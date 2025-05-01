@@ -1,7 +1,8 @@
 export type DadosTreino = {
     [exercicio: string]: {
       [ciclo: string]: {
-        peso?: string;
+        pesos?: string[];
+        reps?: string[];
         obs?: string;
       };
     };

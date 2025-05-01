@@ -1,31 +1,51 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { EXERCICIOS } from "./data/exercise";
 import { carregarDados, salvarDados } from "./utils/storage";
-import { ExerciciosSection } from "./components/ExerciseSection";
-import { DadosTreino } from "./types//TrainingData";
+import ExerciciosSection from "./components/ExerciseSection";
+import { DadosTreino } from "./types/TrainingData";
 
 export default function App() {
-  const [dados, setDados] = useState<DadosTreino>(() => carregarDados());
+  const [dados, setDados] = useState<DadosTreino>(() =>
+    carregarDados() || EXERCICIOS.reduce((acc, exercicio) => {
+      acc[exercicio] = {};
+      return acc;
+    }, {} as DadosTreino)
+  );
+
+  // 🔒 Evita salvar no primeiro render
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    salvarDados(dados);
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    salvarDados(dados); // ✅ Só salva a partir da segunda renderização
   }, [dados]);
 
-  const atualizarCampo = (exercicio: string, ciclo: string, campo: string, valor: string) => {
-    setDados(prev => ({
+  // Resto igual
+  const atualizarCampo = (
+    exercicio: string,
+    ciclo: string,
+    campo: string,
+    valor: string | string[]
+  ) => {
+    setDados((prev) => ({
       ...prev,
       [exercicio]: {
         ...prev[exercicio],
         [ciclo]: {
           ...prev[exercicio]?.[ciclo],
-          [campo]: valor
-        }
-      }
+          [campo]: valor,
+        },
+      },
     }));
   };
 
   const exportarDados = () => {
-    const blob = new Blob([JSON.stringify(dados, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(dados, null, 2)], {
+      type: "application/json",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -34,33 +54,29 @@ export default function App() {
   };
 
   const abrirGraficos = () => {
-    window.open("/graficos", "_blank");
+    salvarDados(dados);
+    requestAnimationFrame(() => window.open("/graficos", "_blank"));
   };
 
   return (
     <div className="p-4 space-y-6">
       <h1 className="text-xl font-bold text-center">Registro de Ciclos de Treino</h1>
 
-      {EXERCICIOS.map(exercicio => (
+      {EXERCICIOS.map((exercicio) => (
         <ExerciciosSection
-          key={exercicio}
-          exercicio={exercicio}
-          dados={dados}
-          atualizar={atualizarCampo}
-        />
+        key={exercicio}
+        exercicio={exercicio}
+        dados={dados}
+        atualizar={atualizarCampo}
+        setDados={setDados} // 👈 adicione isso
+      />
       ))}
 
       <div className="flex flex-col gap-2">
-        <button
-          onClick={exportarDados}
-          className="w-full bg-green-600 text-white py-2 rounded-xl font-bold"
-        >
+        <button onClick={exportarDados} className="w-full bg-green-600 text-white py-2 rounded-xl font-bold">
           Exportar Dados
         </button>
-        <button
-          onClick={abrirGraficos}
-          className="w-full bg-blue-600 text-white py-2 rounded-xl font-bold"
-        >
+        <button onClick={abrirGraficos} className="w-full bg-blue-600 text-white py-2 rounded-xl font-bold">
           Ver Gráficos
         </button>
       </div>

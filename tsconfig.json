@@ -4,4 +4,10 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" }
   ]
+,
+  "compilerOptions": {
+    "jsx": "react-jsx",              
+    "lib": ["dom", "esnext"],        
+    "types": ["react", "react-dom"] 
+  }
 }

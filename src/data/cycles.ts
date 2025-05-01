@@ -1,6 +1,12 @@
-export const CICLOS = [
-    { ciclo: "Ciclo 1", percentual: "100%", reps: "8", objetivo: "Técnica/carga base" },
-    { ciclo: "Ciclo 2", percentual: "+2.5~5%", reps: "6", objetivo: "Carga mais pesada" },
-    { ciclo: "Ciclo 3", percentual: "+5~7.5%", reps: "4–5", objetivo: "Pico força/técnica" },
-    { ciclo: "Ciclo 4", percentual: "-15%", reps: "10–12", objetivo: "Deload/mobilidade" }
-  ];
+export interface CicloInfo {
+  ciclo: string;
+  percentual: string;
+  reps: string;
+}
+
+export const CICLOS: CicloInfo[] = [
+  { ciclo: "C1", percentual: "70%", reps: "12" },
+  { ciclo: "C2", percentual: "75%", reps: "10" },
+  { ciclo: "C3", percentual: "80%", reps: "8" },
+  { ciclo: "C4", percentual: "85%", reps: "6" },
+];
