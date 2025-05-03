@@ -44,9 +44,16 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   const { exercicio, pesoUsado } = payload[0].payload;
 
   return (
-    <div style={{ background: "#fff", padding: 10, border: "1px solid #ccc", borderRadius: 6 }}>
-      <p><strong>Data:</strong> {label}</p>
-      {exercicio && <p><strong>Exercício:</strong> {exercicio}</p>}
+    <div style={{
+      background: "#fff",
+      padding: "12px",
+      border: "1px solid #ccc",
+      borderRadius: "8px",
+      fontSize: "13px",
+      boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+    }}>
+      <p><strong>📅 Data:</strong> {label}</p>
+      {exercicio && <p><strong>🏋️ Exercício:</strong> {exercicio}</p>}
       {[0, 1, 2].map((i) => {
         const reps = payload[0].payload[`serie${i + 1}`];
         const peso = pesoUsado?.[i] ?? "?";
@@ -61,11 +68,14 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 };
 
 export default function Graphics() {
-  console.log("📊 Página de Gráficos carregada");
   const [dados, setDados] = useState<LinhaGrafico[]>([]);
-  const isMobile = window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
 
   useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    handleResize();
+
     const bruto: DadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
     const processado: Record<string, LinhaGrafico> = {};
 
@@ -107,29 +117,67 @@ export default function Graphics() {
     });
 
     setDados(ordenado);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
-    <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
-      <ResponsiveContainer>
-        <ComposedChart
-          data={dados}
-          margin={{ top: 20, right: isMobile ? 10 : 50, left: isMobile ? 10 : 50, bottom: 60 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="data" angle={-30} textAnchor="end" height={isMobile ? 100 : 80} />
-          <YAxis yAxisId="left">
-            <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" />
-          </YAxis>
-          <YAxis yAxisId="right" orientation="right">
-            <Label value="Carga Média (kg)" angle={90} position="insideRight" />
-          </YAxis>
-          <Tooltip content={<CustomTooltip />} />
-          <Legend verticalAlign="top" />
-          <Bar yAxisId="left" dataKey="pesoTotal" name="Soma dos pesos" fill="#4285F4" barSize={isMobile ? 20 : 40} />
-          <Line yAxisId="right" type="monotone" dataKey="cargaMedia" name="Carga média" stroke="#FF5722" dot />
-        </ComposedChart>
-      </ResponsiveContainer>
+    <div style={{
+      width: "100%",
+      maxWidth: "960px",
+      margin: "0 auto",
+      padding: "20px",
+      background: "#fff",
+      borderRadius: "12px",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+      border: "1px solid #e5e7eb"
+    }}>
+      <h2 style={{
+        textAlign: "center",
+        fontSize: "20px",
+        marginBottom: "16px",
+        fontWeight: "bold"
+      }}>📈 Evolução de Carga e Volume</h2>
+
+      <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
+        <ResponsiveContainer>
+          <ComposedChart
+            data={dados}
+            margin={{ top: 20, right: isMobile ? 10 : 40, left: isMobile ? 10 : 40, bottom: 60 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="data"
+              angle={-30}
+              textAnchor="end"
+              height={isMobile ? 80 : 100}
+              interval={0}
+            />
+            <YAxis yAxisId="left">
+              <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" />
+            </YAxis>
+            <YAxis yAxisId="right" orientation="right">
+              <Label value="Carga Média (kg)" angle={90} position="insideRight" />
+            </YAxis>
+            <Tooltip content={<CustomTooltip />} />
+            <Legend verticalAlign="top" />
+            <Bar
+              yAxisId="left"
+              dataKey="pesoTotal"
+              name="Soma dos pesos"
+              fill="#3B82F6"
+              barSize={isMobile ? 18 : 30}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="cargaMedia"
+              name="Carga média"
+              stroke="#EF4444"
+              dot
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }

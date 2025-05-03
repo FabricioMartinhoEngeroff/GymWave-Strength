@@ -49,55 +49,91 @@ export default function Report() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 text-black px-4 py-6">
-      <h1 className="text-2xl font-bold text-center mb-6 flex justify-center items-center gap-2">
-        📋 <span>Relatório de Treinos</span>
+    <div style={{ minHeight: "100vh", background: "#f3f4f6", padding: "20px" }}>
+      <h1 style={{
+        textAlign: "center",
+        fontSize: "24px",
+        fontWeight: "bold",
+        marginBottom: "24px",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "10px"
+      }}>
+        📋 Relatório de Treinos
       </h1>
 
-      {/* Campo de busca redondo com ícone */}
-      <div className="max-w-md mx-auto relative mb-8">
-        <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+      {/* Campo de busca com estilo */}
+      <div style={{ maxWidth: "500px", margin: "0 auto", position: "relative", marginBottom: "24px" }}>
+        <Search size={20} style={{ position: "absolute", top: "10px", left: "12px", color: "#aaa" }} />
         <input
           type="text"
           placeholder="Buscar exercício..."
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
-          className="w-full pl-10 pr-4 py-2 rounded-full bg-white border border-gray-300 shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{
+            width: "100%",
+            padding: "10px 14px 10px 36px",
+            borderRadius: "9999px",
+            border: "1px solid #ccc",
+            background: "#fff",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)"
+          }}
         />
       </div>
 
-      <div className="space-y-6 max-w-md mx-auto">
+      <div style={{ maxWidth: "500px", margin: "0 auto" }}>
         {linhasFiltradas.map((linha, idx) => (
           <div
             key={idx}
-            className="bg-white rounded-2xl p-5 shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200"
+            style={{
+              background: "#fff",
+              padding: "16px",
+              borderRadius: "12px",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+              marginBottom: "20px",
+              border: "1px solid #e2e8f0"
+            }}
           >
-            <p className="text-sm mb-2 text-gray-600">
-              📅 <strong className="text-gray-800">Data:</strong> {linha.data}
+            <p style={{ marginBottom: "6px", fontSize: "14px", color: "#444" }}>
+              📅 <strong>Data:</strong> {linha.data}
             </p>
-            <p className="text-sm mb-2 text-gray-600">
-              🏋️ <strong className="text-gray-800">Exercício:</strong> {linha.exercicio}
+            <p style={{ marginBottom: "6px", fontSize: "14px", color: "#444" }}>
+              🏋️ <strong>Exercício:</strong> {linha.exercicio}
             </p>
-            <p className="text-sm mb-4 text-gray-600">
-              📌 <strong className="text-gray-800">Ciclo:</strong> {linha.ciclo}
+            <p style={{ marginBottom: "10px", fontSize: "14px", color: "#444" }}>
+              📌 <strong>Ciclo:</strong> {linha.ciclo}
             </p>
 
-            <div className="text-sm">
-              <p className="mb-2 text-gray-500 font-medium">
-                🎯 Série 🔁 Reps 🏋️ Peso
+            <p style={{ fontSize: "13px", marginBottom: "6px", color: "#888" }}>
+              🎯 Série 🔁 Reps 🏋️ Peso
+            </p>
+
+            {linha.series.map((serie) => (
+              <p
+                key={serie.serie}
+                style={{
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  padding: "8px 12px",
+                  borderRadius: "6px",
+                  marginBottom: "6px",
+                  fontSize: "14px",
+                  color: "#333"
+                }}
+              >
+                Série {serie.serie}: {serie.rep} reps x {serie.peso} kg
               </p>
-              {linha.series.map((serie) => (
-                <p
-                  key={serie.serie}
-                  className="mb-1 px-3 py-1 rounded-md bg-gray-50 border border-gray-200 text-gray-700"
-                >
-                  Série {serie.serie}: {serie.rep} reps x {serie.peso} kg
-                </p>
-              ))}
-            </div>
+            ))}
 
             {linha.obs && (
-              <p className="mt-4 text-sm text-gray-600 border-t pt-3">
+              <p style={{
+                fontSize: "13px",
+                color: "#555",
+                borderTop: "1px solid #eee",
+                marginTop: "12px",
+                paddingTop: "10px"
+              }}>
                 📝 <strong>Observações:</strong> {linha.obs}
               </p>
             )}
@@ -107,4 +143,3 @@ export default function Report() {
     </div>
   );
 }
-
