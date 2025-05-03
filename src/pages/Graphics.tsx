@@ -61,6 +61,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 };
 
 export default function Graphics() {
+  console.log("📊 Página de Gráficos carregada");
   const [dados, setDados] = useState<LinhaGrafico[]>([]);
   const isMobile = window.innerWidth < 768;
 

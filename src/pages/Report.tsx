@@ -20,6 +20,7 @@ export default function Report() {
   const [busca, setBusca] = useState("");
 
   useEffect(() => {
+    console.log("📋 Página de Relatório carregada");
     const bruto: DadosTreino = carregarDados();
     const geradas: LinhaRelatorio[] = [];
 
