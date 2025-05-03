@@ -12,6 +12,7 @@ interface CicloCardProps {
     obs: string;
     exercicio: string;
   }) => void;
+  value?: string | number | undefined; // Specify the expected types
 }
 
 export const CicloCard: React.FC<CicloCardProps> = ({
