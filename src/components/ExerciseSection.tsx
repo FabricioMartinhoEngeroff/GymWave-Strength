@@ -10,11 +10,11 @@ interface ExerciciosSectionProps {
   atualizar: (
     exercicio: string,
     ciclo: string,
-    campo: string,
-    valor: string | string[],
+    campo: "pesos" | "reps" | "obs",
+    valor: string,
     index?: number
   ) => void;
-  setDados: React.Dispatch<React.SetStateAction<DadosTreino>>; // 👈 adicionamos para atualizar estado corretamente
+  setDados: React.Dispatch<React.SetStateAction<DadosTreino>>;
 }
 
 const ExerciciosSection: React.FC<ExerciciosSectionProps> = ({
@@ -41,7 +41,7 @@ const ExerciciosSection: React.FC<ExerciciosSectionProps> = ({
           [ciclo]: registroSalvo,
         },
       };
-      salvarDados(atualizados); // ✅ salva após atualização real do estado
+      salvarDados(atualizados);
       return atualizados;
     });
   };
@@ -50,18 +50,18 @@ const ExerciciosSection: React.FC<ExerciciosSectionProps> = ({
     <div className="bg-white p-4 rounded-xl shadow space-y-2">
       <h2 className="text-lg font-semibold text-center">{exercicio}</h2>
 
-      {CICLOS.map(({ ciclo, percentual, reps }: CicloInfo) => (
+      {CICLOS.map(({ id, percentual, reps}: CicloInfo) => (
         <CicloCard
-          key={ciclo}
-          ciclo={ciclo}
+          key={id}
+          ciclo={id}
           percentual={percentual}
           reps={reps}
           objetivo={exercicio}
-          value={dados[exercicio]?.[ciclo] || {}}
+          value={dados[exercicio]?.[id] || {}}
           onChange={(campo, valor, index) =>
-            atualizar(exercicio, ciclo, campo, valor, index)
+            atualizar(exercicio, id, campo, valor, index)
           }
-          onSave={(registroSalvo) => salvarNoLocalStorage(ciclo, registroSalvo)}
+          onSave={(registroSalvo) => salvarNoLocalStorage(id, registroSalvo)}
         />
       ))}
     </div>

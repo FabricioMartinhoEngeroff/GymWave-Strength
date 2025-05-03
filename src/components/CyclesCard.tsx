@@ -5,6 +5,17 @@ interface CicloCardProps {
   percentual: string;
   reps: string;
   objetivo: string;
+  value?: {
+    data?: string;
+    pesos?: string[];
+    reps?: string[];
+    obs?: string;
+  };
+  onChange?: (
+    campo: "pesos" | "reps" | "obs",
+    valor: string,
+    index?: number
+  ) => void;
   onSave: (novoRegistro: {
     data: string;
     pesos: string[];
@@ -12,7 +23,6 @@ interface CicloCardProps {
     obs: string;
     exercicio: string;
   }) => void;
-  value?: string | number | undefined; // Specify the expected types
 }
 
 export const CicloCard: React.FC<CicloCardProps> = ({

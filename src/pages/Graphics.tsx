@@ -1,83 +1,134 @@
 import { useEffect, useState } from "react";
-import { carregarDados } from "../utils/storage";
-import { DadosTreino } from "../types/TrainingData";
+import {
+  ComposedChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  Bar,
+  Line,
+  CartesianGrid,
+  ResponsiveContainer,
+  Label,
+} from "recharts";
+import type { TooltipProps } from "recharts";
 import { CICLOS } from "../data/cycles";
 
-interface LinhaRelatorio {
+type RegistroTreino = {
   data: string;
-  exercicio: string;
-  ciclo: string;
-  serie: number;
-  peso: string;
-  repeticoes: string;
+  pesos: string[];
+  reps: string[];
   obs?: string;
+  exercicio?: string;
+};
+
+interface DadosTreino {
+  [exercicio: string]: {
+    [ciclo: string]: RegistroTreino;
+  };
 }
 
-export default function Report() {
-  const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
+interface LinhaGrafico {
+  data: string;
+  pesoTotal: number;
+  cargaMedia: number;
+  serie1: number;
+  serie2: number;
+  serie3: number;
+  exercicio: string;
+  pesoUsado: number[];
+}
+
+const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (!active || !payload?.length) return null;
+  const { exercicio, pesoUsado } = payload[0].payload;
+
+  return (
+    <div style={{ background: "#fff", padding: 10, border: "1px solid #ccc", borderRadius: 6 }}>
+      <p><strong>Data:</strong> {label}</p>
+      {exercicio && <p><strong>Exercício:</strong> {exercicio}</p>}
+      {[0, 1, 2].map((i) => {
+        const reps = payload[0].payload[`serie${i + 1}`];
+        const peso = pesoUsado?.[i] ?? "?";
+        return (
+          <p key={i}>
+            <strong>Série {i + 1}:</strong> {reps} reps x {peso} kg
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
+export default function Graphics() {
+  const [dados, setDados] = useState<LinhaGrafico[]>([]);
+  const isMobile = window.innerWidth < 768;
 
   useEffect(() => {
-    const bruto: DadosTreino = carregarDados();
-    const geradas: LinhaRelatorio[] = [];
+    const bruto: DadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    const processado: Record<string, LinhaGrafico> = {};
 
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
-      Object.entries(ciclos).forEach(([cicloId, registro]) => {
-        const { pesos = [], reps = [], obs = "", data = "Sem data" } = registro;
+      Object.entries(ciclos).forEach(([cicloId, registro], index) => {
+        const { data, pesos = [], reps = [] } = registro;
+        const pesoNum = pesos.map(p => parseFloat(p) || 0);
+        const repsNum = reps.map(r => parseInt(r) || 0);
+
+        const pesoTotal = pesoNum.reduce((acc, val) => acc + val, 0);
+        const cargaMedia = pesoNum.length ? pesoTotal / pesoNum.length : 0;
+        if (pesoTotal === 0 && repsNum.every(n => n === 0)) return;
 
         const cicloInfo = CICLOS.find(c => c.id === cicloId);
-        const nomeCiclo = cicloInfo ? cicloInfo.titulo : "Não definido";
+        const cicloTitulo = cicloInfo?.titulo || cicloId;
+        const dataLabel = `${data} (${cicloTitulo})`;
 
-        const series = [0, 1, 2].map((i) => ({
-          data,
-          exercicio,
-          ciclo: nomeCiclo,
-          serie: i + 1,
-          peso: pesos[i] || "-",
-          repeticoes: reps[i] || "-",
-          obs: i === 0 ? obs : "", // apenas na primeira série
-        }));
-
-        geradas.push(...series);
+        processado[`${data}_${cicloId}_${index}`] = {
+          data: dataLabel,
+          pesoTotal,
+          cargaMedia,
+          serie1: repsNum[0] || 0,
+          serie2: repsNum[1] || 0,
+          serie3: repsNum[2] || 0,
+          exercicio: registro.exercicio || exercicio,
+          pesoUsado: pesoNum,
+        };
       });
     });
 
-    setLinhas(geradas);
+    const ordenado = Object.values(processado).sort((a, b) => {
+      const getDate = (str: string) => {
+        const match = str.match(/\d{2}\/\d{2}\/\d{4}/);
+        if (!match) return 0;
+        const [d, m, y] = match[0].split("/").map(Number);
+        return new Date(y, m - 1, d).getTime();
+      };
+      return getDate(a.data) - getDate(b.data);
+    });
+
+    setDados(ordenado);
   }, []);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto bg-white shadow-xl rounded-xl">
-      <h1 className="text-3xl font-bold text-center mb-6 flex items-center justify-center gap-2">
-        📋 Relatório de Treinos
-      </h1>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-sm md:text-base border border-gray-300 shadow-md">
-          <thead className="bg-green-100 text-gray-800 uppercase text-sm tracking-wider">
-            <tr>
-              <th className="border border-gray-300 px-4 py-2">📅 Data</th>
-              <th className="border border-gray-300 px-4 py-2">🏋️ Exercício</th>
-              <th className="border border-gray-300 px-4 py-2">📌 Ciclo</th>
-              <th className="border border-gray-300 px-4 py-2"># Série</th>
-              <th className="border border-gray-300 px-4 py-2">🔁 Reps</th>
-              <th className="border border-gray-300 px-4 py-2">🏋️ Peso (kg)</th>
-              <th className="border border-gray-300 px-4 py-2">📝 Observações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.map((linha, index) => (
-              <tr key={index} className="even:bg-gray-50 hover:bg-blue-50">
-                <td className="border border-gray-300 px-4 py-2">{linha.data}</td>
-                <td className="border border-gray-300 px-4 py-2">{linha.exercicio}</td>
-                <td className="border border-gray-300 px-4 py-2">{linha.ciclo}</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">{linha.serie}</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">{linha.repeticoes}</td>
-                <td className="border border-gray-300 px-4 py-2 text-center">{linha.peso}</td>
-                <td className="border border-gray-300 px-4 py-2">{linha.obs || "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
+      <ResponsiveContainer>
+        <ComposedChart
+          data={dados}
+          margin={{ top: 20, right: isMobile ? 10 : 50, left: isMobile ? 10 : 50, bottom: 60 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="data" angle={-30} textAnchor="end" height={isMobile ? 100 : 80} />
+          <YAxis yAxisId="left">
+            <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" />
+          </YAxis>
+          <YAxis yAxisId="right" orientation="right">
+            <Label value="Carga Média (kg)" angle={90} position="insideRight" />
+          </YAxis>
+          <Tooltip content={<CustomTooltip />} />
+          <Legend verticalAlign="top" />
+          <Bar yAxisId="left" dataKey="pesoTotal" name="Soma dos pesos" fill="#4285F4" barSize={isMobile ? 20 : 40} />
+          <Line yAxisId="right" type="monotone" dataKey="cargaMedia" name="Carga média" stroke="#FF5722" dot />
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
   );
 }
