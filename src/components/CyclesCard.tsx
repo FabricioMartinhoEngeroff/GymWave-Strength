@@ -212,17 +212,19 @@ export const CicloCard: React.FC<CicloCardProps> = ({
 
       {/* Campo de observações */}
       <input
-        type="text"
-        placeholder="Observações"
-        value={obs}
-        onChange={(e) => setObs(e.target.value)}
-      style={{
-        width: "100%",
-        padding: "8px",
-        marginBottom: "10px",
-        borderRadius: "6px",
-        border: "1px solid #ccc",
-    }}
+  type="text"
+  placeholder="Observações"
+  value={obs}
+  onChange={(e) => setObs(e.target.value)}
+  style={{
+    width: "100%",
+    maxWidth: "100%",       
+    boxSizing: "border-box",
+    padding: "8px",
+    marginBottom: "10px",
+    borderRadius: "6px",
+    border: "1px solid #ccc",
+  }}
 />
 
       {/* Botão de salvar */}
