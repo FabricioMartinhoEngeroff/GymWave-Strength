@@ -22,6 +22,18 @@ export default function App() {
     salvarDados(dados);
   }, [dados]);
 
+  // 👉 Função para resetar completamente
+  const resetarDados = () => {
+    localStorage.clear(); // limpa tudo
+    isFirstRender.current = true; // evita auto-save no reset
+    setDados(() =>
+      EXERCICIOS.reduce((acc, exercicio) => {
+        acc[exercicio] = {};
+        return acc;
+      }, {} as DadosTreino)
+    );
+  };
+
   const exportarDados = () => {
     const blob = new Blob([JSON.stringify(dados, null, 2)], {
       type: "application/json",
@@ -40,12 +52,7 @@ export default function App() {
 
   return (
     <div className="p-4 space-y-6">
-     
-
-      <ExerciciosSection
-        dados={dados}
-        setDados={setDados}
-      />
+      <ExerciciosSection dados={dados} setDados={setDados} />
 
       <div className="flex flex-col gap-3 mt-6 w-full max-w-md mx-auto">
         <button
@@ -67,6 +74,13 @@ export default function App() {
           className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-xl font-semibold shadow-md transition"
         >
           📋 Ver Relatório
+        </button>
+
+        <button
+          onClick={resetarDados}
+          className="flex items-center justify-center gap-2 w-full bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-xl font-semibold shadow-md transition"
+        >
+          🗑️ Zerar Dados
         </button>
       </div>
     </div>
