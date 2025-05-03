@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { carregarDados } from "../utils/storage";
 import { DadosTreino } from "../types/TrainingData";
 import { CICLOS } from "../data/cycles";
+import { Search } from "lucide-react";
 
 interface LinhaRelatorio {
   data: string;
@@ -20,7 +21,6 @@ export default function Report() {
   const [busca, setBusca] = useState("");
 
   useEffect(() => {
-    console.log("📋 Página de Relatório carregada");
     const bruto: DadosTreino = carregarDados();
     const geradas: LinhaRelatorio[] = [];
 
@@ -28,11 +28,8 @@ export default function Report() {
       Object.entries(ciclos).forEach(([ciclo, registro]) => {
         const { pesos = [], reps = [], obs = "", data = "" } = registro;
 
-        const cicloId = ciclo.startsWith("Ciclo ")
-          ? `C${ciclo.split(" ")[1]}`
-          : ciclo;
-
-        const cicloNome = CICLOS.find((c) => c.id === cicloId)?.titulo || "Não definido";
+        const cicloId = ciclo.startsWith("Ciclo ") ? `C${ciclo.split(" ")[1]}` : ciclo;
+        const cicloNome = CICLOS.find((c) => c.id === cicloId)?.titulo || "Ciclo não identificado";
 
         const series = reps.map((rep, index) => ({
           serie: index + 1,
@@ -40,13 +37,7 @@ export default function Report() {
           peso: pesos[index] || "-",
         }));
 
-        geradas.push({
-          data,
-          exercicio,
-          ciclo: cicloNome,
-          series,
-          obs,
-        });
+        geradas.push({ data, exercicio, ciclo: cicloNome, series, obs });
       });
     });
 
@@ -58,40 +49,57 @@ export default function Report() {
   );
 
   return (
-    <div className="p-4 max-w-3xl mx-auto bg-white shadow-xl rounded-xl">
-      <h1 className="text-2xl md:text-3xl font-bold text-center mb-4">📋 Relatório de Treinos</h1>
+    <div className="min-h-screen bg-gray-100 text-black px-4 py-6">
+      <h1 className="text-2xl font-bold text-center mb-6 flex justify-center items-center gap-2">
+        📋 <span>Relatório de Treinos</span>
+      </h1>
 
-      <input
-        type="text"
-        placeholder="Buscar exercício..."
-        value={busca}
-        onChange={(e) => setBusca(e.target.value)}
-        className="w-full max-w-xs border border-gray-300 rounded px-3 py-2 mb-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
-      />
+      {/* Campo de busca redondo com ícone */}
+      <div className="max-w-md mx-auto relative mb-8">
+        <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+        <input
+          type="text"
+          placeholder="Buscar exercício..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 rounded-full bg-white border border-gray-300 shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
-      <div className="grid gap-4">
+      <div className="space-y-6 max-w-md mx-auto">
         {linhasFiltradas.map((linha, idx) => (
-          <div key={idx} className="border rounded-lg p-4 shadow-sm bg-gray-50">
-            <p><strong>📅 Data:</strong> {linha.data}</p>
-            <p><strong>🏋️ Exercício:</strong> {linha.exercicio}</p>
-            <p><strong>📌 Ciclo:</strong> {linha.ciclo}</p>
+          <div
+            key={idx}
+            className="bg-white rounded-2xl p-5 shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200"
+          >
+            <p className="text-sm mb-2 text-gray-600">
+              📅 <strong className="text-gray-800">Data:</strong> {linha.data}
+            </p>
+            <p className="text-sm mb-2 text-gray-600">
+              🏋️ <strong className="text-gray-800">Exercício:</strong> {linha.exercicio}
+            </p>
+            <p className="text-sm mb-4 text-gray-600">
+              📌 <strong className="text-gray-800">Ciclo:</strong> {linha.ciclo}
+            </p>
 
-            <div className="grid grid-cols-3 text-sm text-center mt-2 font-semibold">
-              <span>🎯 Série</span>
-              <span>🔁 Reps</span>
-              <span>🏋️ Peso</span>
+            <div className="text-sm">
+              <p className="mb-2 text-gray-500 font-medium">
+                🎯 Série 🔁 Reps 🏋️ Peso
+              </p>
+              {linha.series.map((serie) => (
+                <p
+                  key={serie.serie}
+                  className="mb-1 px-3 py-1 rounded-md bg-gray-50 border border-gray-200 text-gray-700"
+                >
+                  Série {serie.serie}: {serie.rep} reps x {serie.peso} kg
+                </p>
+              ))}
             </div>
 
-            {linha.series.map((s) => (
-              <div key={s.serie} className="grid grid-cols-3 text-sm text-center border-t py-1">
-                <span>{s.serie}</span>
-                <span>{s.rep}</span>
-                <span>{s.peso}</span>
-              </div>
-            ))}
-
             {linha.obs && (
-              <p className="mt-2 text-sm"><strong>📝 Observações:</strong> {linha.obs}</p>
+              <p className="mt-4 text-sm text-gray-600 border-t pt-3">
+                📝 <strong>Observações:</strong> {linha.obs}
+              </p>
             )}
           </div>
         ))}
@@ -99,3 +107,4 @@ export default function Report() {
     </div>
   );
 }
+
