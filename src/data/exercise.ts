@@ -2,5 +2,7 @@ export const EXERCICIOS = [
     "Agachamento",
     "Levanto Terra",
     "Supino com alteres",
-    "Remada Curvada"
+    "Remada Curvada",
+    "Stiff", 
+    "Elevação Pelvica"
   ];

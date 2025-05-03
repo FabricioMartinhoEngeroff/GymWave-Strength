@@ -121,63 +121,71 @@ export default function Graphics() {
   }, []);
 
   return (
-    <div style={{
-      width: "100%",
-      maxWidth: "960px",
-      margin: "0 auto",
-      padding: "20px",
-      background: "#fff",
-      borderRadius: "12px",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-      border: "1px solid #e5e7eb"
-    }}>
-      <h2 style={{
-        textAlign: "center",
-        fontSize: "20px",
-        marginBottom: "16px",
-        fontWeight: "bold"
-      }}>📈 Evolução de Carga e Volume</h2>
-
-      <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
-        <ResponsiveContainer>
-          <ComposedChart
-            data={dados}
-            margin={{ top: 20, right: isMobile ? 10 : 40, left: isMobile ? 10 : 40, bottom: 60 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="data"
-              angle={-30}
-              textAnchor="end"
-              height={isMobile ? 80 : 100}
-              interval={0}
-            />
-            <YAxis yAxisId="left">
-              <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" />
-            </YAxis>
-            <YAxis yAxisId="right" orientation="right">
-              <Label value="Carga Média (kg)" angle={90} position="insideRight" />
-            </YAxis>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend verticalAlign="top" />
-            <Bar
-              yAxisId="left"
-              dataKey="pesoTotal"
-              name="Soma dos pesos"
-              fill="#3B82F6"
-              barSize={isMobile ? 18 : 30}
-            />
-            <Line
-              yAxisId="right"
-              type="monotone"
-              dataKey="cargaMedia"
-              name="Carga média"
-              stroke="#EF4444"
-              dot
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+    <div style={{ width: "100%", maxWidth: "960px", margin: "0 auto", padding: "20px" }}>
+      {Object.entries(
+        dados.reduce((acc, item) => {
+          if (!acc[item.exercicio]) acc[item.exercicio] = [];
+          acc[item.exercicio].push(item);
+          return acc;
+        }, {} as Record<string, LinhaGrafico[]>)
+      ).map(([exercicio, dadosExercicio]) => (
+        <div
+          key={exercicio}
+          style={{
+            marginBottom: "40px",
+            background: "#fff",
+            padding: "20px",
+            borderRadius: "12px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <h2 style={{ textAlign: "center", fontSize: "20px", marginBottom: "16px", fontWeight: "bold" }}>
+            📈 Evolução de Carga e Volume — {exercicio}
+          </h2>
+  
+          <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
+            <ResponsiveContainer>
+              <ComposedChart
+                data={dadosExercicio}
+                margin={{ top: 20, right: isMobile ? 10 : 40, left: isMobile ? 10 : 40, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis
+                  dataKey="data"
+                  angle={-30}
+                  textAnchor="end"
+                  height={isMobile ? 80 : 100}
+                  interval={0}
+                />
+                <YAxis yAxisId="left">
+                  <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" />
+                </YAxis>
+                <YAxis yAxisId="right" orientation="right">
+                  <Label value="Carga Média (kg)" angle={90} position="insideRight" />
+                </YAxis>
+                <Tooltip content={<CustomTooltip />} />
+                <Legend verticalAlign="top" />
+                <Bar
+                  yAxisId="left"
+                  dataKey="pesoTotal"
+                  name="Soma dos pesos"
+                  fill="#3B82F6"
+                  barSize={isMobile ? 18 : 30}
+                />
+                <Line
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="cargaMedia"
+                  name="Carga média"
+                  stroke="#EF4444"
+                  dot
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      ))}
     </div>
   );
-}
+}  
