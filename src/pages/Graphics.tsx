@@ -14,6 +14,7 @@ import {
 import type { TooltipProps } from "recharts";
 import { CICLOS } from "../data/cycles";
 
+// Tipos
 type RegistroTreino = {
   data: string;
   pesos: string[];
@@ -39,6 +40,7 @@ interface LinhaGrafico {
   pesoUsado: number[];
 }
 
+// Tooltip personalizada
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (!active || !payload?.length) return null;
   const { exercicio, pesoUsado } = payload[0].payload;
@@ -68,7 +70,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
 };
 
 export default function Graphics() {
-  const [dados, setDados] = useState<LinhaGrafico[]>([]);
+  const [dadosAgrupados, setDadosAgrupados] = useState<Record<string, LinhaGrafico[]>>({});
   const [isMobile, setIsMobile] = useState<boolean>(window.innerWidth < 768);
 
   useEffect(() => {
@@ -77,10 +79,11 @@ export default function Graphics() {
     handleResize();
 
     const bruto: DadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const processado: Record<string, LinhaGrafico> = {};
+
+    const dadosPorExercicio: Record<string, LinhaGrafico[]> = {};
 
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
-      Object.entries(ciclos).forEach(([cicloId, registro], index) => {
+      Object.entries(ciclos).forEach(([cicloId, registro]) => {
         const { data, pesos = [], reps = [] } = registro;
         const pesoNum = pesos.map(p => parseFloat(p) || 0);
         const repsNum = reps.map(r => parseInt(r) || 0);
@@ -93,42 +96,42 @@ export default function Graphics() {
         const cicloTitulo = cicloInfo?.titulo || cicloId;
         const dataLabel = `${data} (${cicloTitulo})`;
 
-        processado[`${data}_${cicloId}_${index}`] = {
+        const exercicioFinal = registro.exercicio || exercicio;
+        if (!dadosPorExercicio[exercicioFinal]) dadosPorExercicio[exercicioFinal] = [];
+
+        dadosPorExercicio[exercicioFinal].push({
           data: dataLabel,
           pesoTotal,
           cargaMedia,
           serie1: repsNum[0] || 0,
           serie2: repsNum[1] || 0,
           serie3: repsNum[2] || 0,
-          exercicio: registro.exercicio || exercicio,
+          exercicio: exercicioFinal,
           pesoUsado: pesoNum,
-        };
+        });
       });
     });
 
-    const ordenado = Object.values(processado).sort((a, b) => {
-      const getDate = (str: string) => {
-        const match = str.match(/\d{2}\/\d{2}\/\d{4}/);
-        if (!match) return 0;
-        const [d, m, y] = match[0].split("/").map(Number);
-        return new Date(y, m - 1, d).getTime();
-      };
-      return getDate(a.data) - getDate(b.data);
+    // Ordena os dados por data
+    Object.keys(dadosPorExercicio).forEach((exercicio) => {
+      dadosPorExercicio[exercicio].sort((a, b) => {
+        const getDate = (str: string) => {
+          const match = str.match(/\d{2}\/\d{2}\/\d{4}/);
+          if (!match) return 0;
+          const [d, m, y] = match[0].split("/").map(Number);
+          return new Date(y, m - 1, d).getTime();
+        };
+        return getDate(a.data) - getDate(b.data);
+      });
     });
 
-    setDados(ordenado);
+    setDadosAgrupados(dadosPorExercicio);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
     <div style={{ width: "100%", maxWidth: "960px", margin: "0 auto", padding: "20px" }}>
-      {Object.entries(
-        dados.reduce((acc, item) => {
-          if (!acc[item.exercicio]) acc[item.exercicio] = [];
-          acc[item.exercicio].push(item);
-          return acc;
-        }, {} as Record<string, LinhaGrafico[]>)
-      ).map(([exercicio, dadosExercicio]) => (
+      {Object.entries(dadosAgrupados).map(([exercicio, dadosExercicio]) => (
         <div
           key={exercicio}
           style={{
@@ -143,7 +146,7 @@ export default function Graphics() {
           <h2 style={{ textAlign: "center", fontSize: "20px", marginBottom: "16px", fontWeight: "bold" }}>
             📈 Evolução de Carga e Volume — {exercicio}
           </h2>
-  
+
           <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
             <ResponsiveContainer>
               <ComposedChart
@@ -188,4 +191,4 @@ export default function Graphics() {
       ))}
     </div>
   );
-}  
+}
