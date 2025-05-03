@@ -72,14 +72,28 @@ export default function App() {
       />
       ))}
 
-      <div className="flex flex-col gap-2">
-        <button onClick={exportarDados} className="w-full bg-green-600 text-white py-2 rounded-xl font-bold">
-          Exportar Dados
-        </button>
-        <button onClick={abrirGraficos} className="w-full bg-blue-600 text-white py-2 rounded-xl font-bold">
-          Ver Gráficos
-        </button>
-      </div>
+<div className="flex flex-col gap-3 mt-6 w-full max-w-md mx-auto">
+  <button
+    onClick={exportarDados}
+    className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-xl font-semibold shadow-md transition"
+  >
+    📦 Exportar Dados
+  </button>
+
+  <button
+    onClick={abrirGraficos}
+    className="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-xl font-semibold shadow-md transition"
+  >
+    📊 Ver Gráficos
+  </button>
+
+  <button
+    onClick={() => window.open("/relatorio", "_blank")}
+    className="flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-xl font-semibold shadow-md transition"
+  >
+    📋 Ver Relatório
+  </button>
+</div>
     </div>
   );
 }

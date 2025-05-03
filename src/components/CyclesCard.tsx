@@ -4,13 +4,7 @@ interface CicloCardProps {
   ciclo: string;
   percentual: string;
   reps: string;
-  objetivo: string; // ➕ Novo campo para exibir abaixo do título
-  value: {
-    pesos?: string[];
-    reps?: string[];
-    obs?: string;
-  };
-  onChange: (campo: "pesos" | "reps" | "obs", valor: string | string[], index?: number) => void;
+  objetivo: string;
   onSave: (novoRegistro: {
     data: string;
     pesos: string[];
@@ -25,58 +19,73 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   percentual,
   reps,
   objetivo,
-  value,
-  onChange,
   onSave,
 }) => {
   const dataAtual = new Date().toLocaleDateString("pt-BR");
   const [salvando, setSalvando] = useState(false);
 
-  const handleArrayChange = (campo: "pesos" | "reps", index: number, valor: string) => {
-    const updatedArray = [...(value[campo] || ["", "", ""])];
-    updatedArray[index] = valor;
-    onChange(campo, updatedArray, index);
+  // 👉 Estados internos por card
+  const [pesos, setPesos] = useState<string[]>(["", "", ""]);
+  const [repeticoes, setRepeticoes] = useState<string[]>(["", "", ""]);
+  const [obs, setObs] = useState<string>("");
+
+  const handleArrayChange = (
+    campo: "pesos" | "reps",
+    index: number,
+    valor: string
+  ) => {
+    if (campo === "pesos") {
+      const atualizados = [...pesos];
+      atualizados[index] = valor;
+      setPesos(atualizados);
+    } else {
+      const atualizados = [...repeticoes];
+      atualizados[index] = valor;
+      setRepeticoes(atualizados);
+    }
   };
 
-  const salvarNoLocalStorage = () => {
-    const pesosPadronizados = (value.pesos || ["", "", ""]).map(p => p.trim());
-    const repsPadronizados = (value.reps || ["", "", ""]).map(r => r.trim());
-    const obsLimpo = value.obs?.trim() || "";
+  const salvar = () => {
+    const pesosLimpos = pesos.map((p) => p.trim());
+    const repsLimpos = repeticoes.map((r) => r.trim());
+    const obsLimpo = obs.trim();
 
-    const isTudoVazio =
-      pesosPadronizados.every(p => p === "") &&
-      repsPadronizados.every(r => r === "") &&
+    const isVazio =
+      pesosLimpos.every((p) => p === "") &&
+      repsLimpos.every((r) => r === "") &&
       obsLimpo === "";
 
-    if (isTudoVazio) {
+    if (isVazio) {
       console.warn("🚫 Registro ignorado: todos os campos estão vazios.");
       return;
     }
 
     const novoRegistro = {
       data: dataAtual,
-      pesos: pesosPadronizados,
-      reps: repsPadronizados,
+      pesos: pesosLimpos,
+      reps: repsLimpos,
       obs: obsLimpo,
       exercicio: objetivo,
     };
 
+    // Salvar no localStorage
     const dadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const nomeExercicio = "Agachamento"; // ⚠️ Substitua depois por prop dinâmica se necessário
+    const nomeExercicio = "Agachamento";
     if (!dadosTreino[nomeExercicio]) dadosTreino[nomeExercicio] = {};
     dadosTreino[nomeExercicio][ciclo] = novoRegistro;
-
     localStorage.setItem("dadosTreino", JSON.stringify(dadosTreino));
-    onChange("pesos", ["", "", ""]);
-    onChange("reps", ["", "", ""]);
-    onChange("obs", "");
+
+    // Limpa campos
+    setPesos(["", "", ""]);
+    setRepeticoes(["", "", ""]);
+    setObs("");
     setSalvando(true);
     setTimeout(() => setSalvando(false), 1000);
+
     onSave(novoRegistro);
   };
 
-  // 🔠 Título do ciclo com ícones
-  const cicloTitulo = `📊 ${ciclo} | ⚡ ${percentual} | 🔁 ${reps} | 🎯 ${objetivo} `;
+  const cicloTitulo = `📊 ${ciclo} | ⚡ ${percentual} | 🔁 ${reps} | 🎯 ${objetivo}`;
 
   return (
     <div
@@ -89,21 +98,19 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
       }}
     >
-      {/* 🏷️ Linha principal com ciclo + percentual + repetições */}
       <div style={{ fontWeight: "bold", fontSize: "15px", marginBottom: "6px" }}>
         {cicloTitulo}
       </div>
 
-      {/* Inputs de pesos e repetições */}
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
           <input
             type="number"
             placeholder={`Peso ${i + 1} (kg)`}
-            value={value.pesos?.[i] || ""}
+            value={pesos[i]}
             onChange={(e) => handleArrayChange("pesos", i, e.target.value)}
             style={{
-              flex: 1,
+              width: "48%",
               padding: "8px",
               borderRadius: "6px",
               border: "1px solid #ccc",
@@ -112,10 +119,10 @@ export const CicloCard: React.FC<CicloCardProps> = ({
           <input
             type="number"
             placeholder={`Reps ${i + 1}`}
-            value={value.reps?.[i] || ""}
+            value={repeticoes[i]}
             onChange={(e) => handleArrayChange("reps", i, e.target.value)}
             style={{
-              flex: 1,
+              width: "48%",
               padding: "8px",
               borderRadius: "6px",
               border: "1px solid #ccc",
@@ -124,12 +131,11 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         </div>
       ))}
 
-      {/* Campo de observações */}
       <input
         type="text"
         placeholder="Observações"
-        value={value.obs || ""}
-        onChange={(e) => onChange("obs", e.target.value)}
+        value={obs}
+        onChange={(e) => setObs(e.target.value)}
         style={{
           width: "100%",
           padding: "8px",
@@ -139,14 +145,12 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         }}
       />
 
-      {/* Data da entrada */}
       <div style={{ fontSize: "11px", textAlign: "right", color: "#999", marginBottom: "10px" }}>
         {dataAtual}
       </div>
 
-      {/* Botão de salvar */}
       <button
-        onClick={salvarNoLocalStorage}
+        onClick={salvar}
         style={{
           width: "100%",
           padding: "10px",
