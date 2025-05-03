@@ -38,9 +38,9 @@ const ExerciciosSection: React.FC<ExerciciosSectionProps> = ({
 
   return (
     <div className="bg-white p-4 rounded-xl shadow space-y-2">
-      <h2 className="text-lg font-semibold text-center">
+      <h1 className="text-lg font-semibold text-center">
         Registro de Ciclos de Treino
-      </h2>
+      </h1>
 
       {CICLOS.map(({ id, percentual, reps }: CicloInfo) => (
         <CicloCard
