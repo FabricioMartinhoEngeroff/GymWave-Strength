@@ -26,10 +26,9 @@ export function AuthPage() {
   return (
     <Container>
       <LeftPanel>
-        <LogoText>BMHE</LogoText>
-        <LogoText>Analytics</LogoText>
-        <h2>Seja bem-vindo!</h2>
-        <p>Política de Privacidade</p>
+        <LogoText>Welcome</LogoText>
+         <LogoText>Gym Wave Strength</LogoText>
+      
       </LeftPanel>
 
       <RightPanel>

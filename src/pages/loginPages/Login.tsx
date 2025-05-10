@@ -20,7 +20,7 @@ export function Login() {
   return (
     <RightPanel>
       <LoginBox>
-        <h2>Bem-vindo ao BMHE Analytics</h2>
+        <h2>Enter your password</h2>
         <form onSubmit={handleSubmit}>
           <FormContainer>
             <FormField
@@ -50,14 +50,14 @@ export function Login() {
           <Button text="Entrar" />
         </form>
 
-        <Footer>
-          <span
-            onClick={() => window.dispatchEvent(new Event("toggleRegister"))}
-            style={{ marginLeft: "5px", color: "#0066cc", cursor: "pointer" }}
-          >
-            Já tem uma conta? Criar conta.
-          </span>
-        </Footer>
+      <Footer>
+        <span
+         onClick={() => window.dispatchEvent(new Event("toggleRegister"))}
+         style={{ marginLeft: "5px", color: "#0066cc", cursor: "pointer" }}
+     >
+       Already have an account? Sign up.
+       </span>
+      </Footer>
       </LoginBox>
     </RightPanel>
   );
