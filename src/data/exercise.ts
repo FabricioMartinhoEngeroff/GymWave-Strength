@@ -3,6 +3,8 @@ export const EXERCICIOS = [
     "Levanto Terra",
     "Supino com alteres",
     "Remada Curvada",
-    "Stiff", 
+    "Stiff",
+    "desenvolvimento no smith", 
     "Elevação Pelvica"
+
   ];

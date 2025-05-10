@@ -6,7 +6,10 @@
   ]
 ,
   "compilerOptions": {
-    "jsx": "react-jsx",              
+     "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "jsx": "react",             
     "lib": ["dom", "esnext"],        
     "types": ["react", "react-dom"] 
   }

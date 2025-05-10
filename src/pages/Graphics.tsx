@@ -79,7 +79,6 @@ export default function Graphics() {
     handleResize();
 
     const bruto: DadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-
     const dadosPorExercicio: Record<string, LinhaGrafico[]> = {};
 
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
