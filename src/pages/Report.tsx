@@ -22,6 +22,7 @@ export default function Report() {
   const [editandoIdx, setEditandoIdx] = useState<number | null>(null);
   const [linhaEditada, setLinhaEditada] = useState<Partial<LinhaRelatorio>>({});
 
+  // Carrega os dados salvos do treino e transforma em linhas para o relatorio
   useEffect(() => {
     const bruto: DadosTreino = carregarDados();
     const geradas: LinhaRelatorio[] = [];
@@ -46,6 +47,7 @@ export default function Report() {
     setLinhas(geradas);
   }, []);
 
+  // Salva a edicao feita em uma linha, tanto na UI quanto no localStorage
   const salvarEdicao = (idx: number) => {
     const novasLinhas = [...linhas];
     novasLinhas[idx] = { ...novasLinhas[idx], ...linhaEditada };
@@ -55,6 +57,7 @@ export default function Report() {
     const dados = carregarDados();
     const exercicio = novasLinhas[idx].exercicio;
     const cicloOriginal = CICLOS.find(c => c.titulo === novasLinhas[idx].ciclo)?.id;
+
     if (exercicio && cicloOriginal && dados[exercicio] && dados[exercicio][cicloOriginal]) {
       dados[exercicio][cicloOriginal] = {
         ...dados[exercicio][cicloOriginal],
@@ -67,9 +70,18 @@ export default function Report() {
     }
   };
 
+  // Filtra os exercicios digitados no campo de busca
   const linhasFiltradas = linhas.filter((linha) =>
     linha.exercicio.toLowerCase().includes(busca.toLowerCase())
   );
+
+  // Cópia profunda da linha para evitar referências quebradas
+  const iniciarEdicao = (linha: LinhaRelatorio): LinhaRelatorio => {
+    return {
+      ...linha,
+      series: linha.series.map((s) => ({ ...s }))
+    };
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f3f4f6", padding: "20px" }}>
@@ -119,6 +131,7 @@ export default function Report() {
           >
             {editandoIdx === idx ? (
               <>
+                {/* Campo para editar a data */}
                 <input
                   value={linhaEditada.data || linha.data}
                   onChange={(e) =>
@@ -126,10 +139,11 @@ export default function Report() {
                   }
                   style={{ marginBottom: "8px", width: "100%" }}
                 />
+                {/* Campos para editar as séries */}
                 {linha.series.map((serie, sIdx) => (
                   <div key={sIdx} style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
                     <input
-                      value={linhaEditada.series?.[sIdx]?.rep || serie.rep}
+                      value={linhaEditada.series?.[sIdx]?.rep ?? serie.rep}
                       onChange={(e) => {
                         const novas = [...(linhaEditada.series || linha.series)];
                         novas[sIdx] = { ...novas[sIdx], rep: e.target.value };
@@ -138,7 +152,7 @@ export default function Report() {
                       style={{ width: "50%" }}
                     />
                     <input
-                      value={linhaEditada.series?.[sIdx]?.peso || serie.peso}
+                      value={linhaEditada.series?.[sIdx]?.peso ?? serie.peso}
                       onChange={(e) => {
                         const novas = [...(linhaEditada.series || linha.series)];
                         novas[sIdx] = { ...novas[sIdx], peso: e.target.value };
@@ -148,6 +162,7 @@ export default function Report() {
                     />
                   </div>
                 ))}
+                {/* Campo para editar observacoes */}
                 <input
                   value={linhaEditada.obs || linha.obs || ""}
                   onChange={(e) =>
@@ -156,11 +171,12 @@ export default function Report() {
                   placeholder="Observações"
                   style={{ width: "100%", marginTop: "6px" }}
                 />
-                <button onClick={() => salvarEdicao(idx)} style={{ marginRight: "10px" }}>💾 Salvar</button>
+                <button onClick={() => salvarEdicao(idx)} style={{ marginRight: "10px" }}>📏 Salvar</button>
                 <button onClick={() => setEditandoIdx(null)}>❌ Cancelar</button>
               </>
             ) : (
               <>
+                {/* Visualização dos dados salvos */}
                 <p style={{ marginBottom: "6px", fontSize: "14px", color: "#444" }}>
                   📅 <strong>Data:</strong> {linha.data}
                 </p>
@@ -171,7 +187,7 @@ export default function Report() {
                   📌 <strong>Ciclo:</strong> {linha.ciclo}
                 </p>
                 <p style={{ fontSize: "13px", marginBottom: "6px", color: "#888" }}>
-                  🎯 Série 🔁 Reps 🏋️ Peso
+                  🌟 Série 🔁 Reps 🏋️ Peso
                 </p>
                 {linha.series.map((serie) => (
                   <p
@@ -197,12 +213,12 @@ export default function Report() {
                     marginTop: "12px",
                     paddingTop: "10px"
                   }}>
-                    📝 <strong>Observações:</strong> {linha.obs}
+                    📜 <strong>Observações:</strong> {linha.obs}
                   </p>
                 )}
                 <button onClick={() => {
                   setEditandoIdx(idx);
-                  setLinhaEditada(linha);
+                  setLinhaEditada(iniciarEdicao(linha));
                 }}>✏️ Editar</button>
               </>
             )}
