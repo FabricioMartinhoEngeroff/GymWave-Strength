@@ -8,12 +8,15 @@ export const GlobalStyles = createGlobalStyle`
     font-family: 'Arial', sans-serif;
   }
 
-  body {
+  html, body {
+    min-height: 100vh;
     background-color: #e3eefc;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    height: 100vh;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 `;
 
