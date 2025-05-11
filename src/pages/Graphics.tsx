@@ -1,3 +1,4 @@
+// Componente de gráfico ajustado com layout leve e valores visíveis nas colunas
 import { useEffect, useState } from "react";
 import {
   ComposedChart,
@@ -13,14 +14,14 @@ import {
 import type { TooltipProps } from "recharts";
 import { CICLOS } from "../data/cycles";
 
-// Tipos
-type RegistroTreino = {
+// Tipos utilizados para os dados de treino
+interface RegistroTreino {
   data: string;
   pesos: string[];
   reps: string[];
   obs?: string;
   exercicio?: string;
-};
+}
 
 interface DadosTreino {
   [exercicio: string]: {
@@ -39,7 +40,7 @@ interface LinhaGrafico {
   pesoUsado: number[];
 }
 
-// Tooltip personalizada
+// Tooltip que aparece ao passar o mouse nas colunas
 const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (!active || !payload?.length) return null;
   const { exercicio, pesoUsado, serie1, serie2, serie3 } = payload[0].payload;
@@ -75,6 +76,7 @@ export default function Graphics() {
     const bruto: DadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
     const dadosPorExercicio: Record<string, LinhaGrafico[]> = {};
 
+    // Processa e organiza os dados dos treinos para o gráfico
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
       Object.entries(ciclos).forEach(([cicloId, registro]) => {
         const { data, pesos = [], reps = [] } = registro;
@@ -86,7 +88,7 @@ export default function Graphics() {
         if (pesoTotal === 0 && repsNum.every(n => n === 0)) return;
 
         const cicloInfo = CICLOS.find(c => c.id === cicloId);
-        const cicloTitulo = cicloInfo?.titulo || cicloId;
+        const cicloTitulo = cicloInfo?.titulo || `Ciclo ${cicloId}`;
         const dataLabel = `${data} (${cicloTitulo})`;
 
         const exercicioFinal = registro.exercicio || exercicio;
@@ -105,6 +107,7 @@ export default function Graphics() {
       });
     });
 
+    // Ordena por data
     Object.keys(dadosPorExercicio).forEach((exercicio) => {
       dadosPorExercicio[exercicio].sort((a, b) => {
         const getDate = (str: string) => {
@@ -143,7 +146,7 @@ export default function Graphics() {
             <ResponsiveContainer>
               <ComposedChart
                 data={dadosExercicio}
-                margin={{ top: 20, right: isMobile ? 10 : 40, left: isMobile ? 10 : 40, bottom: 60 }}
+                margin={{ top: 20, right: 40, left: 40, bottom: 60 }}
               >
                 <XAxis
                   dataKey="data"
@@ -152,10 +155,10 @@ export default function Graphics() {
                   interval={0}
                 />
                 <YAxis yAxisId="left">
-                  <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" />
+                  <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" style={{ fill: "#333" }} />
                 </YAxis>
                 <YAxis yAxisId="right" orientation="right">
-                  <Label value="Carga Média (kg)" angle={90} position="insideRight" />
+                  <Label value="Carga Média (kg)" angle={90} position="insideRight" style={{ fill: "#333" }} />
                 </YAxis>
                 <Tooltip content={<CustomTooltip />} />
                 <Legend verticalAlign="top" />
@@ -164,7 +167,18 @@ export default function Graphics() {
                   dataKey="pesoTotal"
                   name="Soma dos pesos"
                   fill="#3B82F6"
-                  barSize={isMobile ? 18 : 30}
+                   barSize={isMobile ? 18 : 30}
+                  label={({ x, y, value, width }) => (
+                <text
+                  x={x + width / 2}
+                  y={y - 8}
+                  fill="#000"
+                 fontSize={12}
+                 textAnchor="middle"
+                  >
+                {value} kg
+                </text>
+              )}
                 />
                 <Line
                   yAxisId="right"

@@ -1,9 +1,11 @@
+// Relatório com edição e exclusão de treinos
 import { useEffect, useState } from "react";
 import { carregarDados, salvarDados } from "../utils/storage";
 import { DadosTreino } from "../types/TrainingData";
 import { CICLOS } from "../data/cycles";
 import { Search } from "lucide-react";
 
+// Estrutura de cada linha do relatório
 interface LinhaRelatorio {
   data: string;
   exercicio: string;
@@ -17,16 +19,18 @@ interface LinhaRelatorio {
 }
 
 export default function Report() {
+  // Estado das linhas do relatório exibidas
   const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
   const [busca, setBusca] = useState("");
   const [editandoIdx, setEditandoIdx] = useState<number | null>(null);
   const [linhaEditada, setLinhaEditada] = useState<Partial<LinhaRelatorio>>({});
 
-  // Carrega os dados salvos do treino e transforma em linhas para o relatorio
+  // Carrega os dados salvos no localStorage ao iniciar o componente
   useEffect(() => {
     const bruto: DadosTreino = carregarDados();
     const geradas: LinhaRelatorio[] = [];
 
+    // Transforma os dados brutos em linhas formatadas para exibição
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
       Object.entries(ciclos).forEach(([ciclo, registro]) => {
         const { pesos = [], reps = [], obs = "", data = "" } = registro;
@@ -47,7 +51,7 @@ export default function Report() {
     setLinhas(geradas);
   }, []);
 
-  // Salva a edicao feita em uma linha, tanto na UI quanto no localStorage
+  // Salva a edição da linha no estado e no localStorage
   const salvarEdicao = (idx: number) => {
     const novasLinhas = [...linhas];
     novasLinhas[idx] = { ...novasLinhas[idx], ...linhaEditada };
@@ -70,12 +74,31 @@ export default function Report() {
     }
   };
 
-  // Filtra os exercicios digitados no campo de busca
+  // Exclui a linha do relatório e do localStorage
+  const excluirLinha = (idx: number) => {
+    const novasLinhas = [...linhas];
+    const linha = novasLinhas[idx];
+    novasLinhas.splice(idx, 1);
+    setLinhas(novasLinhas);
+
+    const dados = carregarDados();
+    const cicloId = CICLOS.find(c => c.titulo === linha.ciclo)?.id;
+
+    if (linha.exercicio && cicloId && dados[linha.exercicio]?.[cicloId]) {
+      delete dados[linha.exercicio][cicloId];
+      if (Object.keys(dados[linha.exercicio]).length === 0) {
+        delete dados[linha.exercicio];
+      }
+      salvarDados(dados);
+    }
+  };
+
+  // Filtra os relatórios pelo nome do exercício digitado
   const linhasFiltradas = linhas.filter((linha) =>
     linha.exercicio.toLowerCase().includes(busca.toLowerCase())
   );
 
-  // Cópia profunda da linha para evitar referências quebradas
+  // Cópia profunda da linha para iniciar a edição sem efeitos colaterais
   const iniciarEdicao = (linha: LinhaRelatorio): LinhaRelatorio => {
     return {
       ...linha,
@@ -85,19 +108,12 @@ export default function Report() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#f3f4f6", padding: "20px" }}>
-      <h1 style={{
-        textAlign: "center",
-        fontSize: "24px",
-        fontWeight: "bold",
-        marginBottom: "24px",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "10px"
-      }}>
+      {/* Título */}
+      <h1 style={{ textAlign: "center", fontSize: "24px", fontWeight: "bold", marginBottom: "24px" }}>
         📋 Relatório de Treinos
       </h1>
 
+      {/* Campo de busca */}
       <div style={{ maxWidth: "500px", margin: "0 auto", position: "relative", marginBottom: "24px" }}>
         <Search size={20} style={{ position: "absolute", top: "10px", left: "12px", color: "#aaa" }} />
         <input
@@ -116,6 +132,7 @@ export default function Report() {
         />
       </div>
 
+      {/* Lista de relatórios filtrados */}
       <div style={{ maxWidth: "500px", margin: "0 auto" }}>
         {linhasFiltradas.map((linha, idx) => (
           <div
@@ -129,17 +146,15 @@ export default function Report() {
               border: "1px solid #e2e8f0"
             }}
           >
+            {/* Modo de edição */}
             {editandoIdx === idx ? (
               <>
-                {/* Campo para editar a data */}
                 <input
                   value={linhaEditada.data || linha.data}
-                  onChange={(e) =>
-                    setLinhaEditada((prev) => ({ ...prev, data: e.target.value }))
-                  }
+                  onChange={(e) => setLinhaEditada((prev) => ({ ...prev, data: e.target.value }))}
                   style={{ marginBottom: "8px", width: "100%" }}
                 />
-                {/* Campos para editar as séries */}
+
                 {linha.series.map((serie, sIdx) => (
                   <div key={sIdx} style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
                     <input
@@ -162,49 +177,38 @@ export default function Report() {
                     />
                   </div>
                 ))}
-                {/* Campo para editar observacoes */}
+
                 <input
                   value={linhaEditada.obs || linha.obs || ""}
-                  onChange={(e) =>
-                    setLinhaEditada((prev) => ({ ...prev, obs: e.target.value }))
-                  }
+                  onChange={(e) => setLinhaEditada((prev) => ({ ...prev, obs: e.target.value }))}
                   placeholder="Observações"
                   style={{ width: "100%", marginTop: "6px" }}
                 />
+
                 <button onClick={() => salvarEdicao(idx)} style={{ marginRight: "10px" }}>📏 Salvar</button>
                 <button onClick={() => setEditandoIdx(null)}>❌ Cancelar</button>
               </>
             ) : (
               <>
-                {/* Visualização dos dados salvos */}
-                <p style={{ marginBottom: "6px", fontSize: "14px", color: "#444" }}>
-                  📅 <strong>Data:</strong> {linha.data}
-                </p>
-                <p style={{ marginBottom: "6px", fontSize: "14px", color: "#444" }}>
-                  🏋️ <strong>Exercício:</strong> {linha.exercicio}
-                </p>
-                <p style={{ marginBottom: "10px", fontSize: "14px", color: "#444" }}>
-                  📌 <strong>Ciclo:</strong> {linha.ciclo}
-                </p>
-                <p style={{ fontSize: "13px", marginBottom: "6px", color: "#888" }}>
-                  🌟 Série 🔁 Reps 🏋️ Peso
-                </p>
+                {/* Visualização normal */}
+                <p><strong>📅 Data:</strong> {linha.data}</p>
+                <p><strong>🏋️ Exercício:</strong> {linha.exercicio}</p>
+                <p><strong>📌 Ciclo:</strong> {linha.ciclo}</p>
+                <p style={{ fontSize: "13px", color: "#888" }}>🌟 Série 🔁 Reps 🏋️ Peso</p>
                 {linha.series.map((serie) => (
-                  <p
-                    key={serie.serie}
-                    style={{
-                      background: "#f9fafb",
-                      border: "1px solid #e5e7eb",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      marginBottom: "6px",
-                      fontSize: "14px",
-                      color: "#333"
-                    }}
-                  >
+                  <p key={serie.serie} style={{
+                    background: "#f9fafb",
+                    border: "1px solid #e5e7eb",
+                    padding: "8px 12px",
+                    borderRadius: "6px",
+                    marginBottom: "6px",
+                    fontSize: "14px",
+                    color: "#333"
+                  }}>
                     Série {serie.serie}: {serie.rep} reps x {serie.peso} kg
                   </p>
                 ))}
+
                 {linha.obs && (
                   <p style={{
                     fontSize: "13px",
@@ -216,10 +220,19 @@ export default function Report() {
                     📜 <strong>Observações:</strong> {linha.obs}
                   </p>
                 )}
-                <button onClick={() => {
-                  setEditandoIdx(idx);
-                  setLinhaEditada(iniciarEdicao(linha));
-                }}>✏️ Editar</button>
+
+                {/* Ações: editar e excluir */}
+                <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", marginTop: "10px" }}>
+                  <button onClick={() => {
+                    setEditandoIdx(idx);
+                    setLinhaEditada(iniciarEdicao(linha));
+                  }}>✏️ Editar</button>
+
+                  <button
+                    onClick={() => excluirLinha(idx)}
+                    style={{ backgroundColor: "#e11d48" }}
+                  >🗑️ Excluir</button>
+                </div>
               </>
             )}
           </div>

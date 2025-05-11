@@ -1,7 +1,7 @@
+// Componente CicloCard com seleção de exercício em botão e correção do placeholder duplicado no select
 import React, { useState, useEffect } from "react";
 import { EXERCICIOS } from "../data/exercise";
 
-// Tipagem das props que o componente CicloCard recebe
 interface CicloCardProps {
   ciclo: string;
   percentual: string;
@@ -36,14 +36,15 @@ export const CicloCard: React.FC<CicloCardProps> = ({
 }) => {
   const dataAtual = new Date().toLocaleDateString("pt-BR");
 
-  // Estados para controlar os campos
   const [salvando, setSalvando] = useState(false);
   const [pesos, setPesos] = useState<string[]>(["", "", ""]);
   const [repeticoes, setRepeticoes] = useState<string[]>(["", "", ""]);
   const [obs, setObs] = useState<string>("");
-  const [exercicioSelecionado, setExercicioSelecionado] = useState(EXERCICIOS[0]);
+  const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
+  const [selecionando, setSelecionando] = useState<boolean>(false);
+  const [data, setData] = useState<string>(dataAtual);
 
-  // Quando `value` muda (edição), preenche os campos com os valores salvos
+  // Carrega valores pré-existentes ao editar
   useEffect(() => {
     if (value) {
       setPesos(value.pesos || ["", "", ""]);
@@ -55,7 +56,7 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     }
   }, [value]);
 
-  // Função para atualizar arrays de pesos ou reps dinamicamente
+  // Atualiza array de pesos ou repetições conforme input
   const handleArrayChange = (
     campo: "pesos" | "reps",
     index: number,
@@ -70,20 +71,22 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     }
   };
 
-  // Função de salvar dados no localStorage
+  // Salva os dados preenchidos
   const salvar = () => {
     const pesosLimpos = pesos.map((p) => p.trim());
     const repsLimpos = repeticoes.map((r) => r.trim());
     const obsLimpo = obs.trim();
 
     const pesoTotal = pesosLimpos.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
-    const isVazio =
-      pesoTotal === 0 &&
-      repsLimpos.every((r) => r === "") &&
-      obsLimpo === "";
+    const isVazio = pesoTotal === 0 && repsLimpos.every((r) => r === "") && obsLimpo === "";
 
     if (isVazio) {
       alert("🚫 Preencha ao menos um peso, repetição ou observação.");
+      return;
+    }
+
+    if (!exercicioSelecionado) {
+      alert("⚠️ Por favor, selecione um exercício.");
       return;
     }
 
@@ -109,7 +112,6 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     onSave(novoRegistro);
   };
 
-  // Título que exibe o ciclo, carga e repetições
   const cicloTitulo = `📊 ${ciclo} | ⚡ ${percentual} | 🔁 ${reps}`;
 
   return (
@@ -123,12 +125,12 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
       }}
     >
-      {/* Título do ciclo */}
+      {/* Cabeçalho com título do ciclo */}
       <div style={{ fontWeight: "bold", fontSize: "15px", marginBottom: "10px" }}>
         {cicloTitulo}
       </div>
 
-      {/* Linha com botão "Selecione seu exercício" e data ao lado */}
+      {/* Linha do seletor de exercício + campo editável de data */}
       <div
         style={{
           display: "flex",
@@ -137,50 +139,67 @@ export const CicloCard: React.FC<CicloCardProps> = ({
           marginBottom: "6px",
         }}
       >
-        <div
-          style={{
-            fontWeight: "bold",
-            fontSize: "14px",
-            backgroundColor: "rgba(59, 130, 246, 0.15)",
-            color: "#2563eb",
-            padding: "6px 12px",
-            borderRadius: "8px",
-            display: "inline-block",
-          }}
-        >
-          Selecione seu exercício
-        </div>
-        <div
+        {!selecionando ? (
+          <button
+            onClick={() => setSelecionando(true)}
+            style={{
+              fontWeight: "bold",
+              fontSize: "14px",
+              backgroundColor: "rgba(59, 130, 246, 0.15)",
+              color: "#2563eb",
+              padding: "6px 12px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            {exercicioSelecionado || "Selecione seu exercício"}
+          </button>
+        ) : (
+          <select
+            autoFocus
+            value={exercicioSelecionado}
+            onChange={(e) => {
+              setExercicioSelecionado(e.target.value);
+              setSelecionando(false);
+            }}
+            onBlur={() => setSelecionando(false)}
+            style={{
+              width: "100%",
+              padding: "8px",
+              borderRadius: "6px",
+              border: "1px solid #ccc",
+            }}
+          >
+            <option value="" disabled hidden>
+              Selecione seu exercício
+            </option>
+            {EXERCICIOS.map((ex) => (
+              <option key={ex} value={ex}>
+                {ex}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {/* Campo editável de data */}
+        <input
+          type="text"
+          value={data}
+          onChange={(e) => setData(e.target.value)}
           style={{
             fontWeight: "bold",
             fontSize: "13px",
             color: "#000",
+            padding: "4px 8px",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            maxWidth: "110px",
           }}
-        >
-          {dataAtual}
-        </div>
+        />
       </div>
 
-      {/* Select de exercícios */}
-      <select
-        value={exercicioSelecionado}
-        onChange={(e) => setExercicioSelecionado(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "8px",
-          borderRadius: "6px",
-          border: "1px solid #ccc",
-          marginBottom: "8px", // 🔼 campo mais próximo da observação
-        }}
-      >
-        {EXERCICIOS.map((ex) => (
-          <option key={ex} value={ex}>
-            {ex}
-          </option>
-        ))}
-      </select>
-
-      {/* Campos de entrada de pesos e repetições */}
+      {/* Campos de peso e reps */}
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
           <input
@@ -210,24 +229,24 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         </div>
       ))}
 
-      {/* Campo de observações */}
+      {/* Observações */}
       <input
-  type="text"
-  placeholder="Observações"
-  value={obs}
-  onChange={(e) => setObs(e.target.value)}
-  style={{
-    width: "100%",
-    maxWidth: "100%",       
-    boxSizing: "border-box",
-    padding: "8px",
-    marginBottom: "10px",
-    borderRadius: "6px",
-    border: "1px solid #ccc",
-  }}
-/>
+        type="text"
+        placeholder="Observações"
+        value={obs}
+        onChange={(e) => setObs(e.target.value)}
+        style={{
+          width: "100%",
+          maxWidth: "100%",
+          boxSizing: "border-box",
+          padding: "8px",
+          marginBottom: "10px",
+          borderRadius: "6px",
+          border: "1px solid #ccc",
+        }}
+      />
 
-      {/* Botão de salvar */}
+      {/* Botão salvar */}
       <button
         onClick={salvar}
         style={{
