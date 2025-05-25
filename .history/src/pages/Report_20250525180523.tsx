@@ -154,8 +154,9 @@ export default function Report() {
       {/* Cards */}
       <div style={{
    width: isMobile ? "100%" : 500,    // <–– largura fixa 500px
-   maxWidth: 500,                      // <–– mas não passa de 500px
-   margin: "0 auto"
++   width: "100%",                      // <–– ocupa 100% do container pai
++   maxWidth: 500,                      // <–– mas não passa de 500px
+    margin: "0 auto"
 }}>
   {linhasFiltradas.map((l, idx) => (
     <div

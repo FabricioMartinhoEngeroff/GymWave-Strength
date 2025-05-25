@@ -122,8 +122,9 @@ export default function Report() {
       {/* Buscador */}
       <div
   style={{
-    width: "100%",                      // <–– ocupa 100% do container pai
-    maxWidth: 500,                      // <–– mas não passa de 500px
+   width: isMobile ? "100%" : 500,    // <–– largura fixa 500px
++   width: "100%",                      // <–– ocupa 100% do container pai
++   maxWidth: 500,                      // <–– mas não passa de 500px
     margin: "0 auto",
     position: "relative",
     marginBottom: 24
@@ -152,23 +153,19 @@ export default function Report() {
       </div>
 
       {/* Cards */}
-      <div style={{
-   width: isMobile ? "100%" : 500,    // <–– largura fixa 500px
-   maxWidth: 500,                      // <–– mas não passa de 500px
-   margin: "0 auto"
-}}>
-  {linhasFiltradas.map((l, idx) => (
-    <div
-      key={idx}
-      style={{
-        background: "#fff",
-        padding: 16,
-        borderRadius: 12,
-        boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
-        marginBottom: 20,
-        border: "1px solid #e2e8f0"
-      }}
-    >
+      <div style={{ width: isMobile ? "100%" : 500, margin: "0 auto" }}>
+        {linhasFiltradas.map((l, idx) => (
+          <div
+            key={idx}
+            style={{
+              background: "#fff",
+              padding: 16,
+              borderRadius: 12,
+              boxShadow: "0 2px 6px rgba(0,0,0,0.08)",
+              marginBottom: 20,
+              border: "1px solid #e2e8f0"
+            }}
+          >
             {editandoIdx === idx ? (
               <>
                 {/* Modo edição */}
