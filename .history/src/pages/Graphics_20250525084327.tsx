@@ -1,4 +1,4 @@
-// Gráficos de evolução de treino com ícones e CICLOS atualizados
+// Gráficos de evolução de treino com ícones realistas e CICLOS atualizados
 import { useEffect, useState } from "react";
 import {
   ComposedChart,
@@ -11,11 +11,7 @@ import {
   ResponsiveContainer,
   Label,
 } from "recharts";
-import {
-  Search,
-  BarChart2,
-  Calendar,
-} from "lucide-react";
+import { FaSearch, FaChartBar, FaCalendarAlt } from "react-icons/fa";
 import type { TooltipProps } from "recharts";
 import { CICLOS } from "../data/cycles";
 
@@ -61,11 +57,11 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
       fontSize: 13,
       boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
     }}>
-      <p><Calendar className="inline-block mr-1" size={16}/> <strong>Date:</strong> {label}</p>
-      {exercicio && <p><strong>Exercise:</strong> {exercicio}</p>}
+      <p><FaCalendarAlt className="inline-block mr-1" size={16}/> <strong>Data:</strong> {label}</p>
+      {exercicio && <p><strong>Exercício:</strong> {exercicio}</p>}
       {[serie1, serie2, serie3].map((reps, i) => (
         <p key={i}>
-          <strong>Set {i + 1}:</strong> {reps} reps x {pesoUsado?.[i] ?? "?"} kg
+          <strong>Série {i + 1}:</strong> {reps} reps x {pesoUsado?.[i] ?? "?"} kg
         </p>
       ))}
     </div>
@@ -95,8 +91,9 @@ export default function Graphics() {
         if (pesoTotal === 0 && repsNum.every(n => n === 0)) return;
         const cargaMedia = pesoNum.length ? pesoTotal / pesoNum.length : 0;
 
+        // Usa o título do ciclo (ex.: "Base técnica") para não duplicar "Ciclo"
         const cicloInfo = CICLOS.find(c => c.id === cicloKey);
-        const cicloTitulo = cicloInfo?.id || cicloInfo?.titulo || cicloKey;
+        const cicloTitulo = cicloInfo?.titulo || cicloKey;
         const dataLabel = `${data.slice(0,5)} (${cicloTitulo})`;
 
         const nomeExe = registro.exercicio || exercicio;
@@ -134,17 +131,13 @@ export default function Graphics() {
   );
 
   return (
-    <div style={{
-      width: isMobile ? "100%" : 960,
-      margin: "0 auto",
-      padding: 20
-    }}>
-      {/* Search field */}
+    <div style={{ width: "100%", maxWidth: 960, margin: "0 auto", padding: 20 }}>
+      {/* Campo de busca */}
       <div style={{ display: "flex", alignItems: "center", marginBottom: 24, gap: 8 }}>
-        <Search size={20} />
+        <FaSearch size={20} />
         <input
           type="text"
-          placeholder="Search exercise..."
+          placeholder="Buscar exercício..."
           value={busca}
           onChange={e => setBusca(e.target.value)}
           style={{ flex: 1, padding: 8, borderRadius: 4, border: "1px solid #ccc" }}
@@ -152,7 +145,7 @@ export default function Graphics() {
       </div>
 
       {exerciciosFiltrados.length === 0 && (
-        <p style={{ textAlign: "center" }}>No exercise found.</p>
+        <p style={{ textAlign: "center" }}>Nenhum exercício encontrado.</p>
       )}
 
       {exerciciosFiltrados.map(exercicio => {
@@ -161,7 +154,6 @@ export default function Graphics() {
           <div
             key={exercicio}
             style={{
-              width: "100%",
               marginBottom: 40,
               background: "#fff",
               padding: 20,
@@ -170,61 +162,25 @@ export default function Graphics() {
               border: "1px solid #e5e7eb",
             }}
           >
-            <h2 style={{
-              textAlign: "center",
-              fontSize: 20,
-              marginBottom: 16,
-              fontWeight: 600
-            }}>
-              <BarChart2 className="inline-block mr-2" size={24} />
-              Load & Volume Progress — {exercicio}
+            <h2 style={{ textAlign: "center", fontSize: 20, marginBottom: 16, fontWeight: 600 }}>
+              <FaChartBar className="inline-block mr-2" size={24} />
+              Evolução de Carga e Volume — {exercicio}
             </h2>
 
             <div style={{ width: "100%", height: isMobile ? 300 : 500 }}>
               <ResponsiveContainer>
-                <ComposedChart
-                  data={dados}
-                  margin={{ top: 20, right: 40, left: 40, bottom: 60 }}
-                >
-                  <XAxis
-                    dataKey="data"
-                    interval={0}
-                    height={isMobile ? 60 : 80}
-                    tick={{ fontSize: 12 }}
-                  />
+                <ComposedChart data={dados} margin={{ top: 20, right: 40, left: 40, bottom: 60 }}>
+                  <XAxis dataKey="data" interval={0} height={isMobile ? 60 : 80} tick={{ fontSize: 12 }} />
                   <YAxis yAxisId="left">
-                    <Label
-                      value="Total Weight (kg)"
-                      angle={-90}
-                      position="insideLeft"
-                      style={{ fill: "#333" }}
-                    />
+                    <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" style={{ fill: "#333" }}/>
                   </YAxis>
                   <YAxis yAxisId="right" orientation="right">
-                    <Label
-                      value="Average Load (kg)"
-                      angle={90}
-                      position="insideRight"
-                      style={{ fill: "#333" }}
-                    />
+                    <Label value="Carga Média (kg)" angle={90} position="insideRight" style={{ fill: "#333" }}/>
                   </YAxis>
                   <Tooltip content={<CustomTooltip />} />
                   <Legend verticalAlign="top" />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="pesoTotal"
-                    name="Total weight"
-                    fill="#3B82F6"
-                    barSize={isMobile ? 18 : 30}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="cargaMedia"
-                    name="Average load"
-                    stroke="#EF4444"
-                    dot
-                  />
+                  <Bar yAxisId="left" dataKey="pesoTotal" name="Soma dos pesos" fill="#3B82F6" barSize={isMobile ? 18 : 30} />
+                  <Line yAxisId="right" type="monotone" dataKey="cargaMedia" name="Carga média" stroke="#EF4444" dot />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>

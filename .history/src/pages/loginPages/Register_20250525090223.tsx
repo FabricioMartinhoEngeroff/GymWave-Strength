@@ -26,7 +26,7 @@ export function Register() {
   return (
     <RightPanel>
       <LoginBox>
-        <h2>Create your account</h2>
+        <h2>Crie sua conta</h2>
         <form onSubmit={handleSubmit}>
           <FormContainer>
             <Row>

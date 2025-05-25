@@ -97,6 +97,7 @@ export default function Report() {
   const linhasFiltradas = linhas.filter(l =>
     l.exercicio.toLowerCase().includes(busca.toLowerCase())
   );
+  }
 
   const iniciarEdicao = (l: LinhaRelatorio): LinhaRelatorio => ({
     ...l,
@@ -315,4 +316,3 @@ export default function Report() {
     </div>
   </div>
 );
-}
