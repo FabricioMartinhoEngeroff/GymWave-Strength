@@ -166,7 +166,7 @@ export default function Graphics() {
             margin={{
               top: 28,    // sobe o gráfico
               right: 0,   // sem margem interna
-              left: 10,
+              left: 5,
               bottom: 25, // reduz o bottom
             }}
             barCategoryGap="25%" // espaço entre categorias

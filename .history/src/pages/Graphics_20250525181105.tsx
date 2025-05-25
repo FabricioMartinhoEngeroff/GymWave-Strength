@@ -166,11 +166,11 @@ export default function Graphics() {
             margin={{
               top: 28,    // sobe o gráfico
               right: 0,   // sem margem interna
-              left: 10,
-              bottom: 25, // reduz o bottom
+              left: 5,
+              bottom: 24, // reduz o bottom
             }}
             barCategoryGap="25%" // espaço entre categorias
-            barGap={4}           // espaço entre barras
+            barGap={5}           // espaço entre barras
           >
             <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
 

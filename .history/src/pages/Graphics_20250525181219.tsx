@@ -160,7 +160,7 @@ export default function Graphics() {
           boxSizing: "border-box",
         }}
       >
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="80%" height="100%">
           <ComposedChart
             data={dados}
             margin={{
