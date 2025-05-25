@@ -80,17 +80,24 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   };
 
   // Salva os dados preenchidos
-   const salvar = () => {
+    const handleArrayChange = (
+    campo: "pesos" | "reps",
+    index: number,
+    valor: string
+  ) => {
+    const atualizados = campo === "pesos" ? [...pesos] : [...repeticoes];
+    atualizados[index] = valor;
+    campo === "pesos" ? setPesos(atualizados) : setRepeticoes(atualizados);
+  };
+
+  const salvar = () => {
     const clean = (arr: string[]) => arr.map((v) => v.trim());
     const pesosLimpos = clean(pesos);
     const repsLimpos = clean(repeticoes);
     const obsLimpo = obs.trim();
     const pesoTotal = pesosLimpos.reduce((a, v) => a + (parseFloat(v) || 0), 0);
-    if (
-      pesoTotal === 0 &&
-      repsLimpos.every((r) => !r) &&
-      !obsLimpo
-    ) {
+
+    if (pesoTotal === 0 && repsLimpos.every((r) => !r) && !obsLimpo) {
       alert("Preencha ao menos um peso, repetição ou observação.");
       return;
     }
@@ -120,7 +127,7 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     onSave(novoRegistro);
   };
 
- return (
+  return (
     <div
       style={{
         margin: "0 8px 16px",     // espaço lateral para não cortar

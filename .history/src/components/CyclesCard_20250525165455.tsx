@@ -120,76 +120,52 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     onSave(novoRegistro);
   };
 
- return (
-    <div
-      style={{
-        margin: "0 8px 16px",     // espaço lateral para não cortar
-        padding: 12,
-        maxWidth: 360,
-        border: "1px solid #ccc",
-        borderRadius: 10,
-        background: "#fff",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-      }}
-    >
+  return (
+    <div style={{
+      border: "1px solid #ccc",
+      padding: 16,
+      borderRadius: 10,
+      marginBottom: 16,
+      background: "#fff",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+    }}>
       {/* Cabeçalho colorido */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          fontWeight: "bold",
-          fontSize: 15,
-          marginBottom: 10,
-        }}
-      >
-        <ChartBar
-          size={20}
-          weight="fill"
-          color="#4caf50"
-          style={{ marginRight: 6 }}
-        />
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        fontWeight: "bold",
+        fontSize: 15,
+        marginBottom: 10,
+      }}>
+        <ChartBar size={20} weight="fill" color="#4caf50" style={{ marginRight: 6 }}/>
         <span>{ciclo}</span>
         <span style={{ margin: "0 8px" }}>|</span>
-        <Lightning
-          size={20}
-          weight="fill"
-          color="#ffeb3b"
-          style={{ marginRight: 6 }}
-        />
+        <Lightning size={20} weight="fill" color="#ffeb3b" style={{ marginRight: 6 }}/>
         <span>{percentual}</span>
         <span style={{ margin: "0 8px" }}>|</span>
-        <Repeat
-          size={20}
-          weight="fill"
-          color="#2196f3"
-          style={{ marginRight: 6 }}
-        />
+        <Repeat size={20} weight="fill" color="#2196f3" style={{ marginRight: 6 }}/>
         <span>{reps}</span>
       </div>
 
       {/* Seletor de exercício e data */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 6,
-        }}
-      >
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: 6,
+      }}>
         {!selecionando ? (
           <button
             onClick={() => setSelecionando(true)}
             style={{
-              flex: 1,
               fontWeight: "bold",
-              fontSize: 13,
+              fontSize: 14,
               backgroundColor: "#e3f2fd",
               color: "#0d47a1",
-              padding: "6px 10px",
-              borderRadius: 6,
+              padding: "6px 12px",
+              borderRadius: 8,
               border: "none",
               cursor: "pointer",
-              textAlign: "left",
             }}
           >
             {exercicioSelecionado || "Selecione seu exercício"}
@@ -205,30 +181,23 @@ export const CicloCard: React.FC<CicloCardProps> = ({
             onBlur={() => setSelecionando(false)}
             style={{
               flex: 1,
-              padding: 6,
-              borderRadius: 4,
+              padding: 8,
+              borderRadius: 6,
               border: "1px solid #ccc",
-              marginRight: 8,
+              marginRight: 10,
             }}
           >
             <option value="" disabled hidden>
               Selecione seu exercício
             </option>
             {EXERCICIOS.map((ex) => (
-              <option key={ex} value={ex}>
-                {ex}
-              </option>
+              <option key={ex} value={ex}>{ex}</option>
             ))}
           </select>
         )}
 
         <div style={{ display: "flex", alignItems: "center" }}>
-          <CalendarBlank
-            size={18}
-            weight="duotone"
-            color="#9e9e9e"
-            style={{ marginRight: 4 }}
-          />
+          <CalendarBlank size={18} weight="duotone" color="#9e9e9e" style={{ marginRight: 4 }}/>
           <input
             type="text"
             value={data}
@@ -239,7 +208,7 @@ export const CicloCard: React.FC<CicloCardProps> = ({
               padding: "4px 8px",
               border: "1px solid #ccc",
               borderRadius: 6,
-              maxWidth: 100,
+              maxWidth: 110,
             }}
           />
         </div>
@@ -247,39 +216,20 @@ export const CicloCard: React.FC<CicloCardProps> = ({
 
       {/* Campos de peso e repetições */}
       {Array.from({ length: 3 }).map((_, i) => (
-        <div
-          key={i}
-          style={{
-            display: "flex",
-            gap: 6,
-            marginBottom: 6,
-          }}
-        >
+        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input
             type="number"
             placeholder={`Peso ${i + 1} (kg)`}
             value={pesos[i]}
             onChange={(e) => handleArrayChange("pesos", i, e.target.value)}
-            style={{
-              flex: "1 1 45%",
-              padding: 6,
-              borderRadius: 4,
-              border: "1px solid #ccc",
-              minWidth: 0,
-            }}
+            style={{ flex: 1, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
           />
           <input
             type="number"
             placeholder={`Reps ${i + 1}`}
             value={repeticoes[i]}
             onChange={(e) => handleArrayChange("reps", i, e.target.value)}
-            style={{
-              flex: "1 1 45%",
-              padding: 6,
-              borderRadius: 4,
-              border: "1px solid #ccc",
-              minWidth: 0,
-            }}
+            style={{ flex: 1, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
           />
         </div>
       ))}
@@ -293,9 +243,9 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         style={{
           width: "100%",
           boxSizing: "border-box",
-          padding: 6,
+          padding: 8,
           marginBottom: 10,
-          borderRadius: 4,
+          borderRadius: 6,
           border: "1px solid #ccc",
         }}
       />
@@ -305,13 +255,13 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         onClick={salvar}
         style={{
           width: "100%",
-          padding: 8,
+          padding: 10,
           backgroundColor: salvando ? "#388e3c" : "#1976d2",
           color: "#fff",
           border: "none",
-          borderRadius: 4,
+          borderRadius: 6,
           fontWeight: "bold",
-          fontSize: 13,
+          fontSize: 14,
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
@@ -320,22 +270,12 @@ export const CicloCard: React.FC<CicloCardProps> = ({
       >
         {salvando ? (
           <>
-            <CheckCircle
-              size={18}
-              weight="fill"
-              color="#cddc39"
-              style={{ marginRight: 6 }}
-            />
+            <CheckCircle size={18} weight="fill" color="#cddc39" style={{ marginRight: 6 }}/>
             Salvo!
           </>
         ) : (
           <>
-            <WarningCircle
-              size={18}
-              weight="fill"
-              color="transparent"
-              style={{ marginRight: 6 }}
-            />
+            <WarningCircle size={18} weight="fill" color="transparent" style={{ marginRight: 6 }}/>
             Salvar
           </>
         )}

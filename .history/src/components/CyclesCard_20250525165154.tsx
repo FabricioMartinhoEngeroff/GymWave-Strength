@@ -9,7 +9,6 @@ import {
   CheckCircle,
 } from "phosphor-react";
 
-
 interface CicloCardProps {
   ciclo: string;
   percentual: string;
@@ -52,7 +51,6 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   const [selecionando, setSelecionando] = useState<boolean>(false);
   const [data, setData] = useState<string>(dataAtual);
 
-  // Carrega valores pré-existentes ao editar
   useEffect(() => {
     if (value) {
       setPesos(value.pesos || ["", "", ""]);
@@ -64,7 +62,6 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     }
   }, [value]);
 
-  // Atualiza array de pesos ou repetições conforme input
   const handleArrayChange = (
     campo: "pesos" | "reps",
     index: number,
@@ -72,25 +69,17 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   ) => {
     const atualizados = campo === "pesos" ? [...pesos] : [...repeticoes];
     atualizados[index] = valor;
-    if (campo === "pesos") {
-      setPesos(atualizados);
-    } else {
-      setRepeticoes(atualizados);
-    }
+    campo === "pesos" ? setPesos(atualizados) : setRepeticoes(atualizados);
   };
 
-  // Salva os dados preenchidos
-   const salvar = () => {
+  const salvar = () => {
     const clean = (arr: string[]) => arr.map((v) => v.trim());
     const pesosLimpos = clean(pesos);
     const repsLimpos = clean(repeticoes);
     const obsLimpo = obs.trim();
     const pesoTotal = pesosLimpos.reduce((a, v) => a + (parseFloat(v) || 0), 0);
-    if (
-      pesoTotal === 0 &&
-      repsLimpos.every((r) => !r) &&
-      !obsLimpo
-    ) {
+
+    if (pesoTotal === 0 && repsLimpos.every((r) => !r) && !obsLimpo) {
       alert("Preencha ao menos um peso, repetição ou observação.");
       return;
     }
@@ -120,7 +109,7 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     onSave(novoRegistro);
   };
 
- return (
+  return (
     <div
       style={{
         margin: "0 8px 16px",     // espaço lateral para não cortar
