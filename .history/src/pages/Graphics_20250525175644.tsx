@@ -164,12 +164,12 @@ export default function Graphics() {
           <ComposedChart
             data={dados}
             margin={{
-              top: 28,    // sobe o gráfico
+              top: 48,    // sobe o gráfico
               right: 0,   // sem margem interna
-              left: 5,
+              left: 0,
               bottom: 24, // reduz o bottom
             }}
-            barCategoryGap="25%" // espaço entre categorias
+            barCategoryGap="40" // espaço entre categorias
             barGap={4}           // espaço entre barras
           >
             <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />

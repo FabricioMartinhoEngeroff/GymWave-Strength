@@ -156,7 +156,7 @@ export default function Graphics() {
         style={{
           width: "100%",
           height: isMobile ? 320 : 400,   // maior altura
-          padding: "0 10px",              // padding lateral para o chart “respirar”
+          padding: "0 8px",              // padding lateral para o chart “respirar”
           boxSizing: "border-box",
         }}
       >
@@ -164,9 +164,9 @@ export default function Graphics() {
           <ComposedChart
             data={dados}
             margin={{
-              top: 28,    // sobe o gráfico
+              top: 48,    // sobe o gráfico
               right: 0,   // sem margem interna
-              left: 5,
+              left: 0,
               bottom: 24, // reduz o bottom
             }}
             barCategoryGap="25%" // espaço entre categorias
@@ -229,9 +229,7 @@ export default function Graphics() {
         </ResponsiveContainer>
       </div>
       </div>
+      </div>
   );
 })}
-
-</div>
- );}
 

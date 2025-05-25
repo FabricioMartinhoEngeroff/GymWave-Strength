@@ -164,9 +164,9 @@ export default function Graphics() {
           <ComposedChart
             data={dados}
             margin={{
-              top: 28,    // sobe o gráfico
+              top: 16,    // sobe o gráfico
               right: 0,   // sem margem interna
-              left: 5,
+              left: 0,
               bottom: 24, // reduz o bottom
             }}
             barCategoryGap="25%" // espaço entre categorias

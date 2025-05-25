@@ -127,111 +127,106 @@ export default function Graphics() {
       </div>
 
       {filtrados.map(ex => {
-  const dados = dadosAgrupados[ex];
-  return (
-    <div
-      key={ex}
-      style={{
-        background: "#1f1f1f",
-        borderRadius: 8,
-        padding: 16,
-        margin: "0 auto 24px",
-        width: "100%",
-        maxWidth: 600,
-      }}
-    >
-      <h2 style={{
-        margin: 0,
-        paddingBottom: 12,
-        color: "#fff",
-        textAlign: "center",
-        fontSize: 18,
-        borderBottom: "1px solid #333",
-      }}>
-        <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
-        Progresso — {ex}
-      </h2>
+        const dados = dadosAgrupados[ex];
+        return (
+          <div key={ex} style={{
+            background:"#1f1f1f",
+            borderRadius: 8,
+            padding: 16,
+            margin: "0 auto 24px",
+            width: "100%",
+            maxWidth: 600
+          }}>
+            <h2 style={{
+              margin:0,
+              paddingBottom:12,
+              color:"#fff",
+              textAlign:"center",
+              fontSize:18,
+              borderBottom:"1px solid #333"
+            }}>
+              <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
+              Progresso — {ex}
+            </h2>
 
-      <div
-        style={{
-          width: "100%",
-          height: isMobile ? 320 : 400,   // maior altura
-          padding: "0 10px",              // padding lateral para o chart “respirar”
-          boxSizing: "border-box",
-        }}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={dados}
-            margin={{
-              top: 28,    // sobe o gráfico
-              right: 0,   // sem margem interna
-              left: 5,
-              bottom: 24, // reduz o bottom
-            }}
-            barCategoryGap="25%" // espaço entre categorias
-            barGap={4}           // espaço entre barras
-          >
-            <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
+            <div style={{ width:"100%", height:isMobile?260:360, marginTop:12 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart
+                  data={dados}
+                  margin={{
+                    top: 16,
+                    right: isMobile ? 24 : 32,
+                    left:  isMobile ? 24 : 32,
+                    bottom: isMobile ? 60 : 80
+                  }}
+                  barGap={8}               // espaço entre barras
+                  barCategoryGap="30%"     // gap de categoria
+                >
+                  <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
 
-            <YAxis
-              yAxisId="media"
-              orientation="left"
-              width={48}
-              tick={{ fill: "#fff" }}
-              tickFormatter={v => `${v} kg`}
-              tickCount={8}
-              allowDecimals={false}
-              tickMargin={8}
-              domain={[0, "dataMax + 5"]}
-              axisLine={{ stroke: "#555" }}
-              tickLine={{ stroke: "#555" }}
-            />
+                  <YAxis
+                    yAxisId="media"
+                    orientation="left"
+                    width={48}
+                    tick={{ fill:"#fff" }}
+                    tickFormatter={v => `${v} kg`}
+                    tickCount={8}
+                    allowDecimals={false}
+                    tickMargin={8}
+                    domain={[0, "dataMax + 5"]}
+                    axisLine={{ stroke:"#555" }}
+                    tickLine={{ stroke:"#555" }}
+                  />
 
-            <YAxis yAxisId="total" orientation="right" hide />
+                  <YAxis yAxisId="total" orientation="right" hide />
 
-            <RechartsTooltip content={<CustomTooltip />} wrapperStyle={{ border: "none" }} />
+                  <RechartsTooltip content={<CustomTooltip />} wrapperStyle={{ border:"none" }} />
 
-            <Legend
-              verticalAlign="top"
-              align="center"
-              wrapperStyle={{ color: "#fff", paddingTop: 8 }}
-            />
+                  <Legend
+                    verticalAlign="top"
+                    align="center"
+                    wrapperStyle={{ color:"#fff", paddingTop:8 }}
+                  />
 
-            <Bar
-              yAxisId="media"
-              dataKey="cargaMedia"
-              name="Média por série"
-              barSize={isMobile ? 20 : 24}  // barras um pouco mais finas
-              fill="#3B82F6"
-            />
+                  <Bar
+                    yAxisId="media"
+                    dataKey="cargaMedia"
+                    name="Média por série"
+                    barSize={isMobile?20:28}
+                    fill="#3B82F6"
+                  />
 
-            <Line
-              yAxisId="total"
-              dataKey="pesoTotal"
-              name="Total das 3 séries"
-              type="monotone"
-              stroke="#fff"
-              dot={{ stroke: "#fff", fill: "#fff" }}
-            />
+                  <Line
+                    yAxisId="total"
+                    dataKey="pesoTotal"
+                    name="Total das 3 séries"
+                    type="monotone"
+                    stroke="#fff"
+                    dot={{ stroke:"#fff", fill:"#fff" }}
+                  />
 
-            <XAxis
-              dataKey="data"
-              interval={0}
-              height={isMobile ? 60 : 80}
-              tick={{ fill: "#fff", fontSize: 12 }}
-              axisLine={{ stroke: "#555" }}
-              tickLine={{ stroke: "#555" }}
-              angle={-30}
-              textAnchor="end"
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-      </div>
+                  <XAxis
+                    dataKey="data"
+                    interval={0}
+                    height={isMobile?60:80}
+                    tick={{ fill:"#fff", fontSize:12 }}
+                    axisLine={{ stroke:"#555" }}
+                    tickLine={{ stroke:"#555" }}
+                    angle={-30}           
+                    textAnchor="end"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        );
+      })}
+
+      {filtrados.length === 0 && (
+        <p style={{ textAlign:"center", color:"#888", padding:20 }}>
+          Nenhum exercício encontrado.
+        </p>
+      )}
+    </div>
   );
-})}
-
-</div>
- );}
-
+}
