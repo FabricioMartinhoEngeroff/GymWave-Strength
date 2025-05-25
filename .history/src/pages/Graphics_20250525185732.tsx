@@ -230,54 +230,38 @@ export default function Graphics() {
             />
 
             <XAxis
-              dataKey="data"
-              interval={0}
-              height={isMobile ? 60 : 80}
-              axisLine={false}
-              tickLine={false}
-              tick={({
-                x,
-                y,
-                payload,
-              }: {
-                x?: number;
-                y?: number;
-                payload?: { value: string };
-              }) => {
-                // payload.value = "DD/MM (CicloID)"
-                const raw = payload?.value as string;
-                const [date, cycleWithParens] = raw ? raw.split(" ") : ["", ""];
-                const cycle = cycleWithParens?.replace(/[()]/g, "") || "";
-                const yOffset = 4;
-                return (
-                  <g transform={`translate(${x},${(y ?? 0) + yOffset})`}>
-                    <text
-                      x={0}
-                      y={0}
-                      fill="#fff"
-                      textAnchor="middle"
-                      fontSize={12}
-                    >
-                      {date}
-                    </text>
-                    <text
-                      x={0}
-                      y={14}
-                      fill="#fff"
-                      textAnchor="middle"
-                      fontSize={10}
-                    >
-                      {cycle}
-                    </text>
-                  </g>
-                );
-              }}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  );
-})}
-</div>
-)}
+  dataKey="data"
+  interval={0}
+  height={isMobile ? 60 : 80}
+  axisLine={false}
+  tickLine={false}
+  tick={({ x, y, payload }: any) => {
+    // payload.value == "DD/MM (CicloID)"
+    const raw = payload.value as string;
+    const [date, cycleWithParens] = raw.split(" ");
+    const cycle = cycleWithParens?.replace(/[()]/g, "") || "";
+    const yOffset = 4;
+    return (
+      <g transform={`translate(${x},${y + yOffset})`}>
+        <text
+          x={0}
+          y={0}
+          fill="#fff"
+          textAnchor="middle"
+          fontSize={12}
+        >
+          {date}
+        </text>
+        <text
+          x={0}
+          y={14}
+          fill="#fff"
+          textAnchor="middle"
+          fontSize={10}
+        >
+          {cycle}
+        </text>
+      </g>
+    );
+  }}
+/>

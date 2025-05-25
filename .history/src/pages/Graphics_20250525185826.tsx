@@ -229,28 +229,20 @@ export default function Graphics() {
               dot={false}
             />
 
-            <XAxis
-              dataKey="data"
-              interval={0}
-              height={isMobile ? 60 : 80}
-              axisLine={false}
-              tickLine={false}
-              tick={({
-                x,
-                y,
-                payload,
-              }: {
-                x?: number;
-                y?: number;
-                payload?: { value: string };
-              }) => {
-                // payload.value = "DD/MM (CicloID)"
-                const raw = payload?.value as string;
-                const [date, cycleWithParens] = raw ? raw.split(" ") : ["", ""];
-                const cycle = cycleWithParens?.replace(/[()]/g, "") || "";
-                const yOffset = 4;
-                return (
-                  <g transform={`translate(${x},${(y ?? 0) + yOffset})`}>
+           <XAxis
+  dataKey="data"
+  interval={0}
+  height={isMobile ? 60 : 80}
+  axisLine={false}
+  tickLine={false}
+  tick={({ x, y, payload }: any) => {
+    // payload.value == "DD/MM (CicloID)"
+    const raw = payload.value as string;
+    const [date, cycleWithParens] = raw.split(" ");
+    const cycle = cycleWithParens?.replace(/[()]/g, "") || "";
+    const yOffset = 4;
+    return (
+                  <g transform={`translate(${x},${y + yOffset})`}>
                     <text
                       x={0}
                       y={0}

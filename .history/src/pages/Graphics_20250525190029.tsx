@@ -6,6 +6,7 @@ import {
   Tooltip as RechartsTooltip,
   Legend,
   Bar,
+  AxisTickItemProps,
   Line,
   ResponsiveContainer,
   CartesianGrid,
@@ -230,27 +231,20 @@ export default function Graphics() {
             />
 
             <XAxis
-              dataKey="data"
-              interval={0}
-              height={isMobile ? 60 : 80}
-              axisLine={false}
-              tickLine={false}
-              tick={({
-                x,
-                y,
-                payload,
-              }: {
-                x?: number;
-                y?: number;
-                payload?: { value: string };
-              }) => {
-                // payload.value = "DD/MM (CicloID)"
-                const raw = payload?.value as string;
-                const [date, cycleWithParens] = raw ? raw.split(" ") : ["", ""];
-                const cycle = cycleWithParens?.replace(/[()]/g, "") || "";
-                const yOffset = 4;
+  dataKey="data"
+  interval={0}
+  height={isMobile ? 60 : 80}
+  axisLine={false}
+  tickLine={false}
+  tick={(props: AxisTickItemProps) => {
+    const { x, y, payload } = props;
+    // payload.value é do tipo string | number
+    const raw = String(payload.value);
+    const [date, cycleWithParens] = raw.split(" ");
+    const cycle = cycleWithParens?.replace(/[()]/g, "") || "";
+    const yOffset = 4;
                 return (
-                  <g transform={`translate(${x},${(y ?? 0) + yOffset})`}>
+                  <g transform={`translate(${x},${y + yOffset})`}>
                     <text
                       x={0}
                       y={0}
