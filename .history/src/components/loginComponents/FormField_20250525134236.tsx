@@ -14,7 +14,6 @@ export interface FormFieldProps {
   error?: string | null;
   isPasswordField?: boolean;
   togglePasswordVisibility?: () => void;
-  autocomplete?: string;
 }
 
 export function FormField({

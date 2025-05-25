@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Login } from "./Login";
 import { Register } from "./Register";
+// Update the import path if the file is located elsewhere, for example:
 import { Container, LeftPanel, LogoText, RightPanel } from "../../styles/GlobalStyles";
-import { useLoginForm } from "../../hooks/useLoginForm";
+import { useLoginForm } from "../hooks/useLoginForm";
 
 /**
  * Componente principal de autenticação.

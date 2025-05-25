@@ -3,18 +3,17 @@ import { IconType } from "react-icons";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useState } from "react";
 
-export interface FormFieldProps {
-  id: string;
+interface FormFieldProps {
   icon: IconType;
   type: string;
   placeholder: string;
   name: string;
-  value: string;
+  id: string;
+  value?: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string | null;
-  isPasswordField?: boolean;
-  togglePasswordVisibility?: () => void;
   autocomplete?: string;
+  isPasswordField?: boolean;
 }
 
 export function FormField({

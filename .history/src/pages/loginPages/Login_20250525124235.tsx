@@ -1,5 +1,5 @@
-
-import type { UseLoginFormReturn } from "../../hooks/useLoginForm";
+import type { ChangeEvent, FormEvent } from "react";
+import type { FormData, FormErrors } from "../../types/Form";
 import { Button } from "../../components/loginComponents/Button";
 import { FormField } from "../../components/loginComponents/FormField";
 import { FaEnvelope, FaLock } from "react-icons/fa";
@@ -14,11 +14,18 @@ import {
  * Props esperadas pelo componente de Login,
  * vindas do hook useLoginForm em AuthPage.
  */
-export type LoginProps = UseLoginFormReturn;
+export interface LoginProps {
+  formData: FormData;                                       // dados atuais do formulário
+  errors: FormErrors;                                       // mensagens de erro por campo
+  handleChange: (e: ChangeEvent<HTMLInputElement>) => void; // atualiza formData
+  handleSubmit: (e: FormEvent) => Promise<void>;           // submete o formulário
+  passwordVisible: boolean;                                 // estado de visibilidade da senha
+  togglePasswordVisibility: () => void;                     // alterna visibilidade da senha
+}
 
 /**
  * Componente de login de usuário.
- * Tudo chega via props (nenhum hook aqui dentro).
+ * Uso mínimo de lógica interna: tudo é passado via props.
  */
 export function Login({
   formData,
@@ -33,7 +40,7 @@ export function Login({
       <LoginBox>
         <h2>Digite sua senha</h2>
 
-        {/* O form chama o handleSubmit passado por props */}
+        {/* Ao submeter, chama handleSubmit vindo de AuthPage */}
         <form onSubmit={handleSubmit}>
           <FormContainer>
             {/* Campo de e-mail */}
@@ -67,10 +74,10 @@ export function Login({
           <Button text="Entrar" />
         </form>
 
-        {/* Link que dispara o evento para trocar para o registro */}
+        {/* Link para alternar para registro */}
         <Footer>
           <span style={{ color: "#333" }}>
-            Ainda não tem conta?{" "}
+            Ainda não tem conta?&nbsp;
             <a
               href="#"
               onClick={() => window.dispatchEvent(new Event("toggleRegister"))}

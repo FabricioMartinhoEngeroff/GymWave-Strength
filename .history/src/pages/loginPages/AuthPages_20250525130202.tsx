@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Login } from "./Login";
 import { Register } from "./Register";
 import { Container, LeftPanel, LogoText, RightPanel } from "../../styles/GlobalStyles";
-import { useLoginForm } from "../../hooks/useLoginForm";
+
 
 /**
  * Componente principal de autenticação.

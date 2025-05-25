@@ -1,4 +1,6 @@
-import type { UseLoginFormReturn } from "../../hooks/useLoginForm";
+// src/components/Register.tsx
+
+import { FormEvent } from "react";
 import { Button } from "../../components/loginComponents/Button";
 import { FormField } from "../../components/loginComponents/FormField";
 import {
@@ -12,42 +14,29 @@ import {
   FaBuilding,
   FaLock,
 } from "react-icons/fa";
-import {
-  RightPanel,
-  LoginBox,
-  FormContainer,
-  Row,
-  Footer,
-} from "../../styles/GlobalStyles";
+import { RightPanel, LoginBox, FormContainer, Row, Footer } from "../../styles/GlobalStyles";
+import type { FormData, FormErrors } from "../../types/Form";
 
-/** 
- * Só usamos do hook:
- * - formData, errors, handleChange, handleSubmit
- */
-export type RegisterProps = Omit<
-  UseLoginFormReturn,
-  "passwordVisible" | "togglePasswordVisibility"
->;
+// Props recebidas do hook useLoginForm (passagem pelo AuthPage)
+interface RegisterProps {
+  formData: FormData;                   // dados do formulário
+  errors: FormErrors;                   // erros de validação
+  handleChange: (e: React.ChangeEvent<HTMLInputElement>) => void; // atualiza formData
+  handleSubmit: (e: FormEvent) => Promise<void>;               // submit
+}
 
 /**
  * Componente de registro de novo usuário.
  * Recebe estado e funções via props do hook useLoginForm.
  */
-export function Register({
-  formData,
-  errors,
-  handleChange,
-  handleSubmit,
-}: RegisterProps) {
+export function Register({ formData, errors, handleChange, handleSubmit }: RegisterProps) {
   return (
     <RightPanel>
       <LoginBox>
         <h2>Crie sua conta</h2>
-
-        {/* Quando submeter, chama handleSubmit passado por props */}
+        {/* Ao submeter, chama handleSubmit vindo do hook */}
         <form onSubmit={handleSubmit}>
           <FormContainer>
-
             <Row>
               {/* Nome completo */}
               <FormField
@@ -72,7 +61,6 @@ export function Register({
                 error={errors.email}
               />
             </Row>
-
             <Row>
               {/* CPF */}
               <FormField
@@ -97,7 +85,6 @@ export function Register({
                 error={errors.telefone}
               />
             </Row>
-
             <Row>
               {/* Rua */}
               <FormField
@@ -122,7 +109,6 @@ export function Register({
                 error={errors.endereco?.bairro}
               />
             </Row>
-
             <Row>
               {/* Cidade */}
               <FormField
@@ -147,7 +133,6 @@ export function Register({
                 error={errors.endereco?.estado}
               />
             </Row>
-
             <Row>
               {/* CEP */}
               <FormField
@@ -173,19 +158,15 @@ export function Register({
                 isPasswordField
               />
             </Row>
-
           </FormContainer>
 
           {/* Botão de envio */}
           <Button text="Cadastrar" />
         </form>
 
-        {/* Link para voltar ao login */}
+        {/* Link para alternar para login, dispara evento global */}
         <Footer>
-          <span
-            onClick={() => window.dispatchEvent(new Event("toggleRegister"))}
-            style={{ cursor: "pointer", color: "#0066cc" }}
-          >
+          <span onClick={() => window.dispatchEvent(new Event("toggleRegister"))}>
             Já possui uma conta? Faça login...
           </span>
         </Footer>

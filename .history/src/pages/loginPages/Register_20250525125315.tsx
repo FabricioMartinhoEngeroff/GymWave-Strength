@@ -1,3 +1,6 @@
+// src/components/Register.tsx
+
+import type { ChangeEvent, FormEvent } from "react";
 import type { UseLoginFormReturn } from "../../hooks/useLoginForm";
 import { Button } from "../../components/loginComponents/Button";
 import { FormField } from "../../components/loginComponents/FormField";

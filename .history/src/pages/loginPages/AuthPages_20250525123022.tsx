@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { Login } from "./Login";
 import { Register } from "./Register";
+// Update the import path if the file is located elsewhere, for example:
 import { Container, LeftPanel, LogoText, RightPanel } from "../../styles/GlobalStyles";
+// import { useLoginForm } from "../hooks/useLoginForm";
+// Update the import path below if the hook is located elsewhere:
 import { useLoginForm } from "../../hooks/useLoginForm";
 
-/**
- * Componente principal de autenticação.
- * Controla qual formulário exibir: login ou registro.
- */
+
 export function AuthPage() {
   const [isRegistering, setIsRegistering] = useState(false);
 

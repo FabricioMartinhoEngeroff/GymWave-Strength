@@ -13,8 +13,6 @@ export interface FormFieldProps {
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   error?: string | null;
   isPasswordField?: boolean;
-  togglePasswordVisibility?: () => void;
-  autocomplete?: string;
 }
 
 export function FormField({

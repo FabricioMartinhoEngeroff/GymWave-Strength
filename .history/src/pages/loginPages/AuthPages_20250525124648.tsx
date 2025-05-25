@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { Login } from "./Login";
-import { Register } from "./Register";
+// If Register is a default export:
+import Register from "./Register";
+// If Register is not the default export but has a different named export, use:
+// import { ActualExportName } from "./Register";
 import { Container, LeftPanel, LogoText, RightPanel } from "../../styles/GlobalStyles";
-import { useLoginForm } from "../../hooks/useLoginForm";
+import { useLoginForm } from "../../hooks/UseLoginForm";
 
 /**
  * Componente principal de autenticação.
