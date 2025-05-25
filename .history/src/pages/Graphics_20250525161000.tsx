@@ -27,21 +27,19 @@ interface RegistroTreino {
 
 interface LinhaGrafico {
   data: string;
-  pesoTotal: number;   
-  cargaMedia: number;   
+  pesoTotal: number;    // soma das 3 séries
+  cargaMedia: number;   // média = soma/3
   serie1: number;
   serie2: number;
   serie3: number;
-  pesoUsado: number[];  
+  pesoUsado: number[];  // pesos em cada série
 }
 
 // Tooltip personalizado
 const CustomTooltip = (props: TooltipProps<number, string>) => {
-  const { active, payload } = props;
+  const { active, payload, label } = props;
   if (!active || !payload?.length) return null;
-
-  const graf = payload[0].payload as LinhaGrafico;
-
+  const { pesoUsado } = payload[0].payload as LinhaGrafico;
   return (
     <div style={{
       background: "#2e2e2e",
@@ -52,26 +50,21 @@ const CustomTooltip = (props: TooltipProps<number, string>) => {
     }}>
       <p>
         <CalendarBlank size={16} weight="duotone" className="inline-block mr-1" />{" "}
-        <strong>Data:</strong> {graf.data}
+        <strong>Data:</strong> {label}
       </p>
       {[0,1,2].map(i => (
         <p key={i}>
-          <strong>Série {i+1}:</strong> {graf.pesoUsado[i] ?? "-"} kg
+          <strong>Série {i+1}:</strong> {pesoUsado[i] ?? "-"} kg
         </p>
       ))}
-      <p>
-        <strong>Total:</strong> {graf.pesoUsado.reduce((a,b) => a + b, 0)} kg
-      </p>
-      <p>
-        <strong>Média:</strong>{" "}
-        {(graf.pesoUsado.reduce((a,b) => a + b, 0) / graf.pesoUsado.length).toFixed(1)} kg
-      </p>
+      <p><strong>Total:</strong> {pesoUsado.reduce((a,b)=>a+b,0)} kg</p>
+      <p><strong>Média:</strong> {(pesoUsado.reduce((a,b)=>a+b,0)/pesoUsado.length).toFixed(1)} kg</p>
     </div>
   );
 };
 
 export default function Graphics() {
-  const [dadosAgrupados, setDadosAgrupados] = useState<Record<string, LinhaGrafico[]>>({});
+  const [dadosAgrupados, setDadosAgrupados] = useState<Record<string,LinhaGrafico[]>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [busca, setBusca] = useState("");
 
@@ -79,41 +72,41 @@ export default function Graphics() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
 
-    const bruto = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const porExe: Record<string, LinhaGrafico[]> = {};
+    const bruto = JSON.parse(localStorage.getItem("dadosTreino")||"{}");
+    const porExe: Record<string,LinhaGrafico[]> = {};
 
     Object.entries(bruto).forEach(([exe, ciclos]) => {
       Object.entries(ciclos as Record<string, RegistroTreino>).forEach(
         ([cicloKey, reg]) => {
-          const pesosNum = (reg.pesos || []).map(p => parseFloat(p) || 0);
+          const pesosNum = (reg.pesos||[]).map(p => parseFloat(p)||0);
           if (!pesosNum.length) return;
 
-          const pesoTotal = pesosNum.reduce((a,b) => a + b, 0);
+          const pesoTotal = pesosNum.reduce((a,b)=>a+b, 0);
           const cargaMedia = +(pesoTotal / pesosNum.length).toFixed(1);
-          const cicloInfo = CICLOS.find(c => c.id === cicloKey);
-          const dataLabel = `${reg.data.slice(0,5)} (${cicloInfo?.id || cicloKey})`;
-          const nomeExe = reg.exercicio || exe;
+          const cicloInfo = CICLOS.find(c=>c.id===cicloKey);
+          const dataLabel = `${reg.data.slice(0,5)} (${cicloInfo?.id||cicloKey})`;
+          const nomeExe = reg.exercicio||exe;
 
-          porExe[nomeExe] = porExe[nomeExe] || [];
+          porExe[nomeExe] = porExe[nomeExe]||[];
           porExe[nomeExe].push({
             data: dataLabel,
             pesoTotal,
             cargaMedia,
-            serie1: pesosNum[0] || 0,
-            serie2: pesosNum[1] || 0,
-            serie3: pesosNum[2] || 0,
+            serie1: pesosNum[0]||0,
+            serie2: pesosNum[1]||0,
+            serie3: pesosNum[2]||0,
             pesoUsado: pesosNum,
           });
         }
       );
     });
 
-    // ordenar por data (DD/MM)
+    // ordenar por data
     Object.values(porExe).forEach(arr =>
-      arr.sort((a, b) => {
-        const [dA, mA] = a.data.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
-        const [dB, mB] = b.data.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
-        return new Date(2025, mA - 1, dA).getTime() - new Date(2025, mB - 1, dB).getTime();
+      arr.sort((a,b)=>{
+        const [dA,mA] = a.data.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
+        const [dB,mB] = b.data.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
+        return new Date(2025,mA-1,dA).getTime() - new Date(2025,mB-1,dB).getTime();
       })
     );
 

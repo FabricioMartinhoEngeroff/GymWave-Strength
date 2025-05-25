@@ -113,13 +113,14 @@ export default function Report() {
         <ClipboardIcon
           size={28}
           weight="duotone"
-          color="#7950F2"
+          primaryColor="#4F46E5"
+          secondaryColor="#E0E7FF"
           className="inline-block mr-2"
         />
         Relatório de Treinos
       </h1>
 
-      {/* Buscador */}
+      {/* Container de busca */}
       <div
         style={{
           width: isMobile ? "100%" : 500,
@@ -131,7 +132,7 @@ export default function Report() {
         <MagnifyingGlassIcon
           size={20}
           weight="fill"
-          color="#6B7280"
+          color="#9CA3AF"
           style={{ position: "absolute", top: 10, left: 12 }}
         />
         <input
@@ -150,7 +151,7 @@ export default function Report() {
         />
       </div>
 
-      {/* Cards */}
+      {/* Container dos cards */}
       <div style={{ width: isMobile ? "100%" : 500, margin: "0 auto" }}>
         {linhasFiltradas.map((l, idx) => (
           <div
@@ -166,11 +167,11 @@ export default function Report() {
           >
             {editandoIdx === idx ? (
               <>
-                {/* Modo edição */}
+                {/* EDIT MODE */}
                 <label style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
                   <CalendarBlankIcon
                     size={18}
-                    weight="duotone"
+                    weight="fill"
                     color="#10B981"
                     className="mr-2"
                   />
@@ -188,8 +189,9 @@ export default function Report() {
                     <label style={{ display: "flex", alignItems: "center", fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
                       <StarIcon
                         size={18}
-                        weight="fill"
-                        color="#FBBF24"
+                        weight="duotone"
+                        primaryColor="#FBBF24"
+                        secondaryColor="#FEF3C7"
                         className="mr-2"
                       />
                       Série {i + 1}
@@ -245,6 +247,8 @@ export default function Report() {
                   <FileTextIcon
                     size={18}
                     weight="duotone"
+                    primaryColor="#6366F1"
+                    secondaryColor="#EDE9FE"
                     className="mr-2"
                   />
                   Observações
@@ -283,11 +287,13 @@ export default function Report() {
               </>
             ) : (
               <>
-                {/* Modo exibição */}
+                {/* DISPLAY MODE */}
                 <p>
                   <CalendarBlankIcon
                     size={16}
                     weight="duotone"
+                    primaryColor="#3B82F6"
+                    secondaryColor="#DBEAFE"
                     className="inline-block mr-1"
                   />
                   <strong>Data:</strong> {l.data}
@@ -305,6 +311,8 @@ export default function Report() {
                   <TagIcon
                     size={16}
                     weight="duotone"
+                    primaryColor="#F59E0B"
+                    secondaryColor="#FEF3C7"
                     className="inline-block mr-1"
                   />
                   <strong>Ciclo:</strong> {l.ciclo}
@@ -312,8 +320,9 @@ export default function Report() {
                 <p style={{ fontSize: 13, color: "#888" }}>
                   <StarIcon
                     size={14}
-                    weight="fill"
-                    color="#FBBF24"
+                    weight="duotone"
+                    primaryColor="#FBBF24"
+                    secondaryColor="#FEF3C7"
                     className="inline-block mr-1"
                   />
                   Série <ArrowsClockwiseIcon size={14} weight="fill" color="#3B82F6" className="inline-block mx-1" />Reps ·{' '}
@@ -340,9 +349,11 @@ export default function Report() {
                     <FileTextIcon
                       size={14}
                       weight="duotone"
+                      primaryColor="#6366F1"
+                      secondaryColor="#EDE9FE"
                       className="inline-block mr-1"
-                    />
-                    <strong> Observações:</strong> {l.obs}
+                    />{' '}
+                    <strong>Observações:</strong> {l.obs}
                   </p>
                 )}
                 <div
@@ -379,6 +390,8 @@ export default function Report() {
                     <TrashIcon
                       size={16}
                       weight="duotone"
+                      primaryColor="#FCA5A5"
+                      secondaryColor="#FECDD3"
                       className="inline-block mr-1"
                     />
                     Excluir

@@ -288,6 +288,8 @@ export default function Report() {
                   <CalendarBlankIcon
                     size={16}
                     weight="duotone"
+                    primaryColor="#10B981"
+                    secondaryColor="#D1FAE5"
                     className="inline-block mr-1"
                   />
                   <strong>Data:</strong> {l.data}

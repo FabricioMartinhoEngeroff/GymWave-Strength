@@ -1,14 +1,14 @@
+// Componente CicloCard com ícones React no lugar dos emojis
 import React, { useState, useEffect } from "react";
 import { EXERCICIOS } from "../data/exercise";
 import {
-  ChartBar,
-  Lightning,
+  BarChart2,
+  Zap,
   Repeat,
-  CalendarBlank,
-  WarningCircle,
-  CheckCircle,
-} from "phosphor-react";
-
+  XCircle,
+  AlertTriangle,
+  Check,
+} from "lucide-react";
 
 interface CicloCardProps {
   ciclo: string;
@@ -52,7 +52,6 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   const [selecionando, setSelecionando] = useState<boolean>(false);
   const [data, setData] = useState<string>(dataAtual);
 
-  // Carrega valores pré-existentes ao editar
   useEffect(() => {
     if (value) {
       setPesos(value.pesos || ["", "", ""]);
@@ -64,7 +63,6 @@ export const CicloCard: React.FC<CicloCardProps> = ({
     }
   }, [value]);
 
-  // Atualiza array de pesos ou repetições conforme input
   const handleArrayChange = (
     campo: "pesos" | "reps",
     index: number,
@@ -72,28 +70,28 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   ) => {
     const atualizados = campo === "pesos" ? [...pesos] : [...repeticoes];
     atualizados[index] = valor;
-    if (campo === "pesos") {
-      setPesos(atualizados);
-    } else {
-      setRepeticoes(atualizados);
-    }
+    campo === "pesos" ? setPesos(atualizados) : setRepeticoes(atualizados);
   };
 
-  // Salva os dados preenchidos
-   const salvar = () => {
-    const clean = (arr: string[]) => arr.map((v) => v.trim());
-    const pesosLimpos = clean(pesos);
-    const repsLimpos = clean(repeticoes);
+  const salvar = () => {
+    const pesosLimpos = pesos.map((p) => p.trim());
+    const repsLimpos = repeticoes.map((r) => r.trim());
     const obsLimpo = obs.trim();
-    const pesoTotal = pesosLimpos.reduce((a, v) => a + (parseFloat(v) || 0), 0);
-    if (
+
+    const pesoTotal = pesosLimpos.reduce(
+      (acc, val) => acc + (parseFloat(val) || 0),
+      0
+    );
+    const isVazio =
       pesoTotal === 0 &&
-      repsLimpos.every((r) => !r) &&
-      !obsLimpo
-    ) {
+      repsLimpos.every((r) => r === "") &&
+      obsLimpo === "";
+
+    if (isVazio) {
       alert("Preencha ao menos um peso, repetição ou observação.");
       return;
     }
+
     if (!exercicioSelecionado) {
       alert("Por favor, selecione um exercício.");
       return;
@@ -107,63 +105,70 @@ export const CicloCard: React.FC<CicloCardProps> = ({
       exercicio: exercicioSelecionado,
     };
 
-    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    if (!db[exercicioSelecionado]) db[exercicioSelecionado] = {};
-    db[exercicioSelecionado][ciclo] = novoRegistro;
-    localStorage.setItem("dadosTreino", JSON.stringify(db));
+    const dadosTreino = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    if (!dadosTreino[exercicioSelecionado]) dadosTreino[exercicioSelecionado] = {};
+    dadosTreino[exercicioSelecionado][ciclo] = novoRegistro;
+    localStorage.setItem("dadosTreino", JSON.stringify(dadosTreino));
 
     setPesos(["", "", ""]);
     setRepeticoes(["", "", ""]);
     setObs("");
     setSalvando(true);
     setTimeout(() => setSalvando(false), 1000);
+
     onSave(novoRegistro);
   };
 
   return (
-    <div style={{
-      border: "1px solid #ccc",
-      padding: 16,
-      borderRadius: 10,
-      marginBottom: 16,
-      background: "#fff",
-      boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
-    }}>
-      {/* Cabeçalho colorido */}
-      <div style={{
-        display: "flex",
-        alignItems: "center",
-        fontWeight: "bold",
-        fontSize: 15,
-        marginBottom: 10,
-      }}>
-        <ChartBar size={20} weight="fill" color="#4caf50" style={{ marginRight: 6 }}/>
+    <div
+      style={{
+        border: "1px solid #ccc",
+        padding: "16px",
+        borderRadius: "10px",
+        marginBottom: "16px",
+        background: "#fff",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+      }}
+    >
+      {/* Cabeçalho com ícones */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          fontWeight: "bold",
+          fontSize: "15px",
+          marginBottom: "10px",
+        }}
+      >
+        <BarChart2 size={18} style={{ marginRight: "4px" }} />
         <span>{ciclo}</span>
         <span style={{ margin: "0 8px" }}>|</span>
-        <Lightning size={20} weight="fill" color="#ffeb3b" style={{ marginRight: 6 }}/>
+        <Zap size={18} style={{ marginRight: "4px" }} />
         <span>{percentual}</span>
         <span style={{ margin: "0 8px" }}>|</span>
-        <Repeat size={20} weight="fill" color="#2196f3" style={{ marginRight: 6 }}/>
+        <Repeat size={18} style={{ marginRight: "4px" }} />
         <span>{reps}</span>
       </div>
 
       {/* Seletor de exercício e data */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: 6,
-      }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "6px",
+        }}
+      >
         {!selecionando ? (
           <button
             onClick={() => setSelecionando(true)}
             style={{
               fontWeight: "bold",
-              fontSize: 14,
-              backgroundColor: "#e3f2fd",
-              color: "#0d47a1",
+              fontSize: "14px",
+              backgroundColor: "rgba(59, 130, 246, 0.15)",
+              color: "#2563eb",
               padding: "6px 12px",
-              borderRadius: 8,
+              borderRadius: "8px",
               border: "none",
               cursor: "pointer",
             }}
@@ -180,56 +185,65 @@ export const CicloCard: React.FC<CicloCardProps> = ({
             }}
             onBlur={() => setSelecionando(false)}
             style={{
-              flex: 1,
-              padding: 8,
-              borderRadius: 6,
+              width: "100%",
+              padding: "8px",
+              borderRadius: "6px",
               border: "1px solid #ccc",
-              marginRight: 10,
             }}
           >
             <option value="" disabled hidden>
               Selecione seu exercício
             </option>
             {EXERCICIOS.map((ex) => (
-              <option key={ex} value={ex}>{ex}</option>
+              <option key={ex} value={ex}>
+                {ex}
+              </option>
             ))}
           </select>
         )}
 
-        <div style={{ display: "flex", alignItems: "center" }}>
-          <CalendarBlank size={18} weight="duotone" color="#9e9e9e" style={{ marginRight: 4 }}/>
-          <input
-            type="text"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            style={{
-              fontWeight: "bold",
-              fontSize: 13,
-              padding: "4px 8px",
-              border: "1px solid #ccc",
-              borderRadius: 6,
-              maxWidth: 110,
-            }}
-          />
-        </div>
+        <input
+          type="text"
+          value={data}
+          onChange={(e) => setData(e.target.value)}
+          style={{
+            fontWeight: "bold",
+            fontSize: "13px",
+            color: "#000",
+            padding: "4px 8px",
+            border: "1px solid #ccc",
+            borderRadius: "6px",
+            maxWidth: "110px",
+          }}
+        />
       </div>
 
       {/* Campos de peso e repetições */}
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        <div key={i} style={{ display: "flex", gap: "8px", marginBottom: "8px" }}>
           <input
             type="number"
             placeholder={`Peso ${i + 1} (kg)`}
             value={pesos[i]}
             onChange={(e) => handleArrayChange("pesos", i, e.target.value)}
-            style={{ flex: 1, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
+            style={{
+              width: "48%",
+              padding: "8px",
+              borderRadius: "6px",
+              border: "1px solid #ccc",
+            }}
           />
           <input
             type="number"
             placeholder={`Reps ${i + 1}`}
             value={repeticoes[i]}
             onChange={(e) => handleArrayChange("reps", i, e.target.value)}
-            style={{ flex: 1, padding: 8, borderRadius: 6, border: "1px solid #ccc" }}
+            style={{
+              width: "48%",
+              padding: "8px",
+              borderRadius: "6px",
+              border: "1px solid #ccc",
+            }}
           />
         </div>
       ))}
@@ -243,9 +257,9 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         style={{
           width: "100%",
           boxSizing: "border-box",
-          padding: 8,
-          marginBottom: 10,
-          borderRadius: 6,
+          padding: "8px",
+          marginBottom: "10px",
+          borderRadius: "6px",
           border: "1px solid #ccc",
         }}
       />
@@ -255,29 +269,23 @@ export const CicloCard: React.FC<CicloCardProps> = ({
         onClick={salvar}
         style={{
           width: "100%",
-          padding: 10,
-          backgroundColor: salvando ? "#388e3c" : "#1976d2",
+          padding: "10px",
+          backgroundColor: salvando ? "#28a745" : "#007bff",
           color: "#fff",
           border: "none",
-          borderRadius: 6,
+          borderRadius: "6px",
           fontWeight: "bold",
-          fontSize: 14,
+          fontSize: "14px",
           cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
         }}
       >
         {salvando ? (
           <>
-            <CheckCircle size={18} weight="fill" color="#cddc39" style={{ marginRight: 6 }}/>
+            <Check size={16} style={{ marginRight: "4px" }} />
             Salvo!
           </>
         ) : (
-          <>
-            <WarningCircle size={18} weight="fill" color="transparent" style={{ marginRight: 6 }}/>
-            Salvar
-          </>
+          "Salvar"
         )}
       </button>
     </div>

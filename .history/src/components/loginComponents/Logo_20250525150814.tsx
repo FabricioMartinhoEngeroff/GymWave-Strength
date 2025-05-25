@@ -13,7 +13,7 @@ const LogoContainer = styled.div`
 export function Logo() {
   return (
     <LogoContainer>
-      <img src={logo} alt="" />
+      <img src={logo} alt="Logo" />
     </LogoContainer>
   );
 }

@@ -27,7 +27,7 @@ interface RegistroTreino {
 
 interface LinhaGrafico {
   data: string;
-  pesoTotal: number;   
+  pesoTotal: number;    // soma das 3 séries
   cargaMedia: number;   
   serie1: number;
   serie2: number;

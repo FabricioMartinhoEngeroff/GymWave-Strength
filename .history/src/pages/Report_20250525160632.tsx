@@ -113,7 +113,8 @@ export default function Report() {
         <ClipboardIcon
           size={28}
           weight="duotone"
-          color="#7950F2"
+          primaryColor="#7950F2"
+          secondaryColor="#EDE9FE"
           className="inline-block mr-2"
         />
         Relatório de Treinos
@@ -245,6 +246,8 @@ export default function Report() {
                   <FileTextIcon
                     size={18}
                     weight="duotone"
+                    primaryColor="#6366F1"
+                    secondaryColor="#EDE9FE"
                     className="mr-2"
                   />
                   Observações
@@ -288,6 +291,8 @@ export default function Report() {
                   <CalendarBlankIcon
                     size={16}
                     weight="duotone"
+                    primaryColor="#10B981"
+                    secondaryColor="#D1FAE5"
                     className="inline-block mr-1"
                   />
                   <strong>Data:</strong> {l.data}
