@@ -71,8 +71,8 @@ export default function Graphics() {
     const bruto = JSON.parse(localStorage.getItem("dadosTreino")||"{}");
     const porExe: Record<string,LinhaGrafico[]> = {};
 
-    Object.entries(bruto).forEach(([exe, ciclos]) => {
-      Object.entries(ciclos as Record<string, RegistroTreino>).forEach(([cicloKey, reg]: [string, RegistroTreino]) => {
+    Object.entries(bruto).forEach(([exe, ciclos]: [string, Record<string, RegistroTreino>]) => {
+      Object.entries(ciclos).forEach(([cicloKey, reg]: [string, RegistroTreino]) => {
         const pesosNum = (reg.pesos||[]).map((p:string)=>parseFloat(p)||0);
         if (!pesosNum.length) return;
 
