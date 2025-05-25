@@ -66,7 +66,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
       {exercicio && <p><strong>Exercício:</strong> {exercicio}</p>}
       {[serie1, serie2, serie3].map((reps, i) => (
         <p key={i}>
-          <strong>Série {i + 1}:</strong> {reps} repetições x {pesoUsado?.[i] ?? "?"} kg
+          <strong>Série {i + 1}:</strong> {reps} reps x {pesoUsado?.[i] ?? "?"} kg
         </p>
       ))}
     </div>
@@ -96,9 +96,10 @@ export default function Graphics() {
         if (pesoTotal === 0 && repsNum.every(n => n === 0)) return;
         const cargaMedia = pesoNum.length ? pesoTotal / pesoNum.length : 0;
 
-        // Define título curto do ciclo (prioriza legibilidade)
+        // Define título curto do ciclo
         const cicloInfo = CICLOS.find(c => c.id === cicloKey);
-        const cicloTitulo = cicloInfo?.titulo || cicloInfo?.id || cicloKey;
+        const cicloTitulo = cicloInfo?.id || cicloInfo?.titulo || cicloKey;
+        // Data e ciclo resumidos
         const dataLabel = `${data.slice(0,5)} (${cicloTitulo})`;
 
         const nomeExe = registro.exercicio || exercicio;
@@ -121,7 +122,7 @@ export default function Graphics() {
       arr.sort((a, b) => {
         const parseData = (str: string) => {
           const [d, m] = str.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
-          return new Date(new Date().getFullYear(), m - 1, d).getTime();
+          return new Date(2025, m - 1, d).getTime();
         };
         return parseData(a.data) - parseData(b.data);
       });
@@ -158,7 +159,7 @@ export default function Graphics() {
         return (
           <div
             key={exercicio}
-            style={{ marginBottom: 40, background: "#fff", padding: 16, borderTop: "1px solid #e5e7eb" }}
+            style={{ marginBottom: 40, background: "#fff", padding: 16, borderRadius: 0, boxShadow: "none", borderTop: "1px solid #e5e7eb" }}
           >
             <h2 style={{ textAlign: "center", fontSize: 22, marginBottom: 12, fontWeight: 600 }}>
               <BarChart2 className="inline-block mr-2" size={28} />
@@ -170,15 +171,15 @@ export default function Graphics() {
                 <ComposedChart data={dados} margin={{ top: 16, right: 24, left: 24, bottom: 48 }}>
                   <XAxis dataKey="data" interval={0} tick={{ fontSize: 14 }} height={isMobile ? 80 : 100} />
                   <YAxis yAxisId="left" tick={{ fontSize: 12 }}>
-                    <Label value="Soma dos Pesos (kg)" angle={-90} position="insideLeft" style={{ fill: "#333" }}/>
+                    <Label value="Total Weight (kg)" angle={-90} position="insideLeft" style={{ fill: "#333" }}/>
                   </YAxis>
                   <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }}>
-                    <Label value="Carga Média (kg)" angle={90} position="insideRight" style={{ fill: "#333" }}/>
+                    <Label value="Average Load (kg)" angle={90} position="insideRight" style={{ fill: "#333" }}/>
                   </YAxis>
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend verticalAlign="top" iconType="circle" formatter={(value) => value /* mantém literal em Português */} />
-                  <Bar yAxisId="left" dataKey="pesoTotal" name="Soma dos Pesos" fill="#3B82F6" barSize={isMobile ? 24 : 40} />
-                  <Line yAxisId="right" type="monotone" dataKey="cargaMedia" name="Carga Média" stroke="#EF4444" dot={{ r: 4 }} />
+                  <Legend verticalAlign="top" iconType="circle" />
+                  <Bar yAxisId="left" dataKey="pesoTotal" name="Total weight" fill="#3B82F6" barSize={isMobile ? 24 : 40} />
+                  <Line yAxisId="right" type="monotone" dataKey="cargaMedia" name="Average load" stroke="#EF4444" dot={{ r: 4 }} />
                 </ComposedChart>
               </ResponsiveContainer>
             </div>
@@ -187,4 +188,4 @@ export default function Graphics() {
       })}
     </div>
   );
-}
+}D
