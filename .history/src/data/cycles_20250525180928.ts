@@ -17,7 +17,7 @@ export const CICLOS: CicloInfo[] = [
   {
     id: "Ciclo 2 Carga moderada",
     titulo: "Carga moderada",
-    percentual: "-5% a -2,5% do pico anterior",
+    percentual: "-5% a -2,5% do pico ",
     reps: "6 repetições",
     objetivo: "Carga média com execução forte",
   },
