@@ -195,7 +195,7 @@ export default function Graphics() {
                     width={50}
                     tick={{ fill: "#fff", fontSize: 11 }}
                     tickFormatter={v => `${v}kg`}
-                    tickCount={13}
+                    tickCount={6}
                     domain={[0, "dataMax + 5"]}
                     axisLine={false}
                     tickLine={false}
@@ -209,8 +209,6 @@ export default function Graphics() {
                     height={24}
                     wrapperStyle={{ color: "#fff", padding: 0, marginBottom: 4 }}
                   />
-
-                  <RechartsTooltip content={<CustomTooltip />} />
 
                   <Bar
                     yAxisId="media"

@@ -195,7 +195,7 @@ export default function Graphics() {
                     width={50}
                     tick={{ fill: "#fff", fontSize: 11 }}
                     tickFormatter={v => `${v}kg`}
-                    tickCount={13}
+                    tickCount={15}
                     domain={[0, "dataMax + 5"]}
                     axisLine={false}
                     tickLine={false}

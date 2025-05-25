@@ -336,8 +336,6 @@ export default function Report() {
               </div>
             </>
           )}
-         </div>
-      ))}
-    </div>
-  </div>
-);}
+        </div>
+      )
+
