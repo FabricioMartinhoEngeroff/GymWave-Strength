@@ -40,10 +40,8 @@ interface LinhaGrafico {
   pesoUsado: number[];
 }
 
-// Tooltip customizado tipado corretamente para evitar conflito de versão
-import type { TooltipProps } from "recharts";
-
-const CustomTooltip = (props: TooltipProps<number, string>) => {
+// Tooltip customizado (props tipados como any para evitar conflito de versão)
+const CustomTooltip = (props: any) => {
   const { active, payload, label } = props;
   if (!active || !payload?.length) return null;
 

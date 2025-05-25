@@ -1,6 +1,6 @@
 export const EXERCICIOS = [
     "Agachamento",
-    "Levantamento Terra",
+    "Levo Terra",
     "Supino com alteres",
     "Remada Curvada",
     "Stiff",

@@ -3,7 +3,7 @@ import {
   ComposedChart,
   XAxis,
   YAxis,
-  Tooltip as RechartsTooltip,
+  Tooltip,
   Legend,
   Bar,
   Line,
@@ -11,7 +11,8 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Search, BarChart2, Calendar } from "lucide-react";
-import { CICLOS } from "../data/cycles"; // confirme que esse é mesmo o caminho correto
+import type { TooltipProps } from "recharts";
+import { CICLOS } from "../data/cycles";
 
 // Tipagem para um registro de treino individual
 interface RegistroTreino {
@@ -22,10 +23,9 @@ interface RegistroTreino {
   exercicio?: string;
 }
 
-// índice de exercícios → índice de ciclos → registro
 interface DadosTreino {
   [exercicio: string]: {
-    [cicloKey: string]: RegistroTreino;
+    [ciclo: string]: RegistroTreino;
   };
 }
 
@@ -40,38 +40,35 @@ interface LinhaGrafico {
   pesoUsado: number[];
 }
 
-// Tooltip customizado tipado corretamente para evitar conflito de versão
-import type { TooltipProps } from "recharts";
-
-const CustomTooltip = (props: TooltipProps<number, string>) => {
-  const { active, payload, label } = props;
+const CustomTooltip = ({
+  active,
+  payload,
+  label,
+}: TooltipProps<number, string>) => {
   if (!active || !payload?.length) return null;
-
   const { exercicio, pesoUsado, serie1, serie2, serie3 } =
-    payload[0].payload as LinhaGrafico;
+    payload[0].payload;
 
   return (
     <div
       style={{
-        background: "#2e2e2e",
+        background: "#fff",
         padding: 12,
+        border: "1px solid #ccc",
         borderRadius: 8,
         fontSize: 13,
-        color: "#fff",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
       }}
     >
       <p>
-        <Calendar size={16} className="inline-block mr-1" />{" "}
+        <Calendar className="inline-block mr-1" size={16} />{" "}
         <strong>Data:</strong> {label}
       </p>
-      {exercicio && (
-        <p>
-          <strong>Exercício:</strong> {exercicio}
-        </p>
-      )}
-      {[serie1, serie2, serie3].map((r, i) => (
+      {exercicio && <p><strong>Exercício:</strong> {exercicio}</p>}
+      {[serie1, serie2, serie3].map((reps, i) => (
         <p key={i}>
-          <strong>Série {i + 1}:</strong> {r} rep × {pesoUsado[i] ?? "?"} kg
+          <strong>Série {i + 1}:</strong> {reps} repetições x{" "}
+          {pesoUsado?.[i] ?? "?"} kg
         </p>
       ))}
     </div>
@@ -79,9 +76,7 @@ const CustomTooltip = (props: TooltipProps<number, string>) => {
 };
 
 export default function Graphics() {
-  const [dadosAgrupados, setDadosAgrupados] = useState<
-    Record<string, LinhaGrafico[]>
-  >({});
+  const [dadosAgrupados, setDadosAgrupados] = useState<Record<string, LinhaGrafico[]>>({});
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [busca, setBusca] = useState("");
 
@@ -89,59 +84,12 @@ export default function Graphics() {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
 
-    const bruto: DadosTreino = JSON.parse(
-      localStorage.getItem("dadosTreino") || "{}"
-    );
-    const porExe: Record<string, LinhaGrafico[]> = {};
+    // ... (mesma lógica para ler e agrupar dados do localStorage)
 
-    Object.entries(bruto).forEach(([exe, ciclos]) => {
-      Object.entries(ciclos).forEach(([cicloKey, reg]) => {
-        const data = reg.data;
-        const pesosNum = (reg.pesos || []).map((p) => parseFloat(p) || 0);
-        const repsNum = (reg.reps || []).map((r) => parseInt(r) || 0);
-
-        const pesoTotal = pesosNum.reduce((a, b) => a + b, 0);
-        if (pesoTotal === 0 && repsNum.every((n) => n === 0)) return;
-        const cargaMedia = pesoTotal / (pesosNum.length || 1);
-
-        const cicloInfo = CICLOS.find((c) => c.id === cicloKey);
-        const cicloTitulo = cicloInfo?.id || cicloKey;
-        const dataLabel = `${data.slice(0, 5)} (${cicloTitulo})`;
-
-        const nomeExe = reg.exercicio || exe;
-        porExe[nomeExe] = porExe[nomeExe] || [];
-        porExe[nomeExe].push({
-          data: dataLabel,
-          pesoTotal,
-          cargaMedia,
-          serie1: repsNum[0] || 0,
-          serie2: repsNum[1] || 0,
-          serie3: repsNum[2] || 0,
-          exercicio: nomeExe,
-          pesoUsado: pesosNum,
-        });
-      });
-    });
-
-    // Ordena por data
-    Object.values(porExe).forEach((arr) =>
-      arr.sort((a, b) => {
-        const pa = a.data.match(/\d{2}\/\d{2}/)![0]
-          .split("/")
-          .map(Number);
-        const pb = b.data.match(/\d{2}\/\d{2}/)![0]
-          .split("/")
-          .map(Number);
-        return new Date(2025, pa[1] - 1, pa[0]).getTime() -
-               new Date(2025, pb[1] - 1, pb[0]).getTime();
-      })
-    );
-
-    setDadosAgrupados(porExe);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const filtrados = Object.keys(dadosAgrupados).filter((nome) =>
+  const exerciciosFiltrados = Object.keys(dadosAgrupados).filter((nome) =>
     nome.toLowerCase().includes(busca.toLowerCase())
   );
 
@@ -157,9 +105,6 @@ export default function Graphics() {
       <div style={{ display: "flex", alignItems: "center", margin: "16px 0" }}>
         <Search size={20} />
         <input
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-          placeholder="Pesquisar exercício..."
           style={{
             flex: 1,
             marginLeft: 8,
@@ -169,24 +114,28 @@ export default function Graphics() {
             background: isMobile ? "#222" : "#fff",
             color: isMobile ? "#fff" : "#000",
           }}
+          placeholder="Pesquisar exercício..."
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
         />
       </div>
 
-      {filtrados.length === 0 && (
+      {exerciciosFiltrados.length === 0 && (
         <p style={{ textAlign: "center", color: "#888" }}>
           Nenhum exercício encontrado.
         </p>
       )}
 
-      {filtrados.map((ex) => {
-        const dados = dadosAgrupados[ex];
+      {exerciciosFiltrados.map((exercicio) => {
+        const dados = dadosAgrupados[exercicio];
         return (
           <div
-            key={ex}
+            key={exercicio}
             style={{
               background: "#fff",
               borderRadius: 12,
               boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              border: "1px solid #e5e7eb",
               marginBottom: 32,
               overflow: "hidden",
             }}
@@ -200,10 +149,11 @@ export default function Graphics() {
                 fontWeight: 600,
               }}
             >
-              <BarChart2 size={24} className="inline-block mr-2" />
-              Progresso — {ex}
+              <BarChart2 className="inline-block mr-2" size={24} />
+              Progresso de Carga e Volume — {exercicio}
             </h2>
 
+            {/* wrapper escuro */}
             <div
               style={{
                 width: "100%",
@@ -220,9 +170,12 @@ export default function Graphics() {
                     left: 10,
                     bottom: isMobile ? 50 : 60,
                   }}
+                  style={{ backgroundColor: "#1f1f1f" }}
                 >
+                  {/* linhas de grade */}
                   <CartesianGrid stroke="#333" />
 
+                  {/* eixo X com labels inclinados */}
                   <XAxis
                     dataKey="data"
                     interval={0}
@@ -234,6 +187,7 @@ export default function Graphics() {
                     textAnchor="end"
                   />
 
+                  {/* Y esquerdo com sufixo kg */}
                   <YAxis
                     yAxisId="left"
                     tick={{ fill: "#fff" }}
@@ -243,6 +197,7 @@ export default function Graphics() {
                     domain={[0, "dataMax + 20"]}
                   />
 
+                  {/* Y direito com sufixo kg */}
                   <YAxis
                     yAxisId="right"
                     orientation="right"
@@ -253,11 +208,12 @@ export default function Graphics() {
                     domain={[0, "dataMax + 10"]}
                   />
 
-                  <RechartsTooltip
+                  <Tooltip
                     content={<CustomTooltip />}
                     wrapperStyle={{
                       background: "#2e2e2e",
                       border: "none",
+                      color: "#fff",
                     }}
                   />
 
@@ -266,6 +222,7 @@ export default function Graphics() {
                     wrapperStyle={{ color: "#fff" }}
                   />
 
+                  {/* Barras em azul */}
                   <Bar
                     yAxisId="left"
                     dataKey="pesoTotal"
@@ -273,6 +230,8 @@ export default function Graphics() {
                     fill="#3B82F6"
                     barSize={isMobile ? 16 : 24}
                   />
+
+                  {/* Linha em branco */}
                   <Line
                     yAxisId="right"
                     dataKey="cargaMedia"
