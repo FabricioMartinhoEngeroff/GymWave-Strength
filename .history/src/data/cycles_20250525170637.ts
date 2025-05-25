@@ -8,7 +8,7 @@ export interface CicloInfo {
 
 export const CICLOS: CicloInfo[] = [
   {
-    id: "Ciclo 1 Base técnica",
+    id: "Ciclo 1",
     titulo: "Base técnica",
     percentual: "-10% do pico anterior",
     reps: "8 repetições",

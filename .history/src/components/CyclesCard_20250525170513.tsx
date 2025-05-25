@@ -75,11 +75,7 @@ export const CicloCard: React.FC<CicloCardProps> = ({
   ) => {
     const atualizados = campo === "pesos" ? [...pesos] : [...repeticoes];
     atualizados[index] = valor;
-    if (campo === "pesos") {
-      setPesos(atualizados);
-    } else {
-      setRepeticoes(atualizados);
-    }
+    campo === "pesos" ? setPesos(atualizados) : setRepeticoes(atualizados);
   };
 
   // Salva os dados preenchidos, agora usando o estado `data`

@@ -8,21 +8,21 @@ export interface CicloInfo {
 
 export const CICLOS: CicloInfo[] = [
   {
-    id: "Ciclo 1 Base técnica",
+    id: "Ciclo 1",
     titulo: "Base técnica",
     percentual: "-10% do pico anterior",
     reps: "8 repetições",
     objetivo: "Base técnica com carga confortável",
   },
   {
-    id: "Ciclo 2 Carga moderada",
+    id: "Ciclo 2",
     titulo: "Carga moderada",
     percentual: "-5% a -2,5% do pico",
     reps: "6 repetições",
     objetivo: "Carga média com execução forte",
   },
   {
-    id: "Ciclo 3 Pico de Força",
+    id: "Ciclo 3",
     titulo: "Novo Pico de Força",
     percentual: "0% a +5% do pico anterior",
     reps: "4 a 5 repetições",
