@@ -154,8 +154,8 @@ export default function Graphics() {
                     tickFormatter={v => `${v} kg`}
                     tickCount={10}
                     allowDecimals={false}
-                    tickMargin={8}
-                    domain={[0, "dataMax + 5"]}
+                    tickMargin={10}
+                    domain={[0, "dataMax + 10"]}
                     axisLine={{ stroke:"#555" }}
                     tickLine={{ stroke:"#555" }}
                   />

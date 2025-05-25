@@ -149,13 +149,13 @@ export default function Graphics() {
                   <YAxis
                     yAxisId="media"
                     orientation="left"
-                    width={50}
+                    width={60}
                     tick={{ fill:"#fff" }}
                     tickFormatter={v => `${v} kg`}
-                    tickCount={10}
+                    tickCount={9}
                     allowDecimals={false}
-                    tickMargin={8}
-                    domain={[0, "dataMax + 5"]}
+                    tickMargin={12}
+                    domain={[0, "dataMax + 10"]}
                     axisLine={{ stroke:"#555" }}
                     tickLine={{ stroke:"#555" }}
                   />

@@ -155,7 +155,7 @@ export default function Graphics() {
                     tickCount={10}
                     allowDecimals={false}
                     tickMargin={8}
-                    domain={[0, "dataMax + 5"]}
+                    domain={[0, "dataMax + 10"]}
                     axisLine={{ stroke:"#555" }}
                     tickLine={{ stroke:"#555" }}
                   />
