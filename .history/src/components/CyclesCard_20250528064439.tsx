@@ -245,7 +245,8 @@ export const CicloCard: React.FC<CicloCardProps> = ({
             }}
           />
         </div>
-        
+      </div>
+
       {/* Campos de peso e repetições */}
       {Array.from({ length: 3 }).map((_, i) => (
         <div

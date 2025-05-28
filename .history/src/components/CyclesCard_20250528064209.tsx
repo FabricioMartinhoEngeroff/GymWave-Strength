@@ -169,60 +169,60 @@ export const CicloCard: React.FC<CicloCardProps> = ({
       </div>
 
       {/* Seletor de exercício e data */}
-<div
-  style={{
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 6,
-  }}
->
-  {!selecionando ? (
-    <button
-      onClick={() => setSelecionando(true)}
-      style={{
-        flex: 1,
-        fontWeight: "bold",
-        fontSize: 13,
-        backgroundColor: "#e3f2fd",
-        color: "#0d47a1",
-        padding: "6px 10px",
-        borderRadius: 6,
-        border: "none",
-        cursor: "pointer",
-        textAlign: "left",
-      }}
-    >
-      {exercicioSelecionado || "Selecione seu exercício"}
-    </button>
-  ) : (
-    <select
-      autoFocus
-      value={exercicioSelecionado}
-      onChange={(e) => {
-        setExercicioSelecionado(e.target.value);
-        setSelecionando(false);
-      }}
-      onBlur={() => setSelecionando(false)}
-      style={{
-        flex: 1,
-        padding: 6,
-        borderRadius: 4,
-        border: "1px solid #ccc",
-        marginRight: 8,
-      }}
-    >
-      <option value="" disabled hidden>
-        Selecione seu exercício
-      </option>
-      {EXERCICIOS.map((ex) => (
-        <option key={ex} value={ex}>
-          {ex}
-        </option>
-      ))}
-    </select>
-  )}
-</div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 6,
+        }}
+      >
+        {!selecionando ? (
+          <button
+            onClick={() => setSelecionando(true)}
+            style={{
+              flex: 1,
+              fontWeight: "bold",
+              fontSize: 13,
+              backgroundColor: "#e3f2fd",
+              color: "#0d47a1",
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: "none",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            {exercicioSelecionado || "Selecione seu exercício"}
+          </button>
+        ) : (
+          <select
+            autoFocus
+            value={exercicioSelecionado}
+            onChange={(e) => {
+              setExercicioSelecionado(e.target.value);
+              setSelecionando(false);
+            }}
+            onBlur={() => setSelecionando(false)}
+            style={{
+              flex: 1,
+              padding: 6,
+              borderRadius: 4,
+              border: "1px solid #ccc",
+              marginRight: 8,
+            }}
+          >
+            <option value="" disabled hidden>
+              Selecione seu exercício
+            </option>
+            {/* Substitua pelo seu array de exercícios */}
+            {[exircie].map((ex) => (
+              <option key={ex} value={ex}>
+                {ex}
+              </option>
+            ))}
+          </select>
+        )}
 
         <div style={{ display: "flex", alignItems: "center" }}>
           <CalendarBlank
@@ -245,7 +245,8 @@ export const CicloCard: React.FC<CicloCardProps> = ({
             }}
           />
         </div>
-        
+      </div>
+
       {/* Campos de peso e repetições */}
       {Array.from({ length: 3 }).map((_, i) => (
         <div
