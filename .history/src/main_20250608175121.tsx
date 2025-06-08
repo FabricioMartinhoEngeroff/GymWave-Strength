@@ -3,7 +3,7 @@ import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthProvider";
 import "./index.css";
-import { router } from "../src/router/RouterTEMP"; 
+import { router } from "../src/router"; 
 import { GlobalStyles } from "./styles/GlobalStyles";
 
 createRoot(document.getElementById("root")!).render(
