@@ -92,36 +92,36 @@ export function EditRow({
       </FieldGroup>
 
       <SeriesContainer>
-        {getSeries().map((s: SerieInfo, i: number) => (
-  <SerieFields key={i}>
-    <Label>Série {i + 1}</Label>
+        {getSeries().map((_, i: number) => (
+          <SerieFields key={i}>
+            <Label>Série {i + 1}</Label>
 
-    <Label>Repetições</Label>
-    <Input
-      type="text"
-      placeholder="Ex.: 8 reps"
-      value={s.rep}
-      onChange={(e) => {
-        const arr = getSeries().map((x) => ({ ...x }));
-        arr[i].rep = e.target.value;
-        setLinhaEditada((p) => ({ ...p, series: arr }));
-      }}
-      isMobile={isMobile}
-    />
+            <Label>Repetições</Label>
+            <Input
+              type="text"
+              placeholder="Ex.: 8 reps"
+              value={getSeries()[i].rep}
+              onChange={(e) => {
+                const arr = getSeries().map((x) => ({ ...x }));
+                arr[i].rep = e.target.value;
+                setLinhaEditada((p) => ({ ...p, series: arr }));
+              }}
+              isMobile={isMobile}
+            />
 
-    <Label>Peso</Label>
-    <Input
-      type="text"
-      placeholder="Ex.: 100 kg"
-      value={s.peso}
-      onChange={(e) => {
-        const arr = getSeries().map((x) => ({ ...x }));
-        arr[i].peso = e.target.value;
-        setLinhaEditada((p) => ({ ...p, series: arr }));
-      }}
-      isMobile={isMobile}
-    />
-  </SerieFields>
+            <Label>Peso</Label>
+            <Input
+              type="text"
+              placeholder="Ex.: 100 kg"
+              value={getSeries()[i].peso}
+              onChange={(e) => {
+                const arr = getSeries().map((x) => ({ ...x }));
+                arr[i].peso = e.target.value;
+                setLinhaEditada((p) => ({ ...p, series: arr }));
+              }}
+              isMobile={isMobile}
+            />
+          </SerieFields>
         ))}
       </SeriesContainer>
 
