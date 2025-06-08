@@ -1,22 +1,23 @@
 import styled from "styled-components";
 
 export const CardContainer = styled.section`
-  width: 100vw; /* Força o preenchimento da tela */
-  max-width: 100%;
-  margin: 0;
+  width: 100%;
+  max-width: 480px;
+  margin: 16px auto;
   padding: 24px;
   background-color: #ffffff;
   border-radius: 20px;
   box-shadow: 0 2px 16px rgba(0, 102, 204, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  box-sizing: border-box;
+  gap: 20px;
 
   @media (max-width: 480px) {
     border-radius: 0;
     box-shadow: none;
     padding: 16px 12px;
+    margin: 0;
+    gap: 16px;
   }
 `;
 

@@ -10,7 +10,7 @@ export const CardContainer = styled.section`
   box-shadow: 0 2px 16px rgba(0, 102, 204, 0.15);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 20px;
   box-sizing: border-box;
 
   @media (max-width: 480px) {
