@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+,
+  "compilerOptions": {
+     "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "jsx": "react",             
+    "lib": ["dom", "esnext"],        
+    "types": ["react", "react-dom"] 
+  }
+}
