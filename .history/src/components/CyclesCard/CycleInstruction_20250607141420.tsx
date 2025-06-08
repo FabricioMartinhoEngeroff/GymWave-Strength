@@ -1,0 +1,63 @@
+import { useEffect, useState } from "react";
+import styled from "styled-components";
+import { Info } from "phosphor-react";
+import { Button } from "../ui/Button";
+
+const CloudContainer = styled.div`
+  position: relative;
+  background-color: #e3f2fd;
+  border-left: 4px solid #2196f3;
+  padding: 16px;
+  border-radius: 10px;
+  color: #0d47a1;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+`;
+
+const CloudHeader = styled.div`
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+
+  svg {
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+
+  strong {
+    margin-left: 4px;
+  }
+`;
+
+export function CycleInstruction() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const jaViu = localStorage.getItem("instrucoesVistas");
+    if (!jaViu) setShow(true);
+  }, []);
+
+  const fecharInstrucao = () => {
+    setShow(false);
+    localStorage.setItem("instrucoesVistas", "true");
+  };
+
+  if (!show) return null;
+
+  return (
+    <CloudContainer>
+      <CloudHeader>
+        <Info size={22} weight="duotone" />
+        Para iniciar este exercício, registre primeiro o
+        <strong> Ciclo 4 </strong> para criar sua base de comparação.
+      </CloudHeader>
+      <div style={{ textAlign: "right" }}>
+        <Button variant="outline" onClick={fecharInstrucao}>
+          Ok, entendi
+        </Button>
+      </div>
+    </CloudContainer>
+  );
+}

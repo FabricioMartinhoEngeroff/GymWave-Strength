@@ -1,0 +1,113 @@
+/* src/components/report/Report.module.css */
+
+/* Container geral da página de relatório */
+.report-container {
+  min-height: 100vh;
+  background: #f3f4f6;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.report-title {
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 24px;
+}
+
+/* SearchBar */
+.report-search-container {
+  width: 100%;
+  max-width: 500px;
+  margin: 10px auto 20px;
+  position: relative;
+}
+
+.report-search-icon {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  /* Ou ajuste com media query se quiser mover para mobile */
+}
+
+/* Cada “card” de relatório (tanto Item quanto EditRow usam esta mesma classe) */
+.report-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  box-sizing: border-box;
+}
+
+/* Header das séries (texto “Série >> Reps · Peso”) */
+.report-series-header {
+  font-size: 13px;
+  color: #888;
+  margin: 12px 0 8px;
+}
+
+/* Cada linha de série (ex.: “Série 1: 8 reps × 100 kg”) */
+.report-series-line {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #333;
+  box-sizing: border-box;
+}
+
+/* Linha de observação */
+.report-obs-line {
+  font-size: 13px;
+  color: #555;
+  border-top: 1px solid #eee;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+
+/* Botões de ação (“Editar” / “Excluir”) */
+.report-action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+
+/* Em modo edição, cada label principal */
+.report-label {
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+/* Container que agrupa os inputs de cada série */
+.report-serie-container {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+/* Dentro do container de série, os dois campos de reps + peso ficam juntos */
+.report-serie-inputs {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Cada campo de repetição / peso */
+.report-serie-field {
+  flex: 1;
+}
+
+/* Label menor para subcampo (Repetições / Peso) */
+.report-sublabel {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #555;
+  margin-bottom: 2px;
+}

@@ -1,0 +1,26 @@
+import { useRelatorio } from "../../hooks/useRelatorio";
+import { useBreakpoint } from "../../hooks/useBreakpoint";
+import { SearchBar } from "../report/SearchBar";
+import { ReportList } from "../report/ReportList";
+import { PageWrapper } from "../report/ReportItem"; // ou mova o PageWrapper para um arquivo global
+import "./Report.module.css";
+
+export default function ReportPage() {
+  const { linhasFiltradas, busca, setBusca, salvarEdicao, excluirLinha } = useRelatorio();
+  const isMobile = useBreakpoint(600);
+
+  return (
+    <PageWrapper>
+      <h1 className="report-title">Relatório de Treinos</h1>
+
+      <SearchBar busca={busca} setBusca={setBusca} isMobile={isMobile} />
+
+      <ReportList
+        linhas={linhasFiltradas}
+        salvarEdicao={salvarEdicao}
+        excluirLinha={excluirLinha}
+        isMobile={isMobile}
+      />
+    </PageWrapper>
+  );
+}

@@ -1,0 +1,12 @@
+container {
+  padding: 0 8px 24px;
+  box-sizing: border-box;
+  background: #f2f6fc;
+}
+
+.noDataText {
+  text-align: center;
+  color: #444;
+  margin-top: 16px;
+  font-size: 14px;
+}
