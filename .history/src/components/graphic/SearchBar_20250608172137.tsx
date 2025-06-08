@@ -46,7 +46,7 @@ const InputContainer = styled.div`
 
 export const SearchBar: React.FC<SearchBarProps> = ({ value, onChange }) => (
   <SearchWrapper>
-    
+    <Button onClick={() => window.location.reload()}>Atualizar Dados</Button>
 
     <InputContainer>
       <MagnifyingGlass size={18} weight="duotone" />

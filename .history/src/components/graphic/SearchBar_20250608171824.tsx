@@ -1,3 +1,4 @@
+// src/components/graphic/SearchBar.tsx
 import React from "react";
 import styled from "styled-components";
 import { MagnifyingGlass } from "phosphor-react";
@@ -13,10 +14,9 @@ interface SearchBarProps {
 const SearchWrapper = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
   gap: 12px;
-  width: 100%;
+  flex-wrap: wrap;
+  justify-content: center;
 
   @media (max-width: 480px) {
     flex-direction: column;
@@ -26,12 +26,11 @@ const SearchWrapper = styled.div`
 
 const InputContainer = styled.div`
   position: relative;
-  flex: 1;
-  min-width: 200px;
+  width: 240px;
 
   svg {
     position: absolute;
-    left: 12px;
+    left: 10px;
     top: 50%;
     transform: translateY(-50%);
     color: #777;
@@ -40,14 +39,12 @@ const InputContainer = styled.div`
 
   input {
     width: 100%;
-    padding-left: 40px !important;
+    padding-left: 36px !important;
   }
 `;
 
 export const SearchBar: React.FC<SearchBarProps> = ({ value, onChange }) => (
   <SearchWrapper>
-    
-
     <InputContainer>
       <MagnifyingGlass size={18} weight="duotone" />
       <Input
