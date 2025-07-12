@@ -4,7 +4,7 @@ const GroupWrapper = styled.div`
   display: flex;
   justify-content: center;
   flex-wrap: nowrap;
-  gap: 10px;
+  gap: 15px;
   margin-top: -10px; // diminui mais o espaço vertical
   padding-top: 4px;
 `;
@@ -21,7 +21,7 @@ const Item = styled.label`
 
   .linha-cima {
     font-weight: bold;
-    margin-bottom: -4px; // cola com a linha de baixo
+    margin-bottom: -4px; // 👈 cola com a linha de baixo
     font-size: 14px;
     color: #0d47a1;
   }
@@ -29,15 +29,14 @@ const Item = styled.label`
   .linha-baixo {
     font-size: 12px;
     color: #555;
-    margin-bottom: 1px; // reduz distância do checkbox
+    margin-bottom: 1px; // 👈 reduz distância do checkbox
     white-space: nowrap;
   }
 
   input {
-  width: 26px;   
-  height: 26px;
-  cursor: pointer;
-}
+    width: 8px;
+    height: 18px;
+  }
 `;
 
 interface CheckboxGroupProps {

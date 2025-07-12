@@ -148,7 +148,7 @@ export function useSugestaoDePeso(ciclo: CicloInfo, exercicio: string): number {
       C1: 0.8,
       C2: 0.9,
       C3: 0.95,
-      C4: 1.02,
+      C4: 1.03,
     };
 
     const fator = multiplicadores[ciclo.id] ?? 1;
