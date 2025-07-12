@@ -40,14 +40,13 @@ function montarLinhaGrafico(
 
   return {
   data: dataLabel,
-  pesoTotal: pesoMaximo,  
-  cargaMedia: pesoMaximo, 
+  pesoTotal: pesoMaximo,  // ← sobrescreve o total com o maior peso
+  cargaMedia: pesoMaximo, // ← sobrescreve a média com o maior peso
   serie1: pesosNum[0] || 0,
   serie2: pesosNum[1] || 0,
   serie3: pesosNum[2] || 0,
   pesoUsado: pesosNum,
-  };
-}
+};
 
 function ordenarPorData(arr: LinhaGrafico[]): void {
   arr.sort((a, b) => {

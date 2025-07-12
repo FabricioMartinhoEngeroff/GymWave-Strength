@@ -47,7 +47,7 @@ export function useRelatorio() {
       // Atualiza no localStorage
       const dados = carregarDados();
       const ex = novas[idx].exercicio;
-      const cid = novas[idx].ciclo;
+      const cid = CICLOS.find((c) => c.titulo === novas[idx].ciclo)?.id;
       if (ex && cid && dados[ex]?.[cid]) {
         dados[ex][cid] = {
           ...dados[ex][cid],

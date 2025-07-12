@@ -12,7 +12,7 @@ export default function ReportPage() {
 return (
     <PageWrapper>
       <HeaderBox>
-        <h1>Relatórios de Treinos</h1>
+        <h1>Relatórioa de Treinos</h1>
         <SearchBar busca={busca} setBusca={setBusca} isMobile={isMobile} />
       </HeaderBox>
 

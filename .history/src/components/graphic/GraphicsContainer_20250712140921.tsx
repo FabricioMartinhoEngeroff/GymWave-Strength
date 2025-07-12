@@ -76,7 +76,7 @@ export const GraphicsContainer: React.FC = () => {
 
 
       <div style={{ textAlign: "center", marginTop: 32 }}>
-        <Button onClick={atualizarDados}>Atualizar Dados</Button>
+        <Button onClick={atualizarDados}>🔄 Atualizar Dados</Button>
       </div>
     </GraphicsWrapper>
   );

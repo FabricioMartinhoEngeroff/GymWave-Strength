@@ -39,13 +39,13 @@ function montarLinhaGrafico(
   const dataLabel = `${reg.data.slice(0, 5)} (${cicloInfo?.id || cicloId})`;
 
   return {
-  data: dataLabel,
-  pesoTotal: pesoMaximo,  
-  cargaMedia: pesoMaximo, 
-  serie1: pesosNum[0] || 0,
-  serie2: pesosNum[1] || 0,
-  serie3: pesosNum[2] || 0,
-  pesoUsado: pesosNum,
+    data: dataLabel,
+    pesoTotal,
+    cargaMedia,
+    serie1: pesosNum[0] || 0,
+    serie2: pesosNum[1] || 0,
+    serie3: pesosNum[2] || 0,
+    pesoUsado: pesosNum,
   };
 }
 

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { CICLOS } from "../data/cycles";
 
 // Definições de tipos (aqui dentro do hook, pois só são usados aqui)
+
 interface RegistroTreino {
   data: string;
   pesos: string[];
@@ -34,18 +35,19 @@ function montarLinhaGrafico(
   const pesosNum = parsePesos(reg.pesos);
   if (pesosNum.length === 0) return null;
 
-  const pesoMaximo = Math.max(...pesosNum);
+  const pesoTotal = pesosNum.reduce((a, b) => a + b, 0);
+  const cargaMedia = Number((pesoTotal / pesosNum.length).toFixed(1));
   const cicloInfo = CICLOS.find((c) => c.id === cicloId);
   const dataLabel = `${reg.data.slice(0, 5)} (${cicloInfo?.id || cicloId})`;
 
   return {
-  data: dataLabel,
-  pesoTotal: pesoMaximo,  
-  cargaMedia: pesoMaximo, 
-  serie1: pesosNum[0] || 0,
-  serie2: pesosNum[1] || 0,
-  serie3: pesosNum[2] || 0,
-  pesoUsado: pesosNum,
+    data: dataLabel,
+    pesoTotal,
+    cargaMedia,
+    serie1: pesosNum[0] || 0,
+    serie2: pesosNum[1] || 0,
+    serie3: pesosNum[2] || 0,
+    pesoUsado: pesosNum,
   };
 }
 

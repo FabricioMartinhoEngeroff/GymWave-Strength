@@ -144,20 +144,19 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
   const [visivel, setVisivel] = useState(true);
   if (!visivel) return null;
 
-  return (
-    <div
-      style={{
-        background: "#1f1f1f",
-        borderRadius: 8,
-        padding: 16,
-        margin: "0 auto 24px",
-        width: "100%",
-        maxWidth: 600,
-        boxSizing: "border-box",
-        position: "relative", 
-      }}
-    >
-      <button
+  <div
+    style={{
+      background: "#1f1f1f",
+      borderRadius: 8,
+      padding: 16,
+      margin: "0 auto 24px",
+      width: "100%",
+      maxWidth: 600,
+      boxSizing: "border-box",
+      position: "relative", 
+    }}
+  >
+   <button
         onClick={() => setVisivel(false)}
         style={{
           position: "absolute",
@@ -174,83 +173,83 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
         ×
       </button>
     
-      <h2
-        style={{
-          margin: 0,
-          paddingBottom: 8,
-          color: "#fff",
-          textAlign: "center",
-          fontSize: 18,
-          borderBottom: "1px solid #333",
-        }}
-      >
-        <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
+    <h2
+      style={{
+        margin: 0,
+        paddingBottom: 8,
+        color: "#fff",
+        textAlign: "center",
+        fontSize: 18,
+        borderBottom: "1px solid #333",
+      }}
+    >
+      <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
         Progresso — {exercicio}
       </h2>
 
-      <div
-        style={{
-          width: "100%",
-          height: isMobile ? 300 : 350,
-          boxSizing: "border-box",
-        }}
-      >
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={dados} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
+    <div
+      style={{
+        width: "100%",
+        height: isMobile ? 300 : 350,
+        boxSizing: "border-box",
+      }}
+    >
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={dados} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
 
-            <YAxis
-              yAxisId="media"
-              orientation="left"
-              width={50}
-              tick={{ fill: "#fff", fontSize: 11 }}
-              tickFormatter={(v) => `${v}kg`}
-              tickCount={12}
-              domain={[0, "dataMax + 5"]}
-              axisLine={false}
-              tickLine={false}
-            />
+          <YAxis
+            yAxisId="media"
+            orientation="left"
+            width={50}
+            tick={{ fill: "#fff", fontSize: 11 }}
+            tickFormatter={(v) => `${v}kg`}
+            tickCount={12}
+            domain={[0, "dataMax + 5"]}
+            axisLine={false}
+            tickLine={false}
+          />
 
-            <YAxis yAxisId="total" orientation="right" hide />
+          <YAxis yAxisId="total" orientation="right" hide />
 
-            <Legend
-              verticalAlign="top"
-              align="center"
-              height={24}
-              wrapperStyle={{ color: "#fff", padding: 0, marginBottom: 4 }}
-            />
+          <Legend
+            verticalAlign="top"
+            align="center"
+            height={24}
+            wrapperStyle={{ color: "#fff", padding: 0, marginBottom: 4 }}
+          />
 
-            <RechartsTooltip content={<CustomTooltip />} />
+          <RechartsTooltip content={<CustomTooltip />} />
 
-            <Bar
-              yAxisId="media"
-              dataKey="cargaMedia"
-              name="Média"
-              barSize={isMobile ? 16 : 20}
-              fill="#3B82F6"
-            />
+          <Bar
+            yAxisId="media"
+            dataKey="cargaMedia"
+            name="Média"
+            barSize={isMobile ? 16 : 20}
+            fill="#3B82F6"
+          />
 
-            <Line
-              yAxisId="total"
-              dataKey="pesoTotal"
-              name="Total"
-              type="monotone"
-              stroke="#fff"
-              dot={false}
-            />
+          <Line
+            yAxisId="total"
+            dataKey="pesoTotal"
+            name="Total"
+            type="monotone"
+            stroke="#fff"
+            dot={false}
+          />
 
-            <XAxis
-              dataKey="data"
-              interval={0}
-              height={isMobile ? 60 : 80}
-              axisLine={false}
-              tickLine={false}
-              tick={renderizarTickX}
-            />
-          </ComposedChart>
-        </ResponsiveContainer>
-      </div>
+          <XAxis
+            dataKey="data"
+            interval={0}
+            height={isMobile ? 60 : 80}
+            axisLine={false}
+            tickLine={false}
+            tick={renderizarTickX}
+          />
+        </ComposedChart>
+      </ResponsiveContainer>
     </div>
-  );
-}
+  </div>
+);
+}}
 

@@ -55,11 +55,22 @@ export const GraphicsContainer: React.FC = () => {
   return (
     <GraphicsWrapper>
       <HeaderControls>
-       <h2 style={{ textAlign: "center", width: "100%", color: "#0d47a1", fontSize: "20px", margin: 0 }}>
+  <h2
+  style={{
+    textAlign: "center",
+    width: "100%",
+    fontSize: "24px",
+    fontWeight: 700,
+    color: "#0d47a1",
+    marginBottom: "4px",
+    fontFamily: "Segoe UI, Roboto, sans-serif",
+    letterSpacing: "0.5px",
+  }}
+>
   Gráficos de Intensidade
 </h2>
   <SearchBar value={busca} onChange={setBusca} isMobile={isMobile} />
-      </HeaderControls>
+</HeaderControls>
 
       {filtrados.length === 0 && (
         <p style={{ padding: 16, color: "#555" }}>Nenhum exercício encontrado.</p>
@@ -76,7 +87,7 @@ export const GraphicsContainer: React.FC = () => {
 
 
       <div style={{ textAlign: "center", marginTop: 32 }}>
-        <Button onClick={atualizarDados}>Atualizar Dados</Button>
+        <Button onClick={atualizarDados}>🔄 Atualizar Dados</Button>
       </div>
     </GraphicsWrapper>
   );

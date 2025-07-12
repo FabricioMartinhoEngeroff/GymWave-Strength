@@ -88,7 +88,7 @@ const Observacoes = styled.div`
   font-size: 14px;
   color: #444;
 
-  // Evita quebra e overflow indesejado em qualquer contexto
+  // 👇 Evita quebra e overflow indesejado em qualquer contexto
   word-break: break-word;
   overflow-wrap: break-word;
   white-space: pre-wrap;

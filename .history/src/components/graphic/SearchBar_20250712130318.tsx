@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { MagnifyingGlass } from "phosphor-react";
 import { Input } from "../ui/Input";
 
+
 interface SearchBarProps {
   value: string;
   onChange: (newValue: string) => void;

@@ -29,8 +29,13 @@ const HeaderControls = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  gap: 8px;
-  align-items: flex-start;
+  gap: 12px;
+  align-items: center;
+
+  @media (min-width: 480px) {
+    flex-direction: row;
+    justify-content: space-between;
+  }
 `;
 
 export const GraphicsContainer: React.FC = () => {
@@ -55,10 +60,7 @@ export const GraphicsContainer: React.FC = () => {
   return (
     <GraphicsWrapper>
       <HeaderControls>
-       <h2 style={{ textAlign: "center", width: "100%", color: "#0d47a1", fontSize: "20px", margin: 0 }}>
-  Gráficos de Intensidade
-</h2>
-  <SearchBar value={busca} onChange={setBusca} isMobile={isMobile} />
+        <SearchBar value={busca} onChange={setBusca} isMobile={isMobile} />
       </HeaderControls>
 
       {filtrados.length === 0 && (
@@ -76,7 +78,7 @@ export const GraphicsContainer: React.FC = () => {
 
 
       <div style={{ textAlign: "center", marginTop: 32 }}>
-        <Button onClick={atualizarDados}>Atualizar Dados</Button>
+        <Button onClick={atualizarDados}>🔄 Atualizar Dados</Button>
       </div>
     </GraphicsWrapper>
   );

@@ -37,7 +37,7 @@ export function useRelatorio() {
     setLinhas(geradas);
   }, []);
 
-  //Função para salvar edição de uma linha (e sincronizar com storage)
+  // 4) Função para salvar edição de uma linha (e sincronizar com storage)
   const salvarEdicao = (idx: number, linhaEditada: Partial<LinhaRelatorio>) => {
     setLinhas((prev) => {
       const novas = prev.map((item, i) =>
@@ -47,7 +47,7 @@ export function useRelatorio() {
       // Atualiza no localStorage
       const dados = carregarDados();
       const ex = novas[idx].exercicio;
-      const cid = novas[idx].ciclo;
+      const cid = CICLOS.find((c) => c.titulo === novas[idx].ciclo)?.id;
       if (ex && cid && dados[ex]?.[cid]) {
         dados[ex][cid] = {
           ...dados[ex][cid],

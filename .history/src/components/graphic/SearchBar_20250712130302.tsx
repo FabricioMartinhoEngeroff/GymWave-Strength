@@ -2,6 +2,7 @@ import React from "react";
 import styled from "styled-components";
 import { MagnifyingGlass } from "phosphor-react";
 import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
 
 interface SearchBarProps {
   value: string;

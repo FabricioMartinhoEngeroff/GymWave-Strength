@@ -40,7 +40,7 @@ function montarLinhaGrafico(
 
   return {
   data: dataLabel,
-  pesoTotal: pesoMaximo,  
+  pesoTotal: pesoMaximo,  // ← sobrescreve o total com o maior peso
   cargaMedia: pesoMaximo, 
   serie1: pesosNum[0] || 0,
   serie2: pesosNum[1] || 0,

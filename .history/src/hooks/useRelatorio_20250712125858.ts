@@ -5,9 +5,9 @@ import { CICLOS } from "../data/cycles";
 import type { LinhaRelatorio, SerieInfo } from "../types/TrainingData";
 
 export function useRelatorio() {
-  //Estado interno das linhas já processadas
+  // 1) Estado interno das linhas já processadas
   const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
-  // Termo de busca
+  // 2) Termo de busca
   const [busca, setBusca] = useState<string>("");
 
   // Ao montar, lê storage e converte em LinhaRelatorio[]
@@ -37,7 +37,7 @@ export function useRelatorio() {
     setLinhas(geradas);
   }, []);
 
-  //Função para salvar edição de uma linha (e sincronizar com storage)
+  // 4) Função para salvar edição de uma linha (e sincronizar com storage)
   const salvarEdicao = (idx: number, linhaEditada: Partial<LinhaRelatorio>) => {
     setLinhas((prev) => {
       const novas = prev.map((item, i) =>
@@ -47,7 +47,7 @@ export function useRelatorio() {
       // Atualiza no localStorage
       const dados = carregarDados();
       const ex = novas[idx].exercicio;
-      const cid = novas[idx].ciclo;
+      const cid = CICLOS.find((c) => c.titulo === novas[idx].ciclo)?.id;
       if (ex && cid && dados[ex]?.[cid]) {
         dados[ex][cid] = {
           ...dados[ex][cid],
