@@ -143,9 +143,9 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
      {[0, 1, 2].map((i) => (
   <div key={i} style={{ marginBottom: "16px" }}>
     <p style={{ marginBottom: "6px", fontWeight: "bold", fontSize: "18px" }}>
-  {i === 0 && "1ª Série - Pre-Topset - Sinta a carga, aprimore o movimento"}
-  {i === 1 && "2ª Série - Pre-Topset - Refinar o movimento longe falha"}
-  {i === 2 && "3ª Série - Topset - Peso alvo sugerido pelo ciclo"}
+  {i === 0 && "1ª Série - Pre-Topset - Sentir a carga, aprimore o movimento"}
+  {i === 1 && "2ª Série - Pre-Topset - Refinar o movimento, mantenha distância da falha"}
+  {i === 2 && "3ª Série - Topset - Peso alvo sugerido pelo o ciclo"}
 </p>
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
   <label style={{ fontWeight: "bold", fontSize: "13px", marginBottom: "-9px" }}>Peso (kg)</label>
