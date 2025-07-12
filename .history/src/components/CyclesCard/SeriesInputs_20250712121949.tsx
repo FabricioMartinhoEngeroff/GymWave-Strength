@@ -38,12 +38,12 @@ export function SeriesInputs({
         <SerieBloco key={index}>
           <SerieTitulo>Série {index + 1} – insira como foi</SerieTitulo>
 
-         <Input
-  type="number"
-  placeholder="Peso (kg)"
-  value={pesos[index]}
-  onChange={(e) => onPesoChange(index, e.target.value)}
-/>
+          <PesoPicker
+            value={Number(pesos[index]) || 0}
+            onChange={(value) =>
+              onPesoChange(index, value.toString())
+            }
+          />
 
           <Input
             type="number"
