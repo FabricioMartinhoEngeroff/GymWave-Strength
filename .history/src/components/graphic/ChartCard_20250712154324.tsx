@@ -74,7 +74,6 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
   const graf = payload[0].payload as LinhaGrafico;
   const total = calcularTotal(graf.pesoUsado);
   const media = calcularMedia(graf.pesoUsado);
-  const maximo = Math.max(...graf.pesoUsado); 
 
   return (
     <div
@@ -105,9 +104,6 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
       </p>
       <p style={{ margin: "4px 0 0 0" }}>
         <strong>Média:</strong> {media} kg
-      </p>
-       <p style={{ margin: "4px 0 0 0" }}>
-        <strong>Topset:</strong> {maximo} kg
       </p>
     </div>
   );

@@ -106,9 +106,6 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
       <p style={{ margin: "4px 0 0 0" }}>
         <strong>Média:</strong> {media} kg
       </p>
-       <p style={{ margin: "4px 0 0 0" }}>
-        <strong>Topset:</strong> {maximo} kg
-      </p>
     </div>
   );
 };

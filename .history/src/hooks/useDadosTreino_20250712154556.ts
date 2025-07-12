@@ -35,7 +35,6 @@ function montarLinhaGrafico(
   if (pesosNum.length === 0) return null;
 
   const pesoMaximo = Math.max(...pesosNum);
-  const pesoTotal = pesosNum.reduce((a, b) => a + b, 0);
   const cicloInfo = CICLOS.find((c) => c.id === cicloId);
   const dataLabel = `${reg.data.slice(0, 5)} (${cicloInfo?.id || cicloId})`;
 
