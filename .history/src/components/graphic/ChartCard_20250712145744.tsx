@@ -1,4 +1,4 @@
-import React, { useState,ReactElement } from "react";
+import React, { useState, ReactElement } from "react";
 import {
   ComposedChart,
   XAxis,
@@ -70,7 +70,6 @@ const renderizarLinhasSeries = (pesosUsados: number[]): ReactElement[] =>
 const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
 
-  // Extrai o objeto LinhaGrafico do payload
   const graf = payload[0].payload as LinhaGrafico;
   const total = calcularTotal(graf.pesoUsado);
   const media = calcularMedia(graf.pesoUsado);
@@ -114,12 +113,8 @@ const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload
  * Retorna sempre um elemento SVG (mesmo que vazio), para satisfazer o tipo esperado.
  */
 const renderizarTickX = ({ x = 0, y = 0, payload }: TickProps) => {
-  // Se não houver valor em payload, retorna um <g/> vazio (em vez de null)
-  if (!payload?.value) {
-    return <g />;
-  }
+  if (!payload?.value) return <g />;
 
-  // "raw" tem formato "DD/MM (CicloID)", ou string vazia
   const raw = payload.value;
   const [date, cycleWithParens] = raw.split(" ");
   const cycle = cycleWithParens.replace(/[()]/g, "");
@@ -137,23 +132,12 @@ const renderizarTickX = ({ x = 0, y = 0, payload }: TickProps) => {
   );
 };
 
-const handleAtualizar = () => {
-  window.location.reload();
-};
-
 /**
  * Componente que renderiza um card de gráfico para um exercício.
  */
 export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
   const [visivel, setVisivel] = useState(true);
   if (!visivel) return null;
-
-  const handleExcluir = () => {
-    const confirmacao = window.confirm("Deseja realmente excluir este gráfico?");
-    if (confirmacao) {
-      setVisivel(false);
-    }
-  };
 
   return (
     <div
@@ -165,21 +149,54 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
         width: "100%",
         maxWidth: 600,
         boxSizing: "border-box",
+        position: "relative",
       }}
     >
-      <h2
+      <div
         style={{
-          margin: 0,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
           paddingBottom: 8,
-          color: "#fff",
-          textAlign: "center",
-          fontSize: 18,
           borderBottom: "1px solid #333",
+          marginBottom: 8,
         }}
       >
-        <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
-        Progresso — {exercicio}
-      </h2>
+        <h2
+          style={{
+            margin: 0,
+            color: "#fff",
+            fontSize: 18,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <ChartBar size={20} weight="duotone" />
+          Progresso — {exercicio}
+        </h2>
+
+        <button
+          onClick={() => {
+            const confirmar = window.confirm("Deseja mesmo excluir este gráfico?");
+            if (confirmar) setVisivel(false);
+          }}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "#aaa",
+            fontSize: 22,
+            cursor: "pointer",
+            lineHeight: 1,
+            transition: "color 0.2s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#f55")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#aaa")}
+          title="Fechar gráfico"
+        >
+          ×
+        </button>
+      </div>
 
       <div
         style={{
@@ -242,43 +259,6 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
             />
           </ComposedChart>
         </ResponsiveContainer>
-      </div>
-
-      {/* Botões abaixo do gráfico */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "16px",
-          marginTop: 16,
-        }}
-      >
-        <button
-          onClick={handleAtualizar}
-          style={{
-            backgroundColor: "#3B82F6",
-            color: "#fff",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Atualizar
-        </button>
-        <button
-          onClick={handleExcluir}
-          style={{
-            backgroundColor: "#EF4444",
-            color: "#fff",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Excluir
-        </button>
       </div>
     </div>
   );

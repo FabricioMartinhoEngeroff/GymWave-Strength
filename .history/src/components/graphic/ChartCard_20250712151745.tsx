@@ -137,8 +137,12 @@ const renderizarTickX = ({ x = 0, y = 0, payload }: TickProps) => {
   );
 };
 
+
 const handleAtualizar = () => {
-  window.location.reload();
+  const novosDados = localStorage.getItem(`dados-${exercicio}`);
+  if (novosDados) {
+    setDadosGrafico(JSON.parse(novosDados));
+  }
 };
 
 /**
@@ -254,7 +258,7 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
         }}
       >
         <button
-          onClick={handleAtualizar}
+          onClick={() => alert("Função de atualizar ainda não implementada")}
           style={{
             backgroundColor: "#3B82F6",
             color: "#fff",

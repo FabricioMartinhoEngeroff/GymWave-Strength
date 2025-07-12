@@ -52,7 +52,7 @@ const EditContainer = styled.div`
   background: #fff;
   border-radius: 12px;
   padding: 16px;
-  margin: 3px ;
+  margin-top: 12px;
   box-shadow: 0 1px 8px rgba(0, 0, 0, 0.06);
   max-width: 100%;
 `;
@@ -90,7 +90,7 @@ export function EditRow({
 
   return (
     <div className="report-card">
-       <EditContainer>
+       <EditContainer></EditContainer>
       <FieldGroup>
         <DatePicker
           selected={parseDate(linhaEditada.data ?? linha.data)}
@@ -156,7 +156,6 @@ export function EditRow({
   Salvar
 </Button>
       </ActionButtons>
-      </EditContainer>
     </div>
   );
 }

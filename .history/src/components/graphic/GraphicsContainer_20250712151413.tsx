@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDadosTreino } from "../../hooks/useDadosTreino";
 import { SearchBar } from "./SearchBar";
 import { ChartCard } from "./ChartCard";
+import { Button } from "../ui/Button";
 import styled from "styled-components";
 
 const GraphicsWrapper = styled.div`
@@ -46,6 +47,8 @@ export const GraphicsContainer: React.FC = () => {
   const filtrados = Object.keys(dadosAgrupados).filter((ex) =>
     ex.toLowerCase().includes(busca.toLowerCase())
   );
+
+  };
 
   return (
     <GraphicsWrapper>

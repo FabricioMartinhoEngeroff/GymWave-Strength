@@ -137,10 +137,6 @@ const renderizarTickX = ({ x = 0, y = 0, payload }: TickProps) => {
   );
 };
 
-const handleAtualizar = () => {
-  window.location.reload();
-};
-
 /**
  * Componente que renderiza um card de gráfico para um exercício.
  */
@@ -148,38 +144,51 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
   const [visivel, setVisivel] = useState(true);
   if (!visivel) return null;
 
-  const handleExcluir = () => {
-    const confirmacao = window.confirm("Deseja realmente excluir este gráfico?");
-    if (confirmacao) {
-      setVisivel(false);
-    }
-  };
-
   return (
     <div
-      style={{
-        background: "#1f1f1f",
-        borderRadius: 8,
-        padding: 16,
-        margin: "0 auto 24px",
-        width: "100%",
-        maxWidth: 600,
-        boxSizing: "border-box",
-      }}
-    >
-      <h2
-        style={{
-          margin: 0,
-          paddingBottom: 8,
-          color: "#fff",
-          textAlign: "center",
-          fontSize: 18,
-          borderBottom: "1px solid #333",
-        }}
-      >
-        <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
-        Progresso — {exercicio}
-      </h2>
+  style={{
+    background: "#1f1f1f",
+    borderRadius: 8,
+    padding: 16,
+    margin: "0 auto 24px",
+    width: "100%",
+    maxWidth: 600,
+    boxSizing: "border-box",
+    position: "relative", // necessário para posicionar o botão internamente
+  }}
+>
+  {/* BOTÃO DE FECHAR NO TOPO */}
+  <button
+    onClick={() => setVisivel(false)}
+    style={{
+      position: "absolute",
+      top: 4,         // <--- estava 8
+      right: 8,       // <--- estava 12
+      background: "transparent",
+      border: "none",
+      color: "#aaa",
+      fontSize: 20,
+      cursor: "pointer",
+      zIndex: 1,      // <--- garante que fique acima do conteúdo
+    }}
+    title="Fechar gráfico"
+  >
+    ×
+  </button>
+
+  <h2
+    style={{
+      margin: 0,
+      paddingBottom: 8,
+      color: "#fff",
+      textAlign: "center",
+      fontSize: 18,
+      borderBottom: "1px solid #333",
+    }}
+  >
+    <ChartBar size={20} weight="duotone" className="inline-block mr-2" />
+    Progresso — {exercicio}
+  </h2>
 
       <div
         style={{
@@ -243,43 +252,7 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Botões abaixo do gráfico */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "16px",
-          marginTop: 16,
-        }}
-      >
-        <button
-          onClick={handleAtualizar}
-          style={{
-            backgroundColor: "#3B82F6",
-            color: "#fff",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Atualizar
-        </button>
-        <button
-          onClick={handleExcluir}
-          style={{
-            backgroundColor: "#EF4444",
-            color: "#fff",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Excluir
-        </button>
-      </div>
     </div>
   );
 }
+

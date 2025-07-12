@@ -137,23 +137,12 @@ const renderizarTickX = ({ x = 0, y = 0, payload }: TickProps) => {
   );
 };
 
-const handleAtualizar = () => {
-  window.location.reload();
-};
-
 /**
  * Componente que renderiza um card de gráfico para um exercício.
  */
 export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
   const [visivel, setVisivel] = useState(true);
   if (!visivel) return null;
-
-  const handleExcluir = () => {
-    const confirmacao = window.confirm("Deseja realmente excluir este gráfico?");
-    if (confirmacao) {
-      setVisivel(false);
-    }
-  };
 
   return (
     <div
@@ -165,8 +154,26 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
         width: "100%",
         maxWidth: 600,
         boxSizing: "border-box",
+        position: "relative", 
       }}
     >
+      <button
+        onClick={() => setVisivel(false)}
+        style={{
+          position: "absolute",
+          top: 8,
+          right: 12,
+          background: "transparent",
+          border: "none",
+          color: "#aaa",
+          fontSize: 20,
+          cursor: "pointer",
+        }}
+        title="Fechar gráfico"
+      >
+        ×
+      </button>
+    
       <h2
         style={{
           margin: 0,
@@ -243,43 +250,7 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
           </ComposedChart>
         </ResponsiveContainer>
       </div>
-
-      {/* Botões abaixo do gráfico */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: "16px",
-          marginTop: 16,
-        }}
-      >
-        <button
-          onClick={handleAtualizar}
-          style={{
-            backgroundColor: "#3B82F6",
-            color: "#fff",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Atualizar
-        </button>
-        <button
-          onClick={handleExcluir}
-          style={{
-            backgroundColor: "#EF4444",
-            color: "#fff",
-            padding: "8px 16px",
-            border: "none",
-            borderRadius: 4,
-            cursor: "pointer",
-          }}
-        >
-          Excluir
-        </button>
-      </div>
     </div>
   );
 }
+

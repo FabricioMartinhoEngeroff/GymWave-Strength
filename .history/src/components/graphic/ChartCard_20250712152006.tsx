@@ -254,7 +254,7 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
         }}
       >
         <button
-          onClick={handleAtualizar}
+          onClick={handleExcluir}
           style={{
             backgroundColor: "#3B82F6",
             color: "#fff",

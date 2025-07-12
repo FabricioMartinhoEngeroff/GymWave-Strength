@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useDadosTreino } from "../../hooks/useDadosTreino";
 import { SearchBar } from "./SearchBar";
 import { ChartCard } from "./ChartCard";
+import { Button } from "../ui/Button";
 import styled from "styled-components";
 
 const GraphicsWrapper = styled.div`
@@ -47,6 +48,10 @@ export const GraphicsContainer: React.FC = () => {
     ex.toLowerCase().includes(busca.toLowerCase())
   );
 
+  const atualizarDados = () => {
+    window.location.reload();
+  };
+
   return (
     <GraphicsWrapper>
       <HeaderControls>
@@ -68,6 +73,7 @@ export const GraphicsContainer: React.FC = () => {
           isMobile={isMobile}
         />
       ))}
+
 
     </GraphicsWrapper>
   );
