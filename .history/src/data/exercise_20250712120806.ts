@@ -1,4 +1,5 @@
 export const EXERCICIOS = [
+  // Powerlifting
   "Agachamento",
   "Levantamento Terra",
   "Supino Reto",
@@ -12,6 +13,6 @@ export const EXERCICIOS = [
   "Puxada na Frente",
   "Hack Machine",
   "Elevação Pélvica",
-  "Bíceps Halteres/Polia",
-"Tríceps Livre/Polia",
+  "Bíceps Halteres/ Polia",
+"Tríceps / Extensão – Livre ou Polia",
 ];

@@ -1,17 +1,17 @@
 export const EXERCICIOS = [
+  // Powerlifting
   "Agachamento",
   "Levantamento Terra",
   "Supino Reto",
   "Remada Curvada",
   "Leg Press",
   "Cadeira Extensora",
-  "Cadeira/Mesa Flexora",
-  "Stiff",
-  "Elevação Pélvica",
+  "Cadeira Flexora",
+  
   "Desenvolvimento Lateral",
   "Puxada na Frente",
   "Hack Machine",
   "Elevação Pélvica",
-  "Bíceps Halteres/Polia",
-"Tríceps Livre/Polia",
+  "Rosca Direta",
+  "Tríceps na Polia"
 ];

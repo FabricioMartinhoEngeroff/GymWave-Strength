@@ -1,4 +1,5 @@
 export const EXERCICIOS = [
+  // Powerlifting
   "Agachamento",
   "Levantamento Terra",
   "Supino Reto",

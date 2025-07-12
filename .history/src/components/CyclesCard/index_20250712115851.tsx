@@ -144,7 +144,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
   <div key={i} style={{ marginBottom: "16px" }}>
     <p style={{ marginBottom: "-1px", fontWeight: "bold", fontSize: "14px" }}>
   {i === 0 && "1ª Série - Pre-Topset - Sentir a carga, aprimore o movimento"}
-  {i === 1 && "2ª Série - Pre-Topset - Refinar o movimento, mantenha distância da falha"}
+  {i === 1 && "2ª Série - Downset - Refinar o movimento, mantenha distância da falha"}
   {i === 2 && "3ª Série - Topset - Carga alvo sugerida para o ciclo"}
 </p>
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>

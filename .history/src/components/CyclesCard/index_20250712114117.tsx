@@ -22,7 +22,7 @@ import { Button } from "../ui/Button";
 import { CheckCircle } from "phosphor-react";
 
 import { EXERCICIOS } from "../../data/exercise";
-import { CICLOS } from "../../data/cycles";
+import { CICLOS, cicloInfo } from "../../data/cycles";
 import { RegistroTreino } from "../../types/TrainingData";
 import { useMemo, useState } from "react";
 
@@ -143,10 +143,8 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
      {[0, 1, 2].map((i) => (
   <div key={i} style={{ marginBottom: "16px" }}>
     <p style={{ marginBottom: "-1px", fontWeight: "bold", fontSize: "14px" }}>
-  {i === 0 && "1ª Série - Pre-Topset - Sentir a carga, aprimore o movimento"}
-  {i === 1 && "2ª Série - Pre-Topset - Refinar o movimento, mantenha distância da falha"}
-  {i === 2 && "3ª Série - Topset - Carga alvo sugerida para o ciclo"}
-</p>
+      Série {i + 1} – insira o peso utilizado
+    </p>
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
       <Input
   type="number"

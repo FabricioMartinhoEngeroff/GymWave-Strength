@@ -6,23 +6,17 @@ import {
   MensagemMotivacional,
 } from "./CycleCard.styles";
 
-import {
-  useCycleCardLogic,
-  parseData,
-  formatarData,
-  useSugestaoDePeso
-} from "./CycleCard.logic";
-
-
+import { useCycleCardLogic } from "./CycleCard.logic";
 import { CheckboxGroup } from "../ui/CheckboxGroup";
 import { CustomSelect } from "../ui/Select";
 import { DatePicker } from "../ui/DatePicker";
+import { PesoPicker } from "../ui/PesoPicker";
 import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { CheckCircle } from "phosphor-react";
 
 import { EXERCICIOS } from "../../data/exercise";
-import { CICLOS } from "../../data/cycles";
+import { CICLOS, CicloInfo } from "../../data/cycles";
 import { RegistroTreino } from "../../types/TrainingData";
 import { useMemo, useState } from "react";
 
@@ -61,7 +55,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
     []
   );
 
-  const sugestaoPeso = useSugestaoDePeso(cicloInfo, exercicioSelecionado);
+  const sugestaoPeso = calcularPesoSugestivo(cicloInfo, exercicioSelecionado);
 
   const exportarDados = () => {
     const blob = new Blob([JSON.stringify(localStorage.getItem("dadosTreino") || {}, null, 2)], {
@@ -143,17 +137,13 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
      {[0, 1, 2].map((i) => (
   <div key={i} style={{ marginBottom: "16px" }}>
     <p style={{ marginBottom: "-1px", fontWeight: "bold", fontSize: "14px" }}>
-  {i === 0 && "1ª Série - Pre-Topset - Sentir a carga, aprimore o movimento"}
-  {i === 1 && "2ª Série - Pre-Topset - Refinar o movimento, mantenha distância da falha"}
-  {i === 2 && "3ª Série - Topset - Carga alvo sugerida para o ciclo"}
-</p>
+      Série {i + 1} – insira o peso utilizado
+    </p>
     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      <Input
-  type="number"
-  placeholder="Peso (kg)"
-  value={pesos[i]}
-  onChange={(e) => handleArrayChange("pesos", i, e.target.value)}
-/>
+      <PesoPicker
+        value={Number(pesos[i]) || 0}
+        onChange={(val) => handleArrayChange("pesos", i, val.toString())}
+      />
       <Input
         type="number"
         placeholder={`Repetições`}
@@ -174,36 +164,31 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
     rows={3}
     placeholder="Digite suas observações"
     style={{
-       width: "100%",
-  maxWidth: "100%", // Evita ultrapassar o container
-  boxSizing: "border-box", // Inclui padding na largura total
-  height: "80px",
-  resize: "vertical",
-  fontSize: "15px",
-  padding: "8px",
-  borderRadius: "6px",
-  border: "2px solid #ccc"
+      width: "100%",
+      height: "80px",
+      resize: "vertical",
+      fontSize: "15px",
+      padding: "8px",
+      borderRadius: "6px",
+      border: "2px solid #ccc"
     }}
     value={obs}
     onChange={(e) => setObs(e.target.value)}
   />
 </div>
 
-<div style={{ display: "flex", justifyContent: "center", marginBottom: "16px", padding: "0 8px" }}>
+<div style={{ display: "flex", justifyContent: "center", marginBottom: "0px" }}>
   <Button
     onClick={salvar}
     type="button"
     style={{
-      width: "100%", // Garante que se ajuste ao container sem quebrar
-  maxWidth: "400px", // Limita o tamanho em telas grandes
-  padding: "12px 24px", // Padding proporcional e acessível
-  fontSize: "22px",
-  backgroundColor: "#e6f0ff",
-  color: "#005bb5",
-  border: "2px solid #b3d1ff",
-  borderRadius: "12px",
-  boxSizing: "border-box" // Garante que padding não ultrapasse o limite
-}}
+      padding: "2px 170px",
+      fontSize: "28px",
+      backgroundColor: "#e6f0ff",
+      color: "#005bb5",
+      border: "2px solid #b3d1ff",
+      borderRadius: "19px"
+    }}
   >
     {salvando ? (
       <>
@@ -217,7 +202,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
 </div>
 
       {/* Botões extras */}
-      <ButtonRow style={{ marginTop: "0px", flexDirection: "column", gap: "1px", padding: "0 8px" }}>
+      <ButtonRow style={{ marginTop: "0px", flexDirection: "column", gap: "1px" }}>
         <Button type="button" variant="outline" fullWidth onClick={exportarDados}>
           Exportar Dados
         </Button>
@@ -243,3 +228,47 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
 
 }
 
+// --- Utils ---
+function parseData(data: string): Date | null {
+  if (!data) return null;
+  const [day, month, year] = data.split("/");
+  if (!day || !month || !year) return null;
+  return new Date(Number(year), Number(month) - 1, Number(day));
+}
+
+function formatarData(date: Date): string {
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+}
+
+function calcularPesoSugestivo(ciclo: CicloInfo, exercicio: string): number {
+  const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+
+  // Sempre usa os dados do ciclo 4 como base
+  const ciclo4 = db?.[exercicio]?.["C4"];
+  if (!ciclo4 || !ciclo4.pesos) return 0;
+
+  const pesos = ciclo4.pesos
+    .map((p: string) => parseFloat(p))
+    .filter((n: number) => !isNaN(n));
+
+  const pico = pesos.length
+    ? pesos.reduce((a: number, b: number) => a + b, 0) / pesos.length
+    : 0;
+
+  if (!pico) return 0;
+
+  // Define os multiplicadores para cada ciclo
+  const multiplicadores: Record<string, number> = {
+    C1: 0.8,   
+    C2: 0.9,   
+    C3: 0.95,  
+    C4: 1.05,  
+  };
+
+  const fator = multiplicadores[ciclo.id] ?? 1; // fallback para 1.0 (sem alteração)
+
+  return Math.round(pico * fator);
+}
