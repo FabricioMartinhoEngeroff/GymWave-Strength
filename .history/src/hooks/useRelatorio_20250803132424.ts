@@ -10,11 +10,6 @@ export function useRelatorio() {
   // Termo de busca
   const [busca, setBusca] = useState<string>("");
 
-  function parseDataBR(data: string): Date {
-    const [dia, mes, ano] = data.split("/");
-    return new Date(`${ano}-${mes}-${dia}`);
-  }
-
   // Ao montar, lê storage e converte em LinhaRelatorio[]
   useEffect(() => {
     const bruto: DadosTreino = carregarDados();
@@ -39,7 +34,10 @@ export function useRelatorio() {
       });
     });
 
-
+     function parseDataBR(data: string): Date {
+  const [dia, mes, ano] = data.split("/");
+  return new Date(`${ano}-${mes}-${dia}`);
+}
 
 geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime());
 

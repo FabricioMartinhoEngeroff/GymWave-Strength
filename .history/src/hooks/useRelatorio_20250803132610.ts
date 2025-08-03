@@ -39,7 +39,7 @@ export function useRelatorio() {
       });
     });
 
-
+  
 
 geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime());
 

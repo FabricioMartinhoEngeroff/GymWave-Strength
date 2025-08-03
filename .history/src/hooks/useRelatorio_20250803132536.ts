@@ -39,7 +39,10 @@ export function useRelatorio() {
       });
     });
 
-
+     function parseDataBR(data: string): Date {
+  const [dia, mes, ano] = data.split("/");
+  return new Date(`${ano}-${mes}-${dia}`);
+}
 
 geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime());
 

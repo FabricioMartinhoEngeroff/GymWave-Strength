@@ -4,16 +4,13 @@ import { DadosTreino } from "../types/TrainingData";
 import { CICLOS } from "../data/cycles";
 import type { LinhaRelatorio, SerieInfo } from "../types/TrainingData";
 
+
+
 export function useRelatorio() {
   //Estado interno das linhas já processadas
   const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
   // Termo de busca
   const [busca, setBusca] = useState<string>("");
-
-  function parseDataBR(data: string): Date {
-    const [dia, mes, ano] = data.split("/");
-    return new Date(`${ano}-${mes}-${dia}`);
-  }
 
   // Ao montar, lê storage e converte em LinhaRelatorio[]
   useEffect(() => {
@@ -39,7 +36,7 @@ export function useRelatorio() {
       });
     });
 
-
+}
 
 geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime());
 

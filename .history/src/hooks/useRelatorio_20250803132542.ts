@@ -35,11 +35,14 @@ export function useRelatorio() {
           peso: pesos[idx] || "-",
         }));
 
-        geradas.push({ data, exercicio, ciclo: cicloNome, series, obs });
+        
       });
     });
 
-
+     function parseDataBR(data: string): Date {
+  const [dia, mes, ano] = data.split("/");
+  return new Date(`${ano}-${mes}-${dia}`);
+}
 
 geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime());
 
