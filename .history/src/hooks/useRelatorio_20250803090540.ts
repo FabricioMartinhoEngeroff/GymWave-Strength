@@ -30,11 +30,9 @@ export function useRelatorio() {
           peso: pesos[idx] || "-",
         }));
 
-        geradas.push({ data, exercicio, ciclo: cicloNome, series, obs });
+         geradas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
       });
     });
-
-     geradas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
 
     setLinhas(geradas);
   }, []);

@@ -147,7 +147,7 @@ export function ReportItem({ linha, onEdit, onDelete }: ReportItemProps) {
       <Label><span>Data:</span> {linha.data}</Label>
       <Label><span>Exercício:</span> {linha.exercicio}</Label>
       <Label><span>Ciclo:</span> {linha.ciclo}</Label>
-  
+      <Label><span>Observações:</span></Label>
 
      {linha.series.map((s: SerieInfo) => (
   <SerieLine key={s.serie}>
@@ -163,7 +163,7 @@ export function ReportItem({ linha, onEdit, onDelete }: ReportItemProps) {
       <FileTextIcon size={16} weight="duotone" />
       <span>{linha.obs}</span>
     </Observacoes>
-  </>
+      </>
 )}
 
       <Actions>

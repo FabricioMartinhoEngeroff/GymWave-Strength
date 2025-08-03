@@ -34,8 +34,6 @@ export function useRelatorio() {
       });
     });
 
-     geradas.sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
-
     setLinhas(geradas);
   }, []);
 

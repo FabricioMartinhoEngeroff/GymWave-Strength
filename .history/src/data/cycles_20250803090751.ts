@@ -9,7 +9,7 @@ export interface CicloInfo {
 export const CICLOS: CicloInfo[] = [
   {
     id: "C1",
-    titulo: "C1 Deload",
+    titulo: " C1 Deload",
     percentual: "20%",
     reps: "10 repetições",
     objetivo: "Deload, foco técnico e mobilidade.",
