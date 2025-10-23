@@ -6,9 +6,9 @@ import styled from "styled-components";
 
 const GraphicsWrapper = styled.div`
   background: #ffffff;
-  padding: 24px;
+  padding: 8px;
   border-radius: 16px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.05);
   max-width: 100%;
   width: 100%;
   box-sizing: border-box;

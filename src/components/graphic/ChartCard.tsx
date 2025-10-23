@@ -162,22 +162,22 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
   return (
     <div
       style={{
-        background: "#1f1f1f",
-        borderRadius: 8,
-        padding: 16,
-        margin: "0 auto 24px",
-        width: "100%",
-        maxWidth: 600,
-        boxSizing: "border-box",
-      }}
+    background: "#1f1f1f",
+    borderRadius: 8,
+    padding: 40,
+    margin: "10px 0 10px 0", // menos espaço lateral (antes era auto)
+    width: "100%",
+    maxWidth: "100%",       // ocupa 100% da largura disponível
+    boxSizing: "border-box",
+  }}
     >
       <h2
         style={{
           margin: 0,
-          paddingBottom: 8,
+          paddingBottom: 2,
           color: "#fff",
           textAlign: "center",
-          fontSize: 18,
+          fontSize: 12,
           borderBottom: "1px solid #333",
         }}
       >
@@ -188,11 +188,11 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
       <div
         style={{
           width: "100%",
-          height: isMobile ? 300 : 350,
+          height: isMobile ? 400 : 350,
           boxSizing: "border-box",
         }}
       >
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="150%" height="100%">
           <ComposedChart data={dados} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
 
@@ -239,7 +239,7 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
             <XAxis
               dataKey="data"
               interval={0}
-              height={isMobile ? 60 : 80}
+              height={isMobile ? 80 : 30}
               axisLine={false}
               tickLine={false}
               tick={renderizarTickX}
