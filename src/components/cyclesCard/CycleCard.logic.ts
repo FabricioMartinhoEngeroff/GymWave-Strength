@@ -132,17 +132,20 @@ export function formatarData(date: Date): string {
 }
 
 // --- Hook para sugestão de carga baseado no topset ---
-export function useSugestaoDePeso(ciclo: CicloInfo, exercicio: string): number {
+export function useSugestaoDePeso(
+  ciclo: CicloInfo,
+  exercicio: string
+): { pesoMaximo: number; sugestaoPeso: number } {
   return useMemo(() => {
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
     const ciclo4 = db?.[exercicio]?.["C4"];
-    if (!ciclo4 || !ciclo4.pesos) return 0;
+    if (!ciclo4 || !ciclo4.pesos) return { pesoMaximo: 0, sugestaoPeso: 0 };
 
     const pesos = ciclo4.pesos
       .map((p: string) => parseFloat(p))
       .filter((n: number) => !isNaN(n));
 
-    const topset = pesos.length ? Math.max(...pesos) : 0;
+    const pesoMaximo = pesos.length ? Math.max(...pesos) : 0;
 
     const multiplicadores: Record<string, number> = {
       C1: 0.8,
@@ -152,7 +155,8 @@ export function useSugestaoDePeso(ciclo: CicloInfo, exercicio: string): number {
     };
 
     const fator = multiplicadores[ciclo.id] ?? 1;
+    const sugestaoPeso = Math.round(pesoMaximo * fator);
 
-    return Math.round(topset * fator);
+    return { pesoMaximo, sugestaoPeso }; // ✅ nomes iguais
   }, [ciclo.id, exercicio]);
 }

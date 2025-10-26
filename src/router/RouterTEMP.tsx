@@ -1,13 +1,14 @@
-
 import { createBrowserRouter } from "react-router-dom";
 import { AuthPage } from "../pages/loginPages/AuthPages";
 import App from "../App";
-import GraphicsContainer from "../components/graphic"; 
+import GraphicsContainer from "../components/graphic";
 import ReportPage from "../components/report";
 import { PrivateRoute } from "../router/PrivateRoute";
+import { PowerliftingChart } from "../components/PowerliftChart"; // ✅ novo import
 
 export const router = createBrowserRouter([
   { path: "/", element: <AuthPage /> },
+
   {
     path: "/app",
     element: (
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
       </PrivateRoute>
     ),
   },
+
   {
     path: "/graficos",
     element: (
@@ -24,6 +26,7 @@ export const router = createBrowserRouter([
       </PrivateRoute>
     ),
   },
+
   {
     path: "/relatorio",
     element: (
@@ -32,4 +35,13 @@ export const router = createBrowserRouter([
       </PrivateRoute>
     ),
   },
-  ]);
+
+  {
+    path: "/grafico-powerlifter",
+    element: (
+      <PrivateRoute>
+        <PowerliftingChart />
+      </PrivateRoute>
+    ),
+  },
+]);

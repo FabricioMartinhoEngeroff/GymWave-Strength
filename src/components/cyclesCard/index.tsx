@@ -21,6 +21,7 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { CheckCircle } from "phosphor-react";
 
+
 import { EXERCICIOS } from "../../data/exercise";
 import { CICLOS } from "../../data/cycles";
 import { RegistroTreino } from "../../types/TrainingData";
@@ -61,7 +62,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
     []
   );
 
-  const sugestaoPeso = useSugestaoDePeso(cicloInfo, exercicioSelecionado);
+  const { pesoMaximo, sugestaoPeso } = useSugestaoDePeso(cicloInfo, exercicioSelecionado);
 
   const exportarDados = () => {
     const blob = new Blob([JSON.stringify(localStorage.getItem("dadosTreino") || {}, null, 2)], {
@@ -77,6 +78,10 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
   const abrirGraficos = () => {
     requestAnimationFrame(() => window.open("/graficos", "_blank"));
   };
+
+  const abrirGraficoPowerlifter = () => {
+  window.open("/grafico-powerlifter", "_blank");
+};
 
   const abrirRelatorio = () => {
     window.open("/relatorio", "_blank");
@@ -122,7 +127,9 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
      <MensagemMotivacional>
   {exercicioSelecionado && sugestaoPeso > 0 ? (
     <>
-      Hora de evoluir! Com base nas suas <strong>séries válidas anteriores</strong> e no ciclo atual, a sugestão para hoje é em torno de{" "}
+      Série máxima registrada: <strong>{pesoMaximo} kg</strong>
+      <br />
+      Sugestão para o ciclo atual:{" "}
       <span style={{ fontWeight: "bold", fontSize: "1.2em" }}>{sugestaoPeso} kg</span>.
       <br />
       <em>{cicloInfo.objetivo}</em>
@@ -134,7 +141,6 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
   )}
 </MensagemMotivacional>
 
-
       <DatePicker
   selected={parseData(data)}
   onChange={(date) => setData(date ? formatarData(date) : "")}
@@ -143,9 +149,9 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
      {[0, 1, 2].map((i) => (
   <div key={i} style={{ marginBottom: "16px" }}>
     <p style={{ marginBottom: "6px", fontWeight: "bold", fontSize: "18px" }}>
-  {i === 0 && "1ª Série - Pre-Topset - Sinta a carga, aprimore o movimento"}
-  {i === 1 && "2ª Série - Pre-Topset - Refinar o movimento longe falha"}
-  {i === 2 && "3ª Série - Topset - Peso alvo sugerido pelo ciclo"}
+  {i === 0 && "1ª Série - Top Set - Carga máxima do dia, foco total na execução."}
+{i === 1 && "2ª Série - Down Set - Reduza a carga, mantenha técnica e ritmo."}
+{i === 2 && "3ª Série - Down Set - Controle, consistência e velocidade."}
 </p>
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
   <label style={{ fontWeight: "bold", fontSize: "13px", marginBottom: "-9px" }}>Peso (kg)</label>
@@ -220,26 +226,51 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
 </div>
 
       {/* Botões extras */}
-      <ButtonRow style={{ marginTop: "0px", flexDirection: "column", gap: "1px", padding: "0 8px" }}>
-        <Button type="button" variant="outline" fullWidth onClick={exportarDados}>
-          Exportar Dados
-        </Button>
-        <Button type="button" variant="outline" fullWidth onClick={abrirGraficos}>
-          Ver Gráficos
-        </Button>
-        <Button type="button" variant="outline" fullWidth onClick={abrirRelatorio}>
-          Ver Relatório
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          fullWidth
-          onClick={resetarDados}
-          style={{ color: "#b02a37", borderColor: "#b02a37",  backgroundColor: "#fff5f5"}}
-        >
-          Zerar Dados
-        </Button>
-      </ButtonRow>
+    <ButtonRow
+  style={{
+    marginTop: "0px",
+    flexDirection: "column",
+    gap: "1px",
+    padding: "0 8px",
+  }}
+>
+  <Button type="button" variant="outline" fullWidth onClick={exportarDados}>
+    Exportar Dados
+  </Button>
+
+  <Button type="button" variant="outline" fullWidth onClick={abrirGraficos}>
+    Ver Gráficos
+  </Button>
+
+  {/* 🔹 NOVO BOTÃO COM A FUNÇÃO CRIADA */}
+  <Button
+    type="button"
+    variant="outline"
+    fullWidth
+    onClick={abrirGraficoPowerlifter}
+  >
+    Ver Gráfico Moderno
+  </Button>
+
+  <Button type="button" variant="outline" fullWidth onClick={abrirRelatorio}>
+    Ver Relatório
+  </Button>
+
+  <Button
+    type="button"
+    variant="outline"
+    fullWidth
+    onClick={resetarDados}
+    style={{
+      color: "#b02a37",
+      borderColor: "#b02a37",
+      backgroundColor: "#fff5f5",
+    }}
+  >
+    Zerar Dados
+  </Button>
+</ButtonRow>
+
     </Bloco>
   </CardContainer>
 );
