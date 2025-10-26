@@ -18,38 +18,31 @@ import {
   TooltipBox,
 } from "./styles";
 
-// Simulação de dados
-interface DadoTreino {
-  data: string;
-  topSet: number;
-  pesoTotal: number;
-}
-
-const dadosSimulados: DadoTreino[] = [
-  { data: "01/01", topSet: 180, pesoTotal: 800 },
-  { data: "08/01", topSet: 190, pesoTotal: 850 },
-  { data: "15/01", topSet: 200, pesoTotal: 900 },
-  { data: "22/01", topSet: 195, pesoTotal: 880 },
-  { data: "29/01", topSet: 205, pesoTotal: 920 },
-  { data: "05/02", topSet: 210, pesoTotal: 940 },
-];
+import { CustomSelect } from "../ui/Select";
+import { useDadosTreino } from "../../hooks/useDadosTreino";
 
 export const PowerliftingChart: React.FC = () => {
   const [intervalo, setIntervalo] = useState("1M");
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+  const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
+
+  const dadosAgrupados = useDadosTreino(); // 🔹 pega todos os dados salvos no localStorage
+  const opcoesExercicio = Object.keys(dadosAgrupados).map((ex) => ({
+    label: ex,
+    value: ex,
+  }));
+
+  const dadosFiltrados = exercicioSelecionado
+    ? dadosAgrupados[exercicioSelecionado] || []
+    : [];
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight);
-    };
+    const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const handleFiltro = (periodo: string) => {
-    setIntervalo(periodo);
-    // Aqui você pode filtrar os dados conforme o período selecionado
-  };
+  const handleFiltro = (periodo: string) => setIntervalo(periodo);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -67,25 +60,41 @@ export const PowerliftingChart: React.FC = () => {
 
   return (
     <Container>
-      <Header>
-        <Title>Desempenho Powerlifter</Title>
-        <TimeFilter>
-          {["1M", "6M", "1A", "3A", "5A"].map((filtro) => (
-            <FilterButton
-              key={filtro}
-              $ativo={intervalo === filtro}
-              onClick={() => handleFiltro(filtro)}
-            >
-              {filtro}
-            </FilterButton>
-          ))}
-        </TimeFilter>
-      </Header>
+     <Header>
+  <Title>Desempenho Powerlifter</Title>
+
+  {/* 🔹 Select reutilizando seu componente */}
+  <div style={{ width: "100%", maxWidth: "400px" }}>
+    <CustomSelect
+      options={opcoesExercicio}
+      value={
+        exercicioSelecionado
+          ? { label: exercicioSelecionado, value: exercicioSelecionado }
+          : null
+      }
+      onChange={(option) => setExercicioSelecionado(option?.value || "")}
+      placeholder="Escolha um exercício..."
+      label="Exercício"
+    />
+  </div>
+
+  <TimeFilter>
+    {["1M", "6M", "1A", "3A", "5A"].map((filtro) => (
+      <FilterButton
+        key={filtro}
+        $ativo={intervalo === filtro}
+        onClick={() => handleFiltro(filtro)}
+      >
+        {filtro}
+      </FilterButton>
+    ))}
+  </TimeFilter>
+</Header>
+
 
       <ChartWrapper $isLandscape={isLandscape}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={dadosSimulados}
+          <LineChart data={dadosFiltrados}
             margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
           >
             <defs>
