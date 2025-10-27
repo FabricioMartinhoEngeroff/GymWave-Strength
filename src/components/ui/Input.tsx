@@ -34,7 +34,7 @@ interface InputProps {
   styleProps?: React.CSSProperties;
 }
 
-// ✅ Agora com suporte ao customInput
+// Agora com suporte ao customInput
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {

@@ -18,7 +18,7 @@ import {
   TooltipBox,
 } from "./styles";
 
-import { SearchBar } from "../graphic/SearchBar";
+import { CustomSelect } from "../ui/Select";
 
 // Tipo base
 interface DadoTreino {
@@ -27,7 +27,7 @@ interface DadoTreino {
   pesoTotal: number;
 }
 
-// Lê e organiza os dados do localStorage
+// Hook para ler dados do LocalStorage
 function useDadosTreino() {
   return useMemo(() => {
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
@@ -38,12 +38,12 @@ function useDadosTreino() {
       const pontos: DadoTreino[] = [];
 
       Object.entries(ciclos).forEach(([ciclo, registro]: any) => {
-        const { pesos = [], datas = [] } = registro;
-        if (pesos.length && datas.length) {
+        const { pesos = [], data } = registro;
+        if (pesos.length) {
           const max = Math.max(...pesos.map((p: string) => parseFloat(p) || 0));
           const total = pesos.reduce((a: number, p: string) => a + parseFloat(p || "0"), 0);
           pontos.push({
-            data: datas[0] || ciclo,
+            data: data || ciclo,
             topSet: max,
             pesoTotal: total,
           });
@@ -58,19 +58,20 @@ function useDadosTreino() {
 }
 
 export const PowerliftingChart: React.FC = () => {
-  const [busca, setBusca] = useState("");
   const [intervalo, setIntervalo] = useState("1M");
   const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
+  const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
 
   const dadosAgrupados = useDadosTreino();
 
-  // Filtra exercícios pelo termo da busca
-  const exercicioEncontrado = Object.keys(dadosAgrupados).find((ex) =>
-    ex.toLowerCase().includes(busca.toLowerCase())
-  );
+  // monta lista de opções pro select
+  const opcoesExercicio = Object.keys(dadosAgrupados).map((ex) => ({
+    label: ex,
+    value: ex,
+  }));
 
-  const dadosFiltrados = exercicioEncontrado
-    ? dadosAgrupados[exercicioEncontrado]
+  const dadosFiltrados = exercicioSelecionado
+    ? dadosAgrupados[exercicioSelecionado]
     : [];
 
   useEffect(() => {
@@ -100,8 +101,18 @@ export const PowerliftingChart: React.FC = () => {
       <Header>
         <Title>Desempenho Powerlifter</Title>
 
-        {/* 🔍 Barra de busca reutilizada */}
-        <SearchBar value={busca} onChange={setBusca} />
+        {/* 🏋️‍♂️ Select de exercício */}
+        <CustomSelect
+          options={opcoesExercicio}
+          value={
+            exercicioSelecionado
+              ? { label: exercicioSelecionado, value: exercicioSelecionado }
+              : null
+          }
+          onChange={(option) => setExercicioSelecionado(option?.value || "")}
+          placeholder="Selecione um exercício..."
+          label="Exercício"
+        />
 
         <TimeFilter>
           {["1M", "6M", "1A", "3A", "5A"].map((filtro) => (
@@ -159,7 +170,7 @@ export const PowerliftingChart: React.FC = () => {
           </ResponsiveContainer>
         ) : (
           <p style={{ color: "#999", textAlign: "center" }}>
-            Nenhum exercício encontrado. Tente buscar pelo nome salvo.
+            Selecione um exercício para visualizar o gráfico.
           </p>
         )}
       </ChartWrapper>
