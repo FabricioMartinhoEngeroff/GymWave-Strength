@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -77,29 +77,7 @@ export const PowerliftingChart: React.FC = () => {
     : [];
 
   // ALTURA DINÂMICA
-  const headerRef = React.useRef<HTMLDivElement>(null);
-  const [chartHeight, setChartHeight] = useState(300);
 
-  useEffect(() => {
-    function updateHeight() {
-      if (headerRef.current) {
-        const headerH =
-          headerRef.current.getBoundingClientRect().height;
-        setChartHeight(window.innerHeight - headerH);
-      }
-    }
-
-    updateHeight();
-    window.addEventListener("resize", updateHeight);
-
-    const observer = new ResizeObserver(updateHeight);
-    if (headerRef.current) observer.observe(headerRef.current);
-
-    return () => {
-      window.removeEventListener("resize", updateHeight);
-      if (headerRef.current) observer.unobserve(headerRef.current);
-    };
-  }, []);
 
 
   const CustomTooltip = ({
@@ -129,7 +107,7 @@ export const PowerliftingChart: React.FC = () => {
 
   return (
     <Container>
-      <Header ref={headerRef}>
+      <Header >
         <Title>Desempenho Powerlifter</Title>
 
         <CustomSelect
@@ -162,7 +140,7 @@ export const PowerliftingChart: React.FC = () => {
         </TimeFilter>
       </Header>
 
-      <ChartWrapper $height={chartHeight}>
+      <ChartWrapper>
         {dadosFiltrados.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart

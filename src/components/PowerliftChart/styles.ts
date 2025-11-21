@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 export const Container = styled.div`
   width: 100%;
-  height: 100vh;
+  height: 100dvh;
   background: #0a0a0a;
   color: #fff;
   display: flex;
@@ -47,9 +47,10 @@ export const FilterButton = styled.button<{ $ativo: boolean }>`
   }
 `;
 
-export const ChartWrapper = styled.div<{ $height: number }>`
-  width: 100%;
-  height: ${({ $height }) => `${$height}px`};
+export const ChartWrapper = styled.div`
+ width: 100%;
+ flex: 1;           
+ min-height: 0;     
   background: #121212;
   border-radius: 12px;
   padding: 12px;
