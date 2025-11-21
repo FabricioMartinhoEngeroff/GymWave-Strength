@@ -52,9 +52,9 @@ export const ChartWrapper = styled.div<{ $height: number }>`
   height: ${({ $height }) => `${$height}px`};
   background: #121212;
   border-radius: 12px;
-  padding: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   overflow: hidden;
-  transition: height 0.2s ease-in-out;
 `;
 
 

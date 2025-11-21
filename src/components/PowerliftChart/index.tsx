@@ -102,7 +102,6 @@ export const PowerliftingChart: React.FC = () => {
   }, []);
 
 
-  // Tooltip corrigido (sem mudar lógica)
   const CustomTooltip = ({
     active,
     payload,
