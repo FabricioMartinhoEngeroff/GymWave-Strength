@@ -2,23 +2,22 @@ import styled from "styled-components";
 
 export const Container = styled.div`
   width: 100%;
-  min-height: 100vh;
+  height: 100vh;
   background: #0a0a0a;
-  color: #fff;//teste
+  color: #fff;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  padding: 16px;
-  box-sizing: border-box;
+  overflow: hidden;
 `;
 
 export const Header = styled.div`
   width: 100%;
+  padding: 8px 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 8px;
+  flex-shrink: 0;
 `;
 
 export const Title = styled.h2`
@@ -48,15 +47,16 @@ export const FilterButton = styled.button<{ $ativo: boolean }>`
   }
 `;
 
-export const ChartWrapper = styled.div<{ $isLandscape: boolean }>`
+export const ChartWrapper = styled.div<{ $height: number }>`
   width: 100%;
-  height: ${({ $isLandscape }) => ($isLandscape ? "70vh" : "50vh")};
+  height: ${({ $height }) => `${$height}px`};
   background: #121212;
   border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-  transition: height 0.3s ease-in-out;
+  padding: 10px;
+  overflow: hidden;
+  transition: height 0.2s ease-in-out;
 `;
+
 
 export const TooltipBox = styled.div`
   background: #222;

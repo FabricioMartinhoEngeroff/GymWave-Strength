@@ -41,7 +41,10 @@ function useDadosTreino() {
         const { pesos = [], data } = registro;
         if (pesos.length) {
           const max = Math.max(...pesos.map((p: string) => parseFloat(p) || 0));
-          const total = pesos.reduce((a: number, p: string) => a + parseFloat(p || "0"), 0);
+          const total = pesos.reduce(
+            (a: number, p: string) => a + parseFloat(p || "0"),
+            0
+          );
           pontos.push({
             data: data || ciclo,
             topSet: max,
@@ -59,12 +62,11 @@ function useDadosTreino() {
 
 export const PowerliftingChart: React.FC = () => {
   const [intervalo, setIntervalo] = useState("1M");
-  const [isLandscape, setIsLandscape] = useState(window.innerWidth > window.innerHeight);
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
 
   const dadosAgrupados = useDadosTreino();
 
-  // monta lista de opções pro select
+  // lista do select
   const opcoesExercicio = Object.keys(dadosAgrupados).map((ex) => ({
     label: ex,
     value: ex,
@@ -74,20 +76,47 @@ export const PowerliftingChart: React.FC = () => {
     ? dadosAgrupados[exercicioSelecionado]
     : [];
 
+  // ALTURA DINÂMICA
+  const headerRef = React.useRef<HTMLDivElement>(null);
+  const [chartHeight, setChartHeight] = useState(300);
+
   useEffect(() => {
-    const handleResize = () => setIsLandscape(window.innerWidth > window.innerHeight);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    function updateHeight() {
+      if (headerRef.current) {
+        const headerH =
+          headerRef.current.getBoundingClientRect().height;
+        setChartHeight(window.innerHeight - headerH);
+      }
+    }
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+
+    const observer = new ResizeObserver(updateHeight);
+    if (headerRef.current) observer.observe(headerRef.current);
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      if (headerRef.current) observer.unobserve(headerRef.current);
+    };
   }, []);
 
-  const handleFiltro = (periodo: string) => setIntervalo(periodo);
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  // Tooltip corrigido (sem mudar lógica)
+  const CustomTooltip = ({
+    active,
+    payload,
+  }: {
+    active?: boolean;
+    payload?: any[];
+  }) => {
     if (active && payload && payload.length) {
       const dado = payload[0].payload;
       return (
         <TooltipBox>
-          <p><strong>{dado.data}</strong></p>
+          <p>
+            <strong>{dado.data}</strong>
+          </p>
           <p>Top Set: {dado.topSet} kg</p>
           <p>Peso Total: {dado.pesoTotal} kg</p>
         </TooltipBox>
@@ -96,26 +125,33 @@ export const PowerliftingChart: React.FC = () => {
     return null;
   };
 
+  // Tipagem explícita do filtro
+  const handleFiltro = (periodo: string) => setIntervalo(periodo);
+
   return (
     <Container>
-      <Header>
+      <Header ref={headerRef}>
         <Title>Desempenho Powerlifter</Title>
 
-        {/* 🏋️‍♂️ Select de exercício */}
         <CustomSelect
           options={opcoesExercicio}
           value={
             exercicioSelecionado
-              ? { label: exercicioSelecionado, value: exercicioSelecionado }
+              ? {
+                  label: exercicioSelecionado,
+                  value: exercicioSelecionado,
+                }
               : null
           }
-          onChange={(option) => setExercicioSelecionado(option?.value || "")}
+          onChange={(option) =>
+            setExercicioSelecionado(option?.value || "")
+          }
           placeholder="Selecione um exercício..."
           label="Exercício"
         />
 
         <TimeFilter>
-          {["1M", "6M", "1A", "3A", "5A"].map((filtro) => (
+          {(["1M", "6M", "1A", "3A", "5A"] as const).map((filtro) => (
             <FilterButton
               key={filtro}
               $ativo={intervalo === filtro}
@@ -127,28 +163,64 @@ export const PowerliftingChart: React.FC = () => {
         </TimeFilter>
       </Header>
 
-      <ChartWrapper $isLandscape={isLandscape}>
+      <ChartWrapper $height={chartHeight}>
         {dadosFiltrados.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
               data={dadosFiltrados}
-              margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+              margin={{
+                top: 10,
+                right: 20,
+                left: 0,
+                bottom: 0,
+              }}
             >
               <defs>
-                <linearGradient id="lineTopSet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00C853" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#00C853" stopOpacity={0} />
+                <linearGradient
+                  id="lineTopSet"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="#00C853"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="#00C853"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
-                <linearGradient id="linePesoTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2962FF" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#2962FF" stopOpacity={0} />
+
+                <linearGradient
+                  id="linePesoTotal"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop
+                    offset="5%"
+                    stopColor="#2962FF"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="#2962FF"
+                    stopOpacity={0}
+                  />
                 </linearGradient>
               </defs>
 
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
               <XAxis dataKey="data" stroke="#ccc" />
               <YAxis stroke="#ccc" />
-              <Tooltip content={<CustomTooltip />} />
+
+              {/* Tooltip totalmente corrigido */}
+              <Tooltip content={(props) => <CustomTooltip {...props} />} />
 
               <Line
                 type="monotone"
@@ -158,6 +230,7 @@ export const PowerliftingChart: React.FC = () => {
                 dot={{ r: 3 }}
                 activeDot={{ r: 5 }}
               />
+
               <Line
                 type="monotone"
                 dataKey="pesoTotal"
@@ -169,7 +242,12 @@ export const PowerliftingChart: React.FC = () => {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p style={{ color: "#999", textAlign: "center" }}>
+          <p
+            style={{
+              color: "#999",
+              textAlign: "center",
+            }}
+          >
             Selecione um exercício para visualizar o gráfico.
           </p>
         )}
