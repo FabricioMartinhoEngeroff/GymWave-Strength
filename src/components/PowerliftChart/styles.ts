@@ -1,23 +1,25 @@
 import styled from "styled-components";
 
 export const Container = styled.div`
-  width: 100%;
-  height: 100dvh;
-  background: #0a0a0a;
-  color: #fff;
+  width: 100vw;
+  height: calc(var(--vh) * 100);
   display: flex;
   flex-direction: column;
+  background: #0a0a0a;
   overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
 `;
 
+
 export const Header = styled.div`
-  width: 100%;
-  padding: 8px 12px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
+  gap: 16px;
+  z-index: 10;
+  background: #0a0a0a;
 `;
 
 export const Title = styled.h2`
@@ -30,6 +32,18 @@ export const TimeFilter = styled.div`
   display: flex;
   gap: 8px;
   justify-content: center;
+`;
+
+export const ChartContainer = styled.div`
+  flex: 1;                     /* ← pega todo o espaço livre */
+  width: 100%;
+  background: #0a0a0a;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  overflow: hidden;
 `;
 
 export const FilterButton = styled.button<{ $ativo: boolean }>`
@@ -47,16 +61,6 @@ export const FilterButton = styled.button<{ $ativo: boolean }>`
   }
 `;
 
-export const ChartWrapper = styled.div`
- width: 100%;
- flex: 1;           
- min-height: 0;     
-  background: #121212;
-  border-radius: 12px;
-  padding: 12px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
-  overflow: hidden;
-`;
 
 
 export const TooltipBox = styled.div`
