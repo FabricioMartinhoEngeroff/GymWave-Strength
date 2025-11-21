@@ -116,7 +116,7 @@ export const PowerliftingChart: React.FC = () => {
     <Container>
       <Header>
         <Title>Desempenho Powerlifter</Title>
-
+        <Title>Escolha o exercício</Title>
         <CustomSelect
           options={opcoesExercicio}
           value={
@@ -131,8 +131,9 @@ export const PowerliftingChart: React.FC = () => {
             setExercicioSelecionado(option?.value || "")
           }
           placeholder="Selecione um exercício..."
-          label="Exercício"
         />
+        
+      
 
         <TimeFilter>
           {(["1M", "6M", "1A", "3A", "5A"] as const).map((filtro) => (

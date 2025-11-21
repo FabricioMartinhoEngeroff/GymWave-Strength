@@ -27,6 +27,12 @@ export const Title = styled.h2`
   color: #00c853;
   margin: 0;
 `;
+export const SelectLabel = styled.label`
+  font-size: 14px;
+  font-weight: 600;
+  color: #00c853;
+  margin-bottom: 6px;
+`;
 
 export const TimeFilter = styled.div`
   display: flex;
