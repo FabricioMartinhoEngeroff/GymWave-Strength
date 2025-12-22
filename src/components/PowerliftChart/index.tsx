@@ -97,7 +97,7 @@ export const PowerliftingChart: React.FC = () => {
     payload,
   }: {
     active?: boolean;
-    payload?: any[];
+    payload?: readonly any[];
   }) => {
     if (active && payload && payload.length) {
       const dado = payload[0].payload;

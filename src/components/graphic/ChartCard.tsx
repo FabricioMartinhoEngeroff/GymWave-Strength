@@ -1,4 +1,5 @@
-import React, { useState,ReactElement } from "react";
+import { useState } from "react";
+import type { ReactElement } from "react";
 import {
   ComposedChart,
   XAxis,
@@ -67,7 +68,8 @@ const renderizarLinhasSeries = (pesosUsados: number[]): ReactElement[] =>
 /**
  * Conteúdo do Tooltip personalizado: exibe data, linhas de séries, total e média.
  */
-const CustomTooltip: React.FC<TooltipProps<number, string>> = ({ active, payload }) => {
+const CustomTooltip = (props: TooltipProps<number, string> & { payload?: any[] }) => {
+  const { active, payload } = props;
   if (!active || !payload?.length) return null;
 
   // Extrai o objeto LinhaGrafico do payload
