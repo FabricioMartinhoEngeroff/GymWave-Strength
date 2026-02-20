@@ -1,8 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { carregarDados, salvarDados } from "../utils/storage";
-import { DadosTreino } from "../types/TrainingData";
 import { CICLOS } from "../data/cycles";
-import type { LinhaRelatorio, SerieInfo } from "../types/TrainingData";
+import type { DadosTreino, LinhaRelatorio, SerieInfo } from "../types/TrainingData";
 
 export function useRelatorio() {
   //Estado interno das linhas já processadas
@@ -31,20 +30,41 @@ export function useRelatorio() {
 
         const series: SerieInfo[] = reps.map((rep, idx) => ({
           serie: idx + 1,
-          rep: rep || "-",
-          peso: pesos[idx] || "-",
+          rep: rep || "",
+          peso: pesos[idx] || "",
         }));
 
-        geradas.push({ data, exercicio, ciclo: cicloNome, series, obs });
+        geradas.push({ data, exercicio, cicloKey, ciclo: cicloNome, series, obs });
       });
     });
 
-
-
-geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime());
+    geradas.sort(
+      (a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime()
+    );
 
     setLinhas(geradas);
   }, []);
+
+  const resolveCicloKey = (
+    dadosDoExercicio: DadosTreino[string] | undefined,
+    linha: LinhaRelatorio
+  ): string | null => {
+    if (!dadosDoExercicio) return null;
+
+    if (linha.cicloKey && dadosDoExercicio[linha.cicloKey]) return linha.cicloKey;
+
+    const cid = CICLOS.find((c) => c.titulo === linha.ciclo)?.id;
+    if (cid && dadosDoExercicio[cid]) return cid;
+
+    // fallback: tenta formato legado "Ciclo N"
+    const match = cid?.match(/^C(\d+)$/);
+    if (match) {
+      const legado = `Ciclo ${match[1]}`;
+      if (dadosDoExercicio[legado]) return legado;
+    }
+
+    return null;
+  };
 
   //Função para salvar edição de uma linha (e sincronizar com storage)
   const salvarEdicao = (idx: number, linhaEditada: Partial<LinhaRelatorio>) => {
@@ -56,16 +76,20 @@ geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTi
       // Atualiza no localStorage
       const dados = carregarDados();
       const ex = novas[idx].exercicio;
-      const cid = novas[idx].ciclo;
-      if (ex && cid && dados[ex]?.[cid]) {
-        dados[ex][cid] = {
-          ...dados[ex][cid],
+      const cicloKey = resolveCicloKey(dados[ex], novas[idx]);
+      if (ex && cicloKey && dados[ex]?.[cicloKey]) {
+        dados[ex][cicloKey] = {
+          ...dados[ex][cicloKey],
           data: novas[idx].data,
           pesos: novas[idx].series.map((s) => s.peso),
           reps: novas[idx].series.map((s) => s.rep),
           obs: novas[idx].obs || "",
         };
         salvarDados(dados);
+
+        if (novas[idx].cicloKey !== cicloKey) {
+          novas[idx] = { ...novas[idx], cicloKey };
+        }
       }
 
       return novas;
@@ -79,9 +103,10 @@ geradas.sort((a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTi
       const lin = novas.splice(idx, 1)[0];
 
       const dados = carregarDados();
-      const cid = CICLOS.find((c) => c.titulo === lin.ciclo)?.id;
-      if (lin.exercicio && cid && dados[lin.exercicio]?.[cid]) {
-        delete dados[lin.exercicio][cid];
+      const ex = lin.exercicio;
+      const cicloKey = resolveCicloKey(dados[ex], lin);
+      if (ex && cicloKey && dados[ex]?.[cicloKey]) {
+        delete dados[ex][cicloKey];
         if (Object.keys(dados[lin.exercicio]).length === 0) {
           delete dados[lin.exercicio];
         }

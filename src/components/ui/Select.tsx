@@ -12,6 +12,7 @@ interface CustomSelectProps {
   onChange: (value: Option | null) => void;
   placeholder?: string;
   isDisabled?: boolean;
+  isSearchable?: boolean;
   label?: string;
 }
 
@@ -34,6 +35,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   onChange,
   placeholder,
   isDisabled,
+  isSearchable,
   label,
 }) => {
   return (
@@ -45,6 +47,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
         onChange={onChange}
         placeholder={placeholder || "Selecione..."}
         isDisabled={isDisabled}
+        isSearchable={isSearchable ?? false}
         styles={{
           control: (base) => ({
             ...base,

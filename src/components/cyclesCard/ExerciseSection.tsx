@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EXERCICIOS } from "../../data/exercise";
 import { carregarDados, salvarDados } from "../../utils/storage";
-import { DadosTreino, RegistroTreino } from "../../types/TrainingData";
+import type { DadosTreino, RegistroTreino } from "../../types/TrainingData";
 import CicloCard from ".";
 
 export default function ExerciciosSection() {

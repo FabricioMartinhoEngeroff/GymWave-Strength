@@ -8,6 +8,12 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import type { TooltipContentProps } from "recharts/types/component/Tooltip";
+import type {
+  NameType,
+  Payload,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 
 import {
   Container,
@@ -20,6 +26,7 @@ import {
 } from "./styles";
 
 import { CustomSelect } from "../ui/Select";
+import type { DadosTreino, RegistroTreino } from "../../types/TrainingData";
 
 // Tipo base
 interface DadoTreino {
@@ -31,14 +38,14 @@ interface DadoTreino {
 // Hook para ler dados do LocalStorage
 function useDadosTreino() {
   return useMemo(() => {
-    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}") as DadosTreino;
     const dados: Record<string, DadoTreino[]> = {};
 
-    Object.keys(db).forEach((exercicio) => {
-      const ciclos = db[exercicio];
+    Object.entries(db).forEach(([exercicio, ciclos]) => {
       const pontos: DadoTreino[] = [];
 
-      Object.entries(ciclos).forEach(([ciclo, registro]: any) => {
+      (Object.entries(ciclos) as Array<[string, RegistroTreino]>).forEach(
+        ([ciclo, registro]) => {
         const { pesos = [], data } = registro;
         if (pesos.length) {
           const max = Math.max(...pesos.map((p: string) => parseFloat(p) || 0));
@@ -95,12 +102,12 @@ export const PowerliftingChart: React.FC = () => {
   const CustomTooltip = ({
     active,
     payload,
-  }: {
-    active?: boolean;
-    payload?: readonly any[];
-  }) => {
+  }: TooltipContentProps<ValueType, NameType>): React.ReactElement | null => {
     if (active && payload && payload.length) {
-      const dado = payload[0].payload;
+      const dado = (payload[0] as Payload<ValueType, NameType>)?.payload as
+        | DadoTreino
+        | undefined;
+      if (!dado) return null;
       return (
         <TooltipBox>
           <p><strong>{dado.data}</strong></p>

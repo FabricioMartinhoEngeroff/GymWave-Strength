@@ -10,8 +10,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  TooltipProps,
 } from "recharts";
+import type { TooltipContentProps } from "recharts/types/component/Tooltip";
+import type {
+  NameType,
+  Payload,
+  ValueType,
+} from "recharts/types/component/DefaultTooltipContent";
 import { ChartBar, CalendarBlank } from "phosphor-react";
 import type { LinhaGrafico } from "../../hooks/useDadosTreino";
 
@@ -68,12 +73,14 @@ const renderizarLinhasSeries = (pesosUsados: number[]): ReactElement[] =>
 /**
  * Conteúdo do Tooltip personalizado: exibe data, linhas de séries, total e média.
  */
-const CustomTooltip = (props: TooltipProps<number, string> & { payload?: any[] }) => {
-  const { active, payload } = props;
+const CustomTooltip = ({
+  active,
+  payload,
+}: TooltipContentProps<ValueType, NameType>): ReactElement | null => {
   if (!active || !payload?.length) return null;
 
   // Extrai o objeto LinhaGrafico do payload
-  const graf = payload[0].payload as LinhaGrafico;
+  const graf = (payload[0] as Payload<ValueType, NameType>).payload as LinhaGrafico;
   const total = calcularTotal(graf.pesoUsado);
   const media = calcularMedia(graf.pesoUsado);
   const maximo = Math.max(...graf.pesoUsado); 
@@ -219,7 +226,7 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
               wrapperStyle={{ color: "#fff", padding: 0, marginBottom: 4 }}
             />
 
-            <RechartsTooltip content={<CustomTooltip />} />
+            <RechartsTooltip content={(props) => <CustomTooltip {...props} />} />
 
             <Bar
               yAxisId="media"

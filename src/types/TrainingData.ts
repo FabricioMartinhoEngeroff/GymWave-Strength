@@ -21,6 +21,8 @@ export interface SerieInfo {
 export interface LinhaRelatorio {
   data: string;
   exercicio: string;
+  /** Chave do ciclo no storage (ex.: "C1" ou legado "Ciclo 1"). */
+  cicloKey: string;
   ciclo: string;
   series: SerieInfo[];
   obs?: string;

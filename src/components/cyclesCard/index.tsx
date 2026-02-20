@@ -24,7 +24,7 @@ import { CheckCircle } from "phosphor-react";
 
 import { EXERCICIOS } from "../../data/exercise";
 import { CICLOS } from "../../data/cycles";
-import { RegistroTreino } from "../../types/TrainingData";
+import type { RegistroTreino } from "../../types/TrainingData";
 import { useMemo, useState } from "react";
 
 interface CycleCardProps {
@@ -87,11 +87,6 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
     window.open("/relatorio", "_blank");
   };
 
-  const resetarDados = () => {
-    localStorage.clear();
-    window.location.reload();
-  };
-
   return (
   <CardContainer as="form" onSubmit={(e) => { e.preventDefault(); salvar(); }}>
     <Bloco>
@@ -149,9 +144,9 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
      {[0, 1, 2].map((i) => (
   <div key={i} style={{ marginBottom: "16px" }}>
     <p style={{ marginBottom: "6px", fontWeight: "bold", fontSize: "18px" }}>
-  {i === 0 && "1ª Série - Top Set - Carga máxima do dia, foco total na execução."}
-{i === 1 && "2ª Série - Down Set - Reduza a carga, mantenha técnica e ritmo."}
-{i === 2 && "3ª Série - Down Set - Controle, consistência e velocidade."}
+  {i === 0 && "1ª Série - Top Set."}
+{i === 1 && "2ª Série - Down Set."}
+{i === 2 && "3ª Série - Down Set."}
 </p>
     <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
   <label style={{ fontWeight: "bold", fontSize: "13px", marginBottom: "-9px" }}>Peso (kg)</label>
@@ -255,20 +250,6 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
   <Button type="button" variant="outline" fullWidth onClick={abrirRelatorio}>
     Ver Relatório
   </Button>
-
-  <Button
-    type="button"
-    variant="outline"
-    fullWidth
-    onClick={resetarDados}
-    style={{
-      color: "#b02a37",
-      borderColor: "#b02a37",
-      backgroundColor: "#fff5f5",
-    }}
-  >
-    Zerar Dados
-  </Button>
 </ButtonRow>
 
     </Bloco>
@@ -276,4 +257,3 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
 );
 
 }
-
