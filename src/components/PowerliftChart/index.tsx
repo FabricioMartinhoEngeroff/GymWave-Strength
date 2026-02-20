@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from "react";
 import {
   ResponsiveContainer,
-  LineChart,
+  ComposedChart,
   Line,
+  Area,
   XAxis,
   YAxis,
   Tooltip,
@@ -20,48 +21,90 @@ import {
   Header,
   TimeFilter,
   FilterButton,
-    ChartContainer,
+  ChartContainer,
   Title,
+  SelectLabel,
   TooltipBox,
 } from "./styles";
 
 import { CustomSelect } from "../ui/Select";
 import type { DadosTreino, RegistroTreino } from "../../types/TrainingData";
 
-// Tipo base
-interface DadoTreino {
-  data: string;
+type PontoSerie = {
+  ts: number;
+  data: string; // "DD/MM/YYYY"
   topSet: number;
-  pesoTotal: number;
-}
+  media4: number;
+};
 
-// Hook para ler dados do LocalStorage
-function useDadosTreino() {
+const media = (nums: number[]): number => {
+  if (nums.length === 0) return 0;
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
+};
+
+const parseDataBR = (data: string): number | null => {
+  const [diaRaw, mesRaw, anoRaw] = data.split("/");
+  const dia = Number(diaRaw);
+  const mes = Number(mesRaw);
+  const ano = Number(anoRaw);
+  if (!dia || !mes || !ano) return null;
+  const d = new Date(ano, mes - 1, dia);
+  const ts = d.getTime();
+  return Number.isNaN(ts) ? null : ts;
+};
+
+const formatarTick = (ts: number): string => {
+  const d = new Date(ts);
+  const dia = String(d.getDate()).padStart(2, "0");
+  const mes = String(d.getMonth() + 1).padStart(2, "0");
+  return `${dia}/${mes}`;
+};
+
+const getCutoffTs = (intervalo: string, nowTs: number): number => {
+  const day = 24 * 60 * 60 * 1000;
+  switch (intervalo) {
+    case "1M":
+      return nowTs - 30 * day;
+    case "6M":
+      return nowTs - 182 * day;
+    case "1A":
+      return nowTs - 365 * day;
+    case "3A":
+      return nowTs - 3 * 365 * day;
+    case "5A":
+      return nowTs - 5 * 365 * day;
+    default:
+      return 0;
+  }
+};
+
+function useDadosTreinoPorExercicio() {
   return useMemo(() => {
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}") as DadosTreino;
-    const dados: Record<string, DadoTreino[]> = {};
+    const dados: Record<string, Array<{ ts: number; data: string; topSet: number }>> = {};
 
     Object.entries(db).forEach(([exercicio, ciclos]) => {
-      const pontos: DadoTreino[] = [];
+      const porDia = new Map<number, { ts: number; data: string; topSet: number }>();
 
-      (Object.entries(ciclos) as Array<[string, RegistroTreino]>).forEach(
-        ([ciclo, registro]) => {
+      for (const [, registro] of Object.entries(ciclos) as Array<
+        [string, RegistroTreino]
+      >) {
         const { pesos = [], data } = registro;
-        if (pesos.length) {
-          const max = Math.max(...pesos.map((p: string) => parseFloat(p) || 0));
-          const total = pesos.reduce(
-            (a: number, p: string) => a + parseFloat(p || "0"),
-            0
-          );
-          pontos.push({
-            data: data || ciclo,
-            topSet: max,
-            pesoTotal: total,
-          });
-        }
-      });
+        if (!data) continue;
+        const ts = parseDataBR(data);
+        if (!ts) continue;
 
-      dados[exercicio] = pontos;
+        const pesosNum = pesos.map((p) => parseFloat(p) || 0).filter((n) => n > 0);
+        if (pesosNum.length === 0) continue;
+
+        const topSet = Math.max(...pesosNum);
+        const atual = porDia.get(ts);
+        if (!atual || topSet > atual.topSet) {
+          porDia.set(ts, { ts, data, topSet });
+        }
+      }
+
+      dados[exercicio] = [...porDia.values()].sort((a, b) => a.ts - b.ts);
     });
 
     return dados;
@@ -72,16 +115,25 @@ export const PowerliftingChart: React.FC = () => {
   const [intervalo, setIntervalo] = useState("1M");
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
 
-  const dadosAgrupados = useDadosTreino();
+  const dadosAgrupados = useDadosTreinoPorExercicio();
 
   const opcoesExercicio = Object.keys(dadosAgrupados).map((ex) => ({
     label: ex,
     value: ex,
   }));
 
-  const dadosFiltrados = exercicioSelecionado
-    ? dadosAgrupados[exercicioSelecionado]
-    : [];
+  const dadosFiltrados: PontoSerie[] = useMemo(() => {
+    if (!exercicioSelecionado) return [];
+    const raw = dadosAgrupados[exercicioSelecionado] ?? [];
+    const nowTs = raw.length ? raw[raw.length - 1].ts : 0;
+    const cutoff = getCutoffTs(intervalo, nowTs);
+
+    const filtrados = raw.filter((p) => p.ts >= cutoff);
+    return filtrados.map((p, i) => {
+      const janela = filtrados.slice(Math.max(0, i - 3), i + 1).map((x) => x.topSet);
+      return { ...p, media4: media(janela) };
+    });
+  }, [dadosAgrupados, exercicioSelecionado, intervalo]);
 
  useEffect(() => {
   function updateVH() {
@@ -105,14 +157,14 @@ export const PowerliftingChart: React.FC = () => {
   }: TooltipContentProps<ValueType, NameType>): React.ReactElement | null => {
     if (active && payload && payload.length) {
       const dado = (payload[0] as Payload<ValueType, NameType>)?.payload as
-        | DadoTreino
+        | PontoSerie
         | undefined;
       if (!dado) return null;
       return (
         <TooltipBox>
           <p><strong>{dado.data}</strong></p>
-          <p>Top Set: {dado.topSet} kg</p>
-          <p>Peso Total: {dado.pesoTotal} kg</p>
+          <p>Maior peso: {Math.round(dado.topSet)} kg</p>
+          <p>Média (4 últimas): {Math.round(dado.media4)} kg</p>
         </TooltipBox>
       );
     }
@@ -122,8 +174,8 @@ export const PowerliftingChart: React.FC = () => {
   return (
     <Container>
       <Header>
-        <Title>Desempenho Powerlifter</Title>
-        <Title>Escolha o exercício</Title>
+        <Title>Gráfico Moderno</Title>
+        <SelectLabel>Escolha o exercício</SelectLabel>
         <CustomSelect
           options={opcoesExercicio}
           value={
@@ -158,45 +210,59 @@ export const PowerliftingChart: React.FC = () => {
       <ChartContainer>
         {dadosFiltrados.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
+            <ComposedChart
               data={dadosFiltrados}
-              margin={{ top: 10, right: 20, left: 0, bottom: 0 }}
+              margin={{ top: 10, right: 16, left: 6, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="lineTopSet" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#00C853" stopOpacity={0.8} />
+                <linearGradient id="areaTopSet" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#00C853" stopOpacity={0.25} />
                   <stop offset="95%" stopColor="#00C853" stopOpacity={0} />
-                </linearGradient>
-
-                <linearGradient id="linePesoTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#2962FF" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#2962FF" stopOpacity={0} />
                 </linearGradient>
               </defs>
 
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-              <XAxis dataKey="data" stroke="#ccc" />
-              <YAxis stroke="#ccc" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#1f1f1f" vertical={false} />
+              <XAxis
+                dataKey="ts"
+                type="number"
+                scale="time"
+                domain={["dataMin", "dataMax"]}
+                stroke="#8a8a8a"
+                tickFormatter={formatarTick}
+                tick={{ fontSize: 12 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                stroke="#8a8a8a"
+                tick={{ fontSize: 12 }}
+                tickFormatter={(v) => `${v}kg`}
+                tickLine={false}
+                axisLine={false}
+                width={46}
+                domain={[0, "dataMax + 5"]}
+              />
               <Tooltip content={(props) => <CustomTooltip {...props} />} />
 
-              <Line
+              <Area
                 type="monotone"
                 dataKey="topSet"
-                stroke="url(#lineTopSet)"
-                strokeWidth={3}
-                dot={{ r: 3 }}
+                stroke="#00C853"
+                strokeWidth={2.5}
+                fill="url(#areaTopSet)"
+                dot={false}
                 activeDot={{ r: 5 }}
               />
 
               <Line
                 type="monotone"
-                dataKey="pesoTotal"
-                stroke="url(#linePesoTotal)"
-                strokeWidth={3}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                dataKey="media4"
+                stroke="#2962FF"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                dot={false}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         ) : (
           <p style={{ color: "#999", textAlign: "center" }}>

@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 export const Container = styled.div`
   width: 100vw;
-  height: calc(var(--vh) * 100);
+  height: calc(var(--vh, 1vh) * 100);
   display: flex;
   flex-direction: column;
   background: #0a0a0a;
@@ -10,20 +10,22 @@ export const Container = styled.div`
   position: fixed;
   top: 0;
   left: 0;
+  padding-bottom: env(safe-area-inset-bottom);
 `;
 
 
 export const Header = styled.div`
-  padding: 16px;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 10px;
   z-index: 10;
   background: #0a0a0a;
+  border-bottom: 1px solid #151515;
 `;
 
 export const Title = styled.h2`
-  font-size: 20px;
+  font-size: 18px;
   color: #00c853;
   margin: 0;
 `;
@@ -31,13 +33,14 @@ export const SelectLabel = styled.label`
   font-size: 14px;
   font-weight: 600;
   color: #00c853;
-  margin-bottom: 6px;
+  margin-bottom: 2px;
 `;
 
 export const TimeFilter = styled.div`
   display: flex;
   gap: 8px;
   justify-content: center;
+  flex-wrap: wrap;
 `;
 
 export const ChartContainer = styled.div`
@@ -50,6 +53,7 @@ export const ChartContainer = styled.div`
   align-items: center;
 
   overflow: hidden;
+  padding: 6px 4px 10px;
 `;
 
 export const FilterButton = styled.button<{ $ativo: boolean }>`
@@ -76,6 +80,7 @@ export const TooltipBox = styled.div`
   color: #fff;
   font-size: 13px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 
   p {
     margin: 4px 0;
