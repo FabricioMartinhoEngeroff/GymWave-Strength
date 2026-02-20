@@ -1,84 +1,87 @@
-// src/hooks/useDadosTreino.ts
-import { useState, useEffect } from "react";
-import { CICLOS } from "../data/cycles";
+import { useEffect, useState } from "react";
+import type { DadosTreino, RegistroTreino } from "../types/TrainingData";
 
-// Definições de tipos (aqui dentro do hook, pois só são usados aqui)
-interface RegistroTreino {
-  data: string;
-  pesos: string[];
-  reps: string[];
-  exercicio?: string;
+export interface RegistroGraficoRaw {
+  data: string; // "DD/MM/YYYY"
+  dataTs: number;
+  cicloId: string; // "C1".."C4"
+  pesos: number[];
+  topSet: number;
 }
 
-export interface LinhaGrafico {
-  data: string;
-  pesoTotal: number;
-  cargaMedia: number;
-  serie1: number;
-  serie2: number;
-  serie3: number;
-  pesoUsado: number[];
-}
+export type DadosAgrupados = Record<string, RegistroGraficoRaw[]>;
 
-export type DadosAgrupados = Record<string, LinhaGrafico[]>;
-
-//Funções auxiliares (também dentro do arquivo, se só forem usadas aqui)
 function parsePesos(pesos: string[] = []): number[] {
   return pesos.map((p) => parseFloat(p) || 0).filter((n) => n > 0);
 }
 
-function montarLinhaGrafico(
+function parseDataBR(data: string): { normalizada: string; ts: number } | null {
+  const [diaRaw, mesRaw, anoRaw] = data.split("/");
+  const dia = Number(diaRaw);
+  const mes = Number(mesRaw);
+  const ano = Number(anoRaw);
+  if (!dia || !mes || !ano) return null;
+
+  const d = new Date(ano, mes - 1, dia);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const normalizada = `${String(dia).padStart(2, "0")}/${String(mes).padStart(
+    2,
+    "0"
+  )}/${ano}`;
+  return { normalizada, ts: d.getTime() };
+}
+
+function normalizarCicloId(cicloKey: string): string {
+  if (cicloKey.startsWith("Ciclo ")) {
+    const n = cicloKey.split(" ")[1];
+    return `C${n}`;
+  }
+  return cicloKey;
+}
+
+function montarRegistroGrafico(
   reg: RegistroTreino,
-  cicloId: string
-): LinhaGrafico | null {
+  cicloKey: string
+): RegistroGraficoRaw | null {
   const pesosNum = parsePesos(reg.pesos);
   if (pesosNum.length === 0) return null;
 
-  const pesoMaximo = Math.max(...pesosNum);
-  const pesoTotal = pesosNum.reduce((a, b) => a + b, 0);
-  const cicloInfo = CICLOS.find((c) => c.id === cicloId);
-  const dataLabel = `${reg.data.slice(0, 5)} (${cicloInfo?.id || cicloId})`;
+  const dataInfo = parseDataBR(reg.data);
+  if (!dataInfo) return null;
 
+  const topSet = Math.max(...pesosNum);
   return {
-  data: dataLabel, pesoTotal,  
-  cargaMedia: pesoMaximo, 
-  serie1: pesosNum[0] || 0,
-  serie2: pesosNum[1] || 0,
-  serie3: pesosNum[2] || 0,
-  pesoUsado: pesosNum,
+    data: dataInfo.normalizada,
+    dataTs: dataInfo.ts,
+    cicloId: normalizarCicloId(cicloKey),
+    pesos: pesosNum,
+    topSet,
   };
 }
-
-function ordenarPorData(arr: LinhaGrafico[]): void {
-  arr.sort((a, b) => {
-    const [dA, mA] = a.data.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
-    const [dB, mB] = b.data.match(/\d{2}\/\d{2}/)![0].split("/").map(Number);
-    return new Date(2025, mA - 1, dA).getTime() - new Date(2025, mB - 1, dB).getTime();
-  });
-}
-
 
 export function useDadosTreino(): DadosAgrupados {
   const [dadosAgrupados, setDadosAgrupados] = useState<DadosAgrupados>({});
 
   useEffect(() => {
-    const bruto = JSON.parse(
-      localStorage.getItem("dadosTreino") || "{}"
-    ) as Record<string, Record<string, RegistroTreino>>;
+    const bruto = JSON.parse(localStorage.getItem("dadosTreino") || "{}") as DadosTreino;
 
     const porExe: DadosAgrupados = {};
     Object.entries(bruto).forEach(([exe, ciclos]) => {
       Object.entries(ciclos).forEach(([cicloKey, reg]) => {
-        const linha = montarLinhaGrafico(reg, cicloKey);
-        if (!linha) return;
+        const registro = montarRegistroGrafico(reg, cicloKey);
+        if (!registro) return;
 
         const nomeExe = reg.exercicio || exe;
         if (!porExe[nomeExe]) porExe[nomeExe] = [];
-        porExe[nomeExe].push(linha);
+        porExe[nomeExe].push(registro);
       });
     });
 
-    Object.values(porExe).forEach((arr) => ordenarPorData(arr));
+    Object.values(porExe).forEach((arr) => {
+      arr.sort((a, b) => a.dataTs - b.dataTs);
+    });
+
     setDadosAgrupados(porExe);
   }, []);
 

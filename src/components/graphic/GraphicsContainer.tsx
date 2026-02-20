@@ -3,6 +3,8 @@ import { useDadosTreino } from "../../hooks/useDadosTreino";
 import { SearchBar } from "./SearchBar";
 import { ChartCard } from "./ChartCard";
 import styled from "styled-components";
+import { CheckboxGroup } from "../ui/CheckboxGroup";
+import { CICLOS } from "../../data/cycles";
 
 const GraphicsWrapper = styled.div`
   background: #ffffff;
@@ -36,6 +38,9 @@ export const GraphicsContainer: React.FC = () => {
   const dadosAgrupados = useDadosTreino();
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [busca, setBusca] = useState("");
+  const [ciclosSelecionados, setCiclosSelecionados] = useState<string[]>(
+    () => CICLOS.map((c) => c.id)
+  );
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
@@ -53,6 +58,22 @@ export const GraphicsContainer: React.FC = () => {
        <h2 style={{ textAlign: "center", width: "100%", color: "#0d47a1", fontSize: "20px", margin: 0 }}>
   Gráficos de Intensidade
 </h2>
+        <p style={{ margin: 0, color: "#0d47a1", fontWeight: 600 }}>
+          Selecione os ciclos para comparar:
+        </p>
+        <CheckboxGroup
+          options={CICLOS.map((c, i) => {
+            const partes = c.titulo.split(" ");
+            return {
+              linhaCima: `Ciclo ${i + 1}`,
+              linhaBaixo: partes.slice(1).join(" "),
+              value: c.id,
+            };
+          })}
+          selected={ciclosSelecionados}
+          onChange={setCiclosSelecionados}
+          multiple
+        />
   <SearchBar value={busca} onChange={setBusca} isMobile={isMobile} />
       </HeaderControls>
 
@@ -65,6 +86,7 @@ export const GraphicsContainer: React.FC = () => {
           key={ex}
           exercicio={ex}
           dados={dadosAgrupados[ex]}
+          ciclosSelecionados={ciclosSelecionados}
           isMobile={isMobile}
         />
       ))}
@@ -72,4 +94,3 @@ export const GraphicsContainer: React.FC = () => {
     </GraphicsWrapper>
   );
 };
-

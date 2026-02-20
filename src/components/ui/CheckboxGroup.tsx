@@ -44,11 +44,26 @@ interface CheckboxGroupProps {
   options: { linhaCima: string; linhaBaixo: string; value: string }[];
   selected: string[];
   onChange: (values: string[]) => void;
+  multiple?: boolean;
 }
 
-export const CheckboxGroup = ({ options, selected, onChange }: CheckboxGroupProps) => {
+export const CheckboxGroup = ({
+  options,
+  selected,
+  onChange,
+  multiple,
+}: CheckboxGroupProps) => {
   const toggle = (value: string) => {
     const alreadySelected = selected.includes(value);
+    if (multiple) {
+      onChange(
+        alreadySelected
+          ? selected.filter((v) => v !== value)
+          : [...selected, value]
+      );
+      return;
+    }
+
     onChange(alreadySelected ? selected.filter((v) => v !== value) : [value]); // única seleção
   };
 

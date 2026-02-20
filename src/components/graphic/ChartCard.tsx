@@ -5,7 +5,6 @@ import {
   XAxis,
   YAxis,
   Legend,
-  Bar,
   Line,
   ResponsiveContainer,
   CartesianGrid,
@@ -18,36 +17,28 @@ import type {
   ValueType,
 } from "recharts/types/component/DefaultTooltipContent";
 import { ChartBar, CalendarBlank } from "phosphor-react";
-import type { LinhaGrafico } from "../../hooks/useDadosTreino";
+import type { RegistroGraficoRaw } from "../../hooks/useDadosTreino";
 
 interface ChartCardProps {
   exercicio: string;
-  dados: LinhaGrafico[];
+  dados: RegistroGraficoRaw[];
+  ciclosSelecionados: string[];
   isMobile: boolean;
 }
 
-//Parâmetros que a função de tick do eixo X recebe.
-type TickProps = {
-  x?: number;
-  y?: number;
-  payload?: { value: string };
+type PontoGrafico = {
+  data: string; // "DD/MM"
+  dataFull: string; // "DD/MM/YYYY"
+  dataTs: number;
+  cicloId: string;
+  pesos: number[];
+  topSet: number;
+  media4: number;
 };
 
-/**
- * Calcula a soma de todos os elementos do array.
- * @param pesosUsados Array de números representando pesos de cada série.
- */
-const calcularTotal = (pesosUsados: number[]): number =>
-  pesosUsados.reduce((ac, at) => ac + at, 0);
-
-/**
- * Calcula a média dos valores do array (arredondada para 1 casa).
- * Retorna 0 caso o array esteja vazio.
- */
-const calcularMedia = (pesosUsados: number[]): number => {
-  if (pesosUsados.length === 0) return 0;
-  const total = calcularTotal(pesosUsados);
-  return Number((total / pesosUsados.length).toFixed(1));
+const media = (nums: number[]): number => {
+  if (nums.length === 0) return 0;
+  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
 };
 
 /**
@@ -79,11 +70,8 @@ const CustomTooltip = ({
 }: TooltipContentProps<ValueType, NameType>): ReactElement | null => {
   if (!active || !payload?.length) return null;
 
-  // Extrai o objeto LinhaGrafico do payload
-  const graf = (payload[0] as Payload<ValueType, NameType>).payload as LinhaGrafico;
-  const total = calcularTotal(graf.pesoUsado);
-  const media = calcularMedia(graf.pesoUsado);
-  const maximo = Math.max(...graf.pesoUsado); 
+  const graf = (payload[0] as Payload<ValueType, NameType>).payload as PontoGrafico;
+  const maximo = graf.topSet;
 
   return (
     <div
@@ -104,49 +92,18 @@ const CustomTooltip = ({
         }}
       >
         <CalendarBlank size={16} weight="duotone" className="inline-block mr-1" />{" "}
-        <strong style={{ marginRight: 4 }}>Data:</strong> {graf.data}
+        <strong style={{ marginRight: 4 }}>Data:</strong> {graf.dataFull} ({graf.cicloId})
       </p>
 
-      {renderizarLinhasSeries(graf.pesoUsado)}
+      {renderizarLinhasSeries(graf.pesos)}
 
       <p style={{ marginTop: 8, marginBottom: 0 }}>
-        <strong>Total:</strong> {total} kg
+        <strong>Maior peso (Topset):</strong> {maximo} kg
       </p>
       <p style={{ margin: "4px 0 0 0" }}>
-        <strong>Média:</strong> {media} kg
-      </p>
-       <p style={{ margin: "4px 0 0 0" }}>
-        <strong>Topset:</strong> {maximo} kg
+        <strong>Média (últimas 4 datas):</strong> {Math.round(graf.media4)} kg
       </p>
     </div>
-  );
-};
-
-/**
- * Renderiza o tick no eixo X, separando “DD/MM” de “(CicloID)”.
- * Retorna sempre um elemento SVG (mesmo que vazio), para satisfazer o tipo esperado.
- */
-const renderizarTickX = ({ x = 0, y = 0, payload }: TickProps) => {
-  // Se não houver valor em payload, retorna um <g/> vazio (em vez de null)
-  if (!payload?.value) {
-    return <g />;
-  }
-
-  // "raw" tem formato "DD/MM (CicloID)", ou string vazia
-  const raw = payload.value;
-  const [date, cycleWithParens] = raw.split(" ");
-  const cycle = cycleWithParens.replace(/[()]/g, "");
-  const yOffset = 4;
-
-  return (
-    <g transform={`translate(${x},${y + yOffset})`}>
-      <text x={0} y={0} fill="#fff" textAnchor="middle" fontSize={12}>
-        {date}
-      </text>
-      <text x={0} y={14} fill="#fff" textAnchor="middle" fontSize={10}>
-        {cycle}
-      </text>
-    </g>
   );
 };
 
@@ -154,12 +111,47 @@ const handleAtualizar = () => {
   window.location.reload();
 };
 
+function montarSeriePorData(
+  dados: RegistroGraficoRaw[],
+  ciclosSelecionados: string[]
+): PontoGrafico[] {
+  const filtrados = dados.filter((d) => ciclosSelecionados.includes(d.cicloId));
+  const porData = new Map<string, RegistroGraficoRaw>();
+
+  filtrados.forEach((d) => {
+    const atual = porData.get(d.data);
+    if (!atual || d.topSet > atual.topSet) porData.set(d.data, d);
+  });
+
+  const ordenados = [...porData.values()].sort((a, b) => a.dataTs - b.dataTs);
+  const pontosBase = ordenados.map((d) => ({
+    data: d.data.slice(0, 5),
+    dataFull: d.data,
+    dataTs: d.dataTs,
+    cicloId: d.cicloId,
+    pesos: d.pesos,
+    topSet: d.topSet,
+  }));
+
+  return pontosBase.map((p, i) => {
+    const janela = pontosBase.slice(Math.max(0, i - 3), i + 1).map((x) => x.topSet);
+    return { ...p, media4: media(janela) };
+  });
+}
+
 /**
  * Componente que renderiza um card de gráfico para um exercício.
  */
-export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
+export function ChartCard({
+  exercicio,
+  dados,
+  ciclosSelecionados,
+  isMobile,
+}: ChartCardProps) {
   const [visivel, setVisivel] = useState(true);
   if (!visivel) return null;
+
+  const serie = montarSeriePorData(dados, ciclosSelecionados);
 
   const handleExcluir = () => {
     const confirmacao = window.confirm("Deseja realmente excluir este gráfico?");
@@ -202,11 +194,10 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
         }}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={dados} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+          <ComposedChart data={serie} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
             <CartesianGrid stroke="#333" strokeDasharray="3 3" horizontal vertical={false} />
 
             <YAxis
-              yAxisId="media"
               orientation="left"
               width={50}
               tick={{ fill: "#fff", fontSize: 11 }}
@@ -217,8 +208,6 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
               tickLine={false}
             />
 
-            <YAxis yAxisId="total" orientation="right" hide />
-
             <Legend
               verticalAlign="top"
               align="center"
@@ -228,30 +217,33 @@ export function ChartCard({ exercicio, dados, isMobile }: ChartCardProps) {
 
             <RechartsTooltip content={(props) => <CustomTooltip {...props} />} />
 
-            <Bar
-              yAxisId="media"
-              dataKey="cargaMedia"
-              name="TopSet"
-              barSize={isMobile ? 16 : 20}
-              fill="#3B82F6"
+            <Line
+              dataKey="topSet"
+              name="Maior peso"
+              type="monotone"
+              stroke="#00C853"
+              strokeWidth={2}
+              dot={{ r: 2 }}
+              activeDot={{ r: 4 }}
             />
 
             <Line
-              yAxisId="total"
-               dataKey="cargaMedia"
-              name="Total"
+              dataKey="media4"
+              name="Média (4 últimas)"
               type="monotone"
-              stroke="#fff"
+              stroke="#2962FF"
+              strokeWidth={2}
+              strokeDasharray="5 4"
               dot={false}
             />
 
             <XAxis
               dataKey="data"
               interval={0}
-              height={isMobile ? 60 : 80}
+              height={isMobile ? 40 : 50}
               axisLine={false}
               tickLine={false}
-              tick={renderizarTickX}
+              tick={{ fill: "#fff", fontSize: 12 }}
             />
           </ComposedChart>
         </ResponsiveContainer>
