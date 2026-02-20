@@ -4,6 +4,8 @@ export interface RegistroTreino {
   reps?: string[];
   obs?: string;
   exercicio?: string;
+  /** RPE da Top Set (1..10). Opcional para manter compatibilidade com registros antigos. */
+  rpe?: number;
 }
 
 export type DadosTreino = {
@@ -26,4 +28,5 @@ export interface LinhaRelatorio {
   ciclo: string;
   series: SerieInfo[];
   obs?: string;
+  rpe?: number;
 }

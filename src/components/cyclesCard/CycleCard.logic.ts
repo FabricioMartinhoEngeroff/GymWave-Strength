@@ -10,6 +10,7 @@ interface CycleLogicParams {
     reps?: string[];
     obs?: string;
     exercicio?: string;
+    rpe?: number;
   };
   onSave: (registro: {
     data: string;
@@ -17,6 +18,7 @@ interface CycleLogicParams {
     reps: string[];
     obs: string;
     exercicio: string;
+    rpe?: number;
   }) => void;
 }
 
@@ -29,6 +31,7 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
   const [obs, setObs] = useState<string>("");
   const [data, setData] = useState<string>(dataAtual);
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
+  const [rpe, setRpe] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     if (value) {
@@ -36,6 +39,7 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
       setRepeticoes(value.reps || ["", "", ""]);
       setObs(value.obs || "");
       setData(value.data || dataAtual);
+      setRpe(typeof value.rpe === "number" ? value.rpe : undefined);
 
       if (value.exercicio && EXERCICIOS.includes(value.exercicio)) {
         setExercicioSelecionado(value.exercicio);
@@ -83,6 +87,7 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
       reps: repsLimpos,
       obs: obsLimpo,
       exercicio: exercicioSelecionado,
+      rpe,
     };
 
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
@@ -93,6 +98,7 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
     setPesos(["", "", ""]);
     setRepeticoes(["", "", ""]);
     setObs("");
+    setRpe(undefined);
     setSalvando(true);
     setTimeout(() => setSalvando(false), 1000);
 
@@ -105,11 +111,13 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
     obs,
     data,
     exercicioSelecionado,
+    rpe,
     setPesos,
     setRepeticoes,
     setObs,
     setData,
     setExercicioSelecionado,
+    setRpe,
     handleArrayChange,
     salvar,
     salvando,

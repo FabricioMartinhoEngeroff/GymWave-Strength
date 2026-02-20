@@ -5,7 +5,7 @@ export const Container = styled.div`
   height: calc(var(--vh, 1vh) * 100);
   display: flex;
   flex-direction: column;
-  background: #0a0a0a;
+  background: #2f2f2f;
   overflow: hidden;
   position: fixed;
   top: 0;
@@ -13,65 +13,107 @@ export const Container = styled.div`
   padding-bottom: env(safe-area-inset-bottom);
 `;
 
-
 export const Header = styled.div`
   padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   z-index: 10;
-  background: #0a0a0a;
-  border-bottom: 1px solid #151515;
+  background: #2f2f2f;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
 export const Title = styled.h2`
   font-size: 18px;
-  color: #00c853;
+  color: #ffffff;
   margin: 0;
 `;
+
 export const SelectLabel = styled.label`
   font-size: 14px;
   font-weight: 600;
-  color: #00c853;
+  color: #e5e7eb;
   margin-bottom: 2px;
 `;
 
-export const TimeFilter = styled.div`
+export const FiltersRow = styled.div`
   display: flex;
-  gap: 8px;
-  justify-content: center;
+  gap: 10px;
   flex-wrap: wrap;
-`;
-
-export const ChartContainer = styled.div`
-  flex: 1;                     /* ← pega todo o espaço livre */
+  align-items: flex-end;
   width: 100%;
-  background: #0a0a0a;
-  
-  display: flex;
-  justify-content: center;
-  align-items: center;
 
-  overflow: hidden;
-  padding: 6px 4px 10px;
-`;
+  > * {
+    flex: 1;
+    min-width: 220px;
+  }
 
-export const FilterButton = styled.button<{ $ativo: boolean }>`
-  background: ${({ $ativo }) => ($ativo ? "#00C853" : "#1f1f1f")};
-  color: ${({ $ativo }) => ($ativo ? "#fff" : "#aaa")};
-  border: none;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s;
-
-  &:hover {
-    background: ${({ $ativo }) => ($ativo ? "#00E676" : "#333")};
+  @media (max-width: 420px) {
+    > * {
+      min-width: 100%;
+    }
   }
 `;
 
+export const Content = styled.div`
+  flex: 1;
+  width: 100%;
+  overflow: auto;
+  padding: 10px 10px 14px;
+  box-sizing: border-box;
+`;
 
+export const PanelsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+
+  @media (orientation: landscape) {
+    grid-template-columns: 1fr 1fr;
+  }
+`;
+
+export const Panel = styled.section`
+  background: #343434;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+`;
+
+export const PanelTitle = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+
+  h3 {
+    margin: 0;
+    font-size: 14px;
+    color: #ffffff;
+    letter-spacing: 0.2px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 12px;
+    color: #d1d5db;
+  }
+`;
+
+export const ChartBox = styled.div`
+  width: 100%;
+  height: 320px;
+
+  @media (orientation: landscape) {
+    height: calc((var(--vh, 1vh) * 100) - 160px);
+    min-height: 220px;
+  }
+`;
 
 export const TooltipBox = styled.div`
   background: #222;

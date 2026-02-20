@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { carregarDados, salvarDados } from "../utils/storage";
 import { CICLOS } from "../data/cycles";
 import type { DadosTreino, LinhaRelatorio, SerieInfo } from "../types/TrainingData";
+import { getCutoffTs, type TimeInterval } from "../utils/timeFilter";
 
 export function useRelatorio() {
   //Estado interno das linhas já processadas
   const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
-  // Termo de busca
-  const [busca, setBusca] = useState<string>("");
+  const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
+  const [intervalo, setIntervalo] = useState<TimeInterval>("Tudo");
 
   function parseDataBR(data: string): Date {
     const [dia, mes, ano] = data.split("/");
@@ -22,6 +23,7 @@ export function useRelatorio() {
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
       Object.entries(ciclos).forEach(([cicloKey, registro]) => {
         const { pesos = [], reps = [], obs = "", data = "" } = registro;
+        const { rpe } = registro;
         const cicloId = cicloKey.startsWith("Ciclo ")
           ? `C${cicloKey.split(" ")[1]}`
           : cicloKey;
@@ -34,7 +36,7 @@ export function useRelatorio() {
           peso: pesos[idx] || "",
         }));
 
-        geradas.push({ data, exercicio, cicloKey, ciclo: cicloNome, series, obs });
+        geradas.push({ data, exercicio, cicloKey, ciclo: cicloNome, series, obs, rpe });
       });
     });
 
@@ -84,6 +86,7 @@ export function useRelatorio() {
           pesos: novas[idx].series.map((s) => s.peso),
           reps: novas[idx].series.map((s) => s.rep),
           obs: novas[idx].obs || "",
+          rpe: novas[idx].rpe,
         };
         salvarDados(dados);
 
@@ -119,18 +122,55 @@ export function useRelatorio() {
 
   // 6) Linhas filtradas em função do termo de busca (useMemo para desempenho)
   const linhasFiltradas = useMemo(
+    () => {
+      const parseToTs = (data: string): number | null => {
+        const [diaRaw, mesRaw, anoRaw] = data.split("/");
+        const dia = Number(diaRaw);
+        const mes = Number(mesRaw);
+        const ano = Number(anoRaw);
+        if (!dia || !mes || !ano) return null;
+        const d = new Date(ano, mes - 1, dia);
+        const ts = d.getTime();
+        return Number.isNaN(ts) ? null : ts;
+      };
+
+      const base = exercicioSelecionado
+        ? linhas.filter((l) => l.exercicio === exercicioSelecionado)
+        : linhas;
+
+      if (intervalo === "Tudo") return base;
+
+      const tsValidos = base
+        .map((l) => parseToTs(l.data))
+        .filter((ts): ts is number => typeof ts === "number");
+      const nowTs = tsValidos.length ? Math.max(...tsValidos) : 0;
+      const cutoff = getCutoffTs(intervalo, nowTs);
+
+      return base.filter((l) => {
+        const ts = parseToTs(l.data);
+        if (!ts) return true;
+        return ts >= cutoff;
+      });
+    },
+    [linhas, exercicioSelecionado, intervalo]
+  );
+
+  const exerciciosDisponiveis = useMemo(
     () =>
-      linhas.filter((l) =>
-        l.exercicio.toLowerCase().includes(busca.toLowerCase())
+      [...new Set(linhas.map((l) => l.exercicio))].sort((a, b) =>
+        a.localeCompare(b)
       ),
-    [linhas, busca]
+    [linhas]
   );
 
   return {
     linhas,
-    busca,
-    setBusca,
     linhasFiltradas,
+    exerciciosDisponiveis,
+    exercicioSelecionado,
+    setExercicioSelecionado,
+    intervalo,
+    setIntervalo,
     salvarEdicao,
     excluirLinha,
   };

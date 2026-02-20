@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useDadosTreino } from "../../hooks/useDadosTreino";
-import { SearchBar } from "./SearchBar";
 import { ChartCard } from "./ChartCard";
 import styled from "styled-components";
 import { CheckboxGroup } from "../ui/CheckboxGroup";
 import { CICLOS } from "../../data/cycles";
+import { NativeSelect } from "../ui/NativeSelect";
+import { getCutoffTs, TIME_INTERVAL_OPTIONS, type TimeInterval } from "../../utils/timeFilter";
+import type { RegistroGraficoRaw } from "../../hooks/useDadosTreino";
 
 const GraphicsWrapper = styled.div`
   background: #ffffff;
@@ -34,23 +36,68 @@ const HeaderControls = styled.div`
   align-items: flex-start;
 `;
 
+const FilterRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+  align-items: flex-end;
+
+  > * {
+    flex: 1;
+    min-width: 220px;
+  }
+
+  @media (max-width: 480px) {
+    > * {
+      min-width: 100%;
+    }
+  }
+`;
+
 export const GraphicsContainer: React.FC = () => {
   const dadosAgrupados = useDadosTreino();
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-  const [busca, setBusca] = useState("");
+  const computeIsMobile = () => Math.min(window.innerWidth, window.innerHeight) < 768;
+  const [isMobile, setIsMobile] = useState(computeIsMobile());
+  const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
+  const [intervalo, setIntervalo] = useState<TimeInterval>("Tudo");
   const [ciclosSelecionados, setCiclosSelecionados] = useState<string[]>(
     () => CICLOS.map((c) => c.id)
   );
 
   useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    const handleResize = () => setIsMobile(computeIsMobile());
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    window.addEventListener("orientationchange", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("orientationchange", handleResize);
+    };
   }, []);
 
-  const filtrados = Object.keys(dadosAgrupados).filter((ex) =>
-    ex.toLowerCase().includes(busca.toLowerCase())
+  const exercicios = useMemo(
+    () => Object.keys(dadosAgrupados).sort((a, b) => a.localeCompare(b)),
+    [dadosAgrupados]
   );
+
+  const dadosPorExercicioFiltrados = useMemo(() => {
+    const out: Record<string, RegistroGraficoRaw[]> = {};
+    exercicios.forEach((ex) => {
+      const arr = dadosAgrupados[ex] ?? [];
+      if (intervalo === "Tudo") {
+        out[ex] = arr;
+        return;
+      }
+      const nowTs = arr.length ? arr[arr.length - 1].dataTs : 0;
+      const cutoff = getCutoffTs(intervalo, nowTs);
+      out[ex] = arr.filter((p) => p.dataTs >= cutoff);
+    });
+    return out;
+  }, [dadosAgrupados, exercicios, intervalo]);
+
+  const exerciciosExibidos = exercicioSelecionado
+    ? [exercicioSelecionado]
+    : exercicios;
 
   return (
     <GraphicsWrapper>
@@ -74,18 +121,34 @@ export const GraphicsContainer: React.FC = () => {
           onChange={setCiclosSelecionados}
           multiple
         />
-  <SearchBar value={busca} onChange={setBusca} isMobile={isMobile} />
+        <FilterRow>
+          <NativeSelect
+            label="Exercício"
+            value={exercicioSelecionado}
+            onChange={setExercicioSelecionado}
+            options={[
+              { label: "Todos os exercícios", value: "" },
+              ...exercicios.map((ex) => ({ label: ex, value: ex })),
+            ]}
+          />
+          <NativeSelect
+            label="Período"
+            value={intervalo}
+            onChange={(v) => setIntervalo(v as TimeInterval)}
+            options={TIME_INTERVAL_OPTIONS}
+          />
+        </FilterRow>
       </HeaderControls>
 
-      {filtrados.length === 0 && (
+      {exerciciosExibidos.length === 0 && (
         <p style={{ padding: 16, color: "#555" }}>Nenhum exercício encontrado.</p>
       )}
 
-      {filtrados.map((ex) => (
+      {exerciciosExibidos.map((ex) => (
         <ChartCard
           key={ex}
           exercicio={ex}
-          dados={dadosAgrupados[ex]}
+          dados={dadosPorExercicioFiltrados[ex] ?? []}
           ciclosSelecionados={ciclosSelecionados}
           isMobile={isMobile}
         />
