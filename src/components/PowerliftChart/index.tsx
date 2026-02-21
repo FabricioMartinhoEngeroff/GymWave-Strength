@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Bar,
   CartesianGrid,
-  Cell,
   ComposedChart,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
+  Line,
 } from "recharts";
 import type { TooltipContentProps } from "recharts/types/component/Tooltip";
 import type {
@@ -35,14 +36,11 @@ import { carregarDados } from "../../utils/storage";
 import { getCutoffTs, TIME_INTERVAL_OPTIONS, type TimeInterval } from "../../utils/timeFilter";
 import {
   buildExerciseHistory,
-  buildPRIntervals,
-  type PRIntervalPoint,
   type SessionPoint,
 } from "../../utils/workoutMetrics";
 
 const dayMs = 24 * 60 * 60 * 1000;
 const BLUE = "#5470C6";
-const BLUE_2 = "rgba(84,112,198,0.55)";
 const GRID = "rgba(255,255,255,0.22)";
 
 const formatarTick = (ts: number): string => {
@@ -68,8 +66,10 @@ function TooltipThermometer({
       <p>
         Top Set: {Math.round(p.topSetPeso)} kg × {Math.round(p.topSetReps)} reps
       </p>
-      <p>Volume efetivo: {Math.round(p.tonnage)} kg·reps</p>
       <p>1RM estimado: {Math.round(p.e1rm)} kg</p>
+      {"mediaMensal" in p && typeof (p as any).mediaMensal === "number" ? (
+        <p>Média mensal (Top Set): {Math.round((p as any).mediaMensal)} kg</p>
+      ) : null}
     </TooltipBox>
   );
 }
@@ -79,9 +79,7 @@ function TooltipOverdrive({
   payload,
 }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
-  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as
-    | (SessionPoint & { diasPR?: number; alerta?: PRIntervalPoint["alerta"] })
-    | undefined;
+  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as SessionPoint | undefined;
   if (!p) return null;
 
   return (
@@ -93,11 +91,6 @@ function TooltipOverdrive({
         Top Set: {Math.round(p.topSetPeso)} kg × {Math.round(p.topSetReps)} reps
       </p>
       <p>1RM estimado: {Math.round(p.e1rm)} kg</p>
-      {typeof p.diasPR === "number" ? <p>Dias para novo PR: {p.diasPR}</p> : <p>Sem PR neste dia.</p>}
-      {typeof p.rpe === "number" ? <p>RPE: {p.rpe}</p> : <p>RPE: não registrado.</p>}
-      {p.alerta === "plateau" ? (
-        <p style={{ color: "#FCA5A5" }}>Sinal: platô/fadiga (pode ser hora de deload).</p>
-      ) : null}
     </TooltipBox>
   );
 }
@@ -135,35 +128,32 @@ export const PowerliftingChart: React.FC = () => {
     [sessionsAll, cutoff]
   );
 
-  const prAll = useMemo(() => buildPRIntervals(sessionsAll), [sessionsAll]);
-  const prByTs = useMemo(() => {
-    const m = new Map<number, PRIntervalPoint>();
-    prAll.forEach((p) => m.set(p.ts, p));
-    return m;
-  }, [prAll]);
+  const sessionsWithMonthlyAvg = useMemo(() => {
+    const monthKey = (ts: number) => {
+      const d = new Date(ts);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    };
 
-  const overdriveData = useMemo(
-    () =>
-      sessions.map((s) => {
-        const pr = prByTs.get(s.ts);
-        return {
-          ...s,
-          diasPR: pr?.dias,
-          alerta: pr?.alerta,
-        };
-      }),
-    [sessions, prByTs]
-  );
+    const buckets = new Map<string, { sum: number; count: number }>();
+    sessions.forEach((s) => {
+      const key = monthKey(s.ts);
+      const b = buckets.get(key) ?? { sum: 0, count: 0 };
+      buckets.set(key, { sum: b.sum + s.topSetPeso, count: b.count + 1 });
+    });
 
-  const hasRPE = useMemo(
-    () => sessions.some((s) => typeof s.rpe === "number" && Number.isFinite(s.rpe)),
-    [sessions]
-  );
+    const avgByMonth = new Map<string, number>();
+    buckets.forEach((b, key) => {
+      avgByMonth.set(key, b.count ? b.sum / b.count : 0);
+    });
+
+    return sessions.map((s) => ({
+      ...s,
+      mediaMensal: avgByMonth.get(monthKey(s.ts)) ?? 0,
+    }));
+  }, [sessions]);
 
   const last = sessionsAll.length ? sessionsAll[sessionsAll.length - 1] : null;
-  const lastPR = prAll.length ? prAll[prAll.length - 1] : null;
-  const diasDesdeUltimoPR =
-    last && lastPR ? Math.max(0, Math.round((last.ts - lastPR.ts) / dayMs)) : null;
+  const diasDesdeUltimoTreino = last ? Math.max(0, Math.round((Date.now() - last.ts) / dayMs)) : null;
 
   return (
     <Container>
@@ -196,12 +186,12 @@ export const PowerliftingChart: React.FC = () => {
               {Math.round(last.topSetPeso)}×{Math.round(last.topSetReps)}
             </strong>{" "}
             — 1RM~ <strong style={{ color: "#ffffff" }}>{Math.round(last.e1rm)}kg</strong>
-            {typeof diasDesdeUltimoPR === "number" ? (
+            {typeof diasDesdeUltimoTreino === "number" ? (
               <>
                 {" "}
-                — dias desde último PR:{" "}
-                <strong style={{ color: diasDesdeUltimoPR >= 21 ? "#FCA5A5" : "#e5e7eb" }}>
-                  {diasDesdeUltimoPR}
+                — dias desde último treino:{" "}
+                <strong style={{ color: diasDesdeUltimoTreino >= 7 ? "#FCA5A5" : "#e5e7eb" }}>
+                  {diasDesdeUltimoTreino}
                 </strong>
               </>
             ) : null}
@@ -223,11 +213,14 @@ export const PowerliftingChart: React.FC = () => {
             <Panel>
               <PanelTitle>
                 <h3>Termômetro da Evolução</h3>
-                <p>Barras em azul: Top Set (kg) + Volume efetivo (kg·reps).</p>
+                <p>Top Set (kg) + média mensal (kg) estilo “ação”.</p>
               </PanelTitle>
               <ChartBox>
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={sessions} margin={{ top: 8, right: 18, left: 6, bottom: 0 }}>
+                  <ComposedChart
+                    data={sessionsWithMonthlyAvg}
+                    margin={{ top: 8, right: 18, left: 6, bottom: 0 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                     <XAxis
                       dataKey="ts"
@@ -250,33 +243,35 @@ export const PowerliftingChart: React.FC = () => {
                       width={44}
                       domain={[0, "dataMax + 5"]}
                     />
-                    <YAxis
-                      yAxisId="vol"
-                      orientation="right"
-                      stroke="rgba(255,255,255,0.6)"
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => `${Math.round(v)}`}
-                      tickLine={false}
-                      axisLine={false}
-                      width={44}
-                    />
 
                     <Tooltip content={(props) => <TooltipThermometer {...props} />} />
 
-                    <Bar
-                      yAxisId="kg"
-                      dataKey="topSetPeso"
-                      name="Top Set (kg)"
-                      fill={BLUE}
-                      radius={[8, 8, 0, 0]}
+                    <Legend
+                      verticalAlign="top"
+                      align="center"
+                      height={24}
+                      wrapperStyle={{ color: "rgba(255,255,255,0.75)" }}
                     />
 
-                    <Bar
-                      yAxisId="vol"
-                      dataKey="tonnage"
-                      name="Volume (kg·reps)"
-                      fill={BLUE_2}
-                      radius={[8, 8, 0, 0]}
+                    <Line
+                      yAxisId="kg"
+                      type="monotone"
+                      dataKey="topSetPeso"
+                      name="Top Set (kg)"
+                      stroke={BLUE}
+                      strokeWidth={2.5}
+                      dot={{ r: 2 }}
+                      activeDot={{ r: 4 }}
+                    />
+                    <Line
+                      yAxisId="kg"
+                      type="monotone"
+                      dataKey="mediaMensal"
+                      name="Média mensal (kg)"
+                      stroke="rgba(84,112,198,0.55)"
+                      strokeWidth={2}
+                      strokeDasharray="6 4"
+                      dot={false}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -285,15 +280,12 @@ export const PowerliftingChart: React.FC = () => {
 
             <Panel>
               <PanelTitle>
-                <h3>Janela de Overdrive</h3>
-                <p>
-                  Barras: dias entre PRs (1RM~) e RPE (Top Set).
-                  {!hasRPE ? " (Sem RPE registrado ainda)" : ""}
-                </p>
+                <h3>Low Volume — Reps na Top Set</h3>
+                <p>Barras em azul: quantas reps você fez na Top Set (com tooltip do peso).</p>
               </PanelTitle>
               <ChartBox>
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={overdriveData} margin={{ top: 8, right: 18, left: 6, bottom: 0 }}>
+                  <ComposedChart data={sessions} margin={{ top: 8, right: 18, left: 6, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
                     <XAxis
                       dataKey="ts"
@@ -307,47 +299,24 @@ export const PowerliftingChart: React.FC = () => {
                       axisLine={false}
                     />
                     <YAxis
-                      yAxisId="dias"
-                      stroke="rgba(255,255,255,0.6)"
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(v) => `${v}d`}
-                      tickLine={false}
-                      axisLine={false}
-                      width={40}
-                      domain={[0, "dataMax + 2"]}
-                    />
-                    <YAxis
-                      yAxisId="rpe"
-                      orientation="right"
+                      yAxisId="reps"
                       stroke="rgba(255,255,255,0.6)"
                       tick={{ fontSize: 12 }}
                       tickFormatter={(v) => `${v}`}
                       tickLine={false}
                       axisLine={false}
-                      width={38}
-                      domain={[1, 10]}
-                      hide={!hasRPE}
+                      width={40}
+                      domain={[0, "dataMax + 1"]}
                     />
 
                     <Tooltip content={(props) => <TooltipOverdrive {...props} />} />
 
-                    <Bar yAxisId="dias" dataKey="diasPR" name="Dias p/ PR" radius={[8, 8, 0, 0]}>
-                      {overdriveData.map((d) => (
-                        <Cell
-                          key={d.ts}
-                          fill={d.alerta === "plateau" ? "#EF4444" : BLUE}
-                          opacity={typeof d.diasPR === "number" ? 0.95 : 0}
-                        />
-                      ))}
-                    </Bar>
-
                     <Bar
-                      yAxisId="rpe"
-                      dataKey="rpe"
-                      name="RPE"
-                      fill="rgba(251,191,36,0.55)"
+                      yAxisId="reps"
+                      dataKey="topSetReps"
+                      name="Top Set (reps)"
+                      fill={BLUE}
                       radius={[8, 8, 0, 0]}
-                      hide={!hasRPE}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
