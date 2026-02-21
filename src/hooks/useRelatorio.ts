@@ -23,7 +23,6 @@ export function useRelatorio() {
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
       Object.entries(ciclos).forEach(([cicloKey, registro]) => {
         const { pesos = [], reps = [], obs = "", data = "" } = registro;
-        const { rpe } = registro;
         const cicloId = cicloKey.startsWith("Ciclo ")
           ? `C${cicloKey.split(" ")[1]}`
           : cicloKey;
@@ -36,7 +35,7 @@ export function useRelatorio() {
           peso: pesos[idx] || "",
         }));
 
-        geradas.push({ data, exercicio, cicloKey, ciclo: cicloNome, series, obs, rpe });
+        geradas.push({ data, exercicio, cicloKey, ciclo: cicloNome, series, obs });
       });
     });
 
@@ -86,7 +85,6 @@ export function useRelatorio() {
           pesos: novas[idx].series.map((s) => s.peso),
           reps: novas[idx].series.map((s) => s.rep),
           obs: novas[idx].obs || "",
-          rpe: novas[idx].rpe,
         };
         salvarDados(dados);
 

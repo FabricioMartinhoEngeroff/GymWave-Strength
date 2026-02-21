@@ -41,6 +41,8 @@ import {
 
 const dayMs = 24 * 60 * 60 * 1000;
 const BLUE = "#5470C6";
+const BLUE_SOFT_1 = "rgba(84,112,198,0.55)";
+const BLUE_SOFT_2 = "rgba(84,112,198,0.32)";
 const GRID = "rgba(255,255,255,0.22)";
 
 const formatarTick = (ts: number): string => {
@@ -66,7 +68,16 @@ function TooltipThermometer({
       <p>
         Top Set: {Math.round(p.topSetPeso)} kg × {Math.round(p.topSetReps)} reps
       </p>
-      <p>1RM estimado: {Math.round(p.e1rm)} kg</p>
+      {p.backoff1Peso > 0 || p.backoff1Reps > 0 ? (
+        <p>
+          Backoff 1: {Math.round(p.backoff1Peso)} kg × {Math.round(p.backoff1Reps)} reps
+        </p>
+      ) : null}
+      {p.backoff2Peso > 0 || p.backoff2Reps > 0 ? (
+        <p>
+          Backoff 2: {Math.round(p.backoff2Peso)} kg × {Math.round(p.backoff2Reps)} reps
+        </p>
+      ) : null}
       {"mediaMensal" in p && typeof (p as any).mediaMensal === "number" ? (
         <p>Média mensal (Top Set): {Math.round((p as any).mediaMensal)} kg</p>
       ) : null}
@@ -90,7 +101,16 @@ function TooltipOverdrive({
       <p>
         Top Set: {Math.round(p.topSetPeso)} kg × {Math.round(p.topSetReps)} reps
       </p>
-      <p>1RM estimado: {Math.round(p.e1rm)} kg</p>
+      {p.backoff1Peso > 0 || p.backoff1Reps > 0 ? (
+        <p>
+          Backoff 1: {Math.round(p.backoff1Peso)} kg × {Math.round(p.backoff1Reps)} reps
+        </p>
+      ) : null}
+      {p.backoff2Peso > 0 || p.backoff2Reps > 0 ? (
+        <p>
+          Backoff 2: {Math.round(p.backoff2Peso)} kg × {Math.round(p.backoff2Reps)} reps
+        </p>
+      ) : null}
     </TooltipBox>
   );
 }
@@ -185,7 +205,24 @@ export const PowerliftingChart: React.FC = () => {
             <strong style={{ color: "#ffffff" }}>
               {Math.round(last.topSetPeso)}×{Math.round(last.topSetReps)}
             </strong>{" "}
-            — 1RM~ <strong style={{ color: "#ffffff" }}>{Math.round(last.e1rm)}kg</strong>
+            {last.backoff1Peso > 0 || last.backoff1Reps > 0 ? (
+              <>
+                {" "}
+                — Backoffs:{" "}
+                <strong style={{ color: "#ffffff" }}>
+                  {Math.round(last.backoff1Peso)}×{Math.round(last.backoff1Reps)}
+                </strong>
+                {last.backoff2Peso > 0 || last.backoff2Reps > 0 ? (
+                  <>
+                    {" "}
+                    /{" "}
+                    <strong style={{ color: "#ffffff" }}>
+                      {Math.round(last.backoff2Peso)}×{Math.round(last.backoff2Reps)}
+                    </strong>
+                  </>
+                ) : null}
+              </>
+            ) : null}
             {typeof diasDesdeUltimoTreino === "number" ? (
               <>
                 {" "}
@@ -268,7 +305,7 @@ export const PowerliftingChart: React.FC = () => {
                       type="monotone"
                       dataKey="mediaMensal"
                       name="Média mensal (kg)"
-                      stroke="rgba(84,112,198,0.55)"
+                      stroke={BLUE_SOFT_1}
                       strokeWidth={2}
                       strokeDasharray="6 4"
                       dot={false}
@@ -280,8 +317,8 @@ export const PowerliftingChart: React.FC = () => {
 
             <Panel>
               <PanelTitle>
-                <h3>Low Volume — Reps na Top Set</h3>
-                <p>Barras em azul: quantas reps você fez na Top Set (com tooltip do peso).</p>
+                <h3>Low Volume — Reps (Top + Backoffs)</h3>
+                <p>Barras: reps feitas por série (tooltip mostra também os pesos).</p>
               </PanelTitle>
               <ChartBox>
                 <ResponsiveContainer width="100%" height="100%">
@@ -314,9 +351,35 @@ export const PowerliftingChart: React.FC = () => {
                     <Bar
                       yAxisId="reps"
                       dataKey="topSetReps"
-                      name="Top Set (reps)"
+                      name="Top (reps)"
                       fill={BLUE}
+                      barSize={12}
+                      maxBarSize={14}
                       radius={[8, 8, 0, 0]}
+                    />
+                    <Bar
+                      yAxisId="reps"
+                      dataKey="backoff1Reps"
+                      name="Backoff 1 (reps)"
+                      fill={BLUE_SOFT_1}
+                      barSize={12}
+                      maxBarSize={14}
+                      radius={[8, 8, 0, 0]}
+                    />
+                    <Bar
+                      yAxisId="reps"
+                      dataKey="backoff2Reps"
+                      name="Backoff 2 (reps)"
+                      fill={BLUE_SOFT_2}
+                      barSize={12}
+                      maxBarSize={14}
+                      radius={[8, 8, 0, 0]}
+                    />
+                    <Legend
+                      verticalAlign="top"
+                      align="center"
+                      height={24}
+                      wrapperStyle={{ color: "rgba(255,255,255,0.75)" }}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

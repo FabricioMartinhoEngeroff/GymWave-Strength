@@ -6,24 +6,10 @@ export type SessionPoint = {
   exercicio: string;
   topSetPeso: number;
   topSetReps: number;
-  tonnage: number; // soma(peso*reps) das séries válidas
-  e1rm: number; // 1RM estimado (Epley) usando o Top Set
-  rpe?: number;
-  low: number;
-  high: number;
-  open: number;
-  close: number;
-};
-
-export type PRIntervalPoint = {
-  ts: number;
-  data: string;
-  dias: number;
-  e1rm: number;
-  topSetPeso: number;
-  topSetReps: number;
-  rpe?: number;
-  alerta: "ok" | "plateau";
+  backoff1Peso: number;
+  backoff1Reps: number;
+  backoff2Peso: number;
+  backoff2Reps: number;
 };
 
 export function parseDataBRToTs(data: string): number | null {
@@ -41,29 +27,9 @@ function toNumArray(arr: string[] | undefined): number[] {
   return (arr ?? []).map((v) => Number(String(v).trim())).map((n) => (Number.isFinite(n) ? n : 0));
 }
 
-function pickTopSetIndex(pesos: number[]): number {
-  let idx = -1;
-  let best = -Infinity;
-  pesos.forEach((p, i) => {
-    if (p > best) {
-      best = p;
-      idx = i;
-    }
-  });
-  return idx;
-}
-
-function clampRPE(rpe: unknown): number | undefined {
-  if (rpe === null || rpe === undefined || rpe === "") return undefined;
-  const n = typeof rpe === "number" ? rpe : Number(String(rpe).trim());
-  if (!Number.isFinite(n)) return undefined;
-  const clamped = Math.min(10, Math.max(1, n));
-  return Math.round(clamped * 2) / 2; // 0.5 steps
-}
-
-function epley1RM(peso: number, reps: number): number {
-  if (!peso || !reps) return 0;
-  return peso * (1 + reps / 30);
+function firstNonZeroIndex(nums: number[]): number {
+  const idx = nums.findIndex((n) => n > 0);
+  return idx >= 0 ? idx : 0;
 }
 
 export function computeSessionPoint(
@@ -73,29 +39,17 @@ export function computeSessionPoint(
   const ts = parseDataBRToTs(reg.data);
   if (!ts) return null;
 
-  const pesos = toNumArray(reg.pesos).filter((n) => n > 0);
-  const reps = toNumArray(reg.reps);
-  if (pesos.length === 0) return null;
-
   const pesosAll = toNumArray(reg.pesos);
-  const topIdx = pickTopSetIndex(pesosAll);
-  const topSetPeso = topIdx >= 0 ? pesosAll[topIdx] : Math.max(...pesosAll);
-  const topSetReps = topIdx >= 0 ? reps[topIdx] || 0 : 0;
+  const repsAll = toNumArray(reg.reps);
+  if (pesosAll.every((p) => p <= 0)) return null;
 
-  const pares = pesosAll.map((p, i) => ({
-    peso: p,
-    rep: reps[i] || 0,
-  }));
-  const tonnage = pares.reduce((acc, s) => {
-    if (!s.peso || !s.rep) return acc;
-    return acc + s.peso * s.rep;
-  }, 0);
-
-  const validPesos = pesosAll.filter((p) => p > 0);
-  const open = validPesos.length ? validPesos[0] : topSetPeso;
-  const close = validPesos.length ? validPesos[validPesos.length - 1] : topSetPeso;
-  const low = validPesos.length ? Math.min(...validPesos) : topSetPeso;
-  const high = validPesos.length ? Math.max(...validPesos) : topSetPeso;
+  const topIdx = firstNonZeroIndex(pesosAll);
+  const topSetPeso = pesosAll[topIdx] || 0;
+  const topSetReps = repsAll[topIdx] || 0;
+  const backoff1Peso = pesosAll[topIdx + 1] || 0;
+  const backoff1Reps = repsAll[topIdx + 1] || 0;
+  const backoff2Peso = pesosAll[topIdx + 2] || 0;
+  const backoff2Reps = repsAll[topIdx + 2] || 0;
 
   return {
     ts,
@@ -103,13 +57,10 @@ export function computeSessionPoint(
     exercicio,
     topSetPeso,
     topSetReps,
-    tonnage,
-    e1rm: epley1RM(topSetPeso, topSetReps),
-    rpe: clampRPE((reg as any).rpe),
-    low,
-    high,
-    open,
-    close,
+    backoff1Peso,
+    backoff1Reps,
+    backoff2Peso,
+    backoff2Reps,
   };
 }
 
@@ -124,7 +75,11 @@ export function buildExerciseHistory(db: DadosTreino): Record<string, SessionPoi
       if (!point) return;
 
       const atual = porDia.get(point.ts);
-      if (!atual || point.e1rm > atual.e1rm) {
+      const melhor =
+        !atual ||
+        point.topSetPeso > atual.topSetPeso ||
+        (point.topSetPeso === atual.topSetPeso && point.topSetReps > atual.topSetReps);
+      if (melhor) {
         porDia.set(point.ts, point);
       }
     });
@@ -134,38 +89,3 @@ export function buildExerciseHistory(db: DadosTreino): Record<string, SessionPoi
 
   return out;
 }
-
-export function buildPRIntervals(
-  sessions: SessionPoint[],
-  plateauDays: number = 21,
-  plateauRPE: number = 9
-): PRIntervalPoint[] {
-  let best = 0;
-  let lastPRTs: number | null = null;
-  const pr: PRIntervalPoint[] = [];
-
-  sessions.forEach((s) => {
-    if (s.e1rm <= 0) return;
-    if (s.e1rm <= best) return;
-
-    const dias =
-      lastPRTs === null ? 0 : Math.round((s.ts - lastPRTs) / (24 * 60 * 60 * 1000));
-    best = s.e1rm;
-    lastPRTs = s.ts;
-
-    const isPlateau = dias >= plateauDays && (s.rpe ?? 0) >= plateauRPE;
-    pr.push({
-      ts: s.ts,
-      data: s.data,
-      dias,
-      e1rm: s.e1rm,
-      topSetPeso: s.topSetPeso,
-      topSetReps: s.topSetReps,
-      rpe: s.rpe,
-      alerta: isPlateau ? "plateau" : "ok",
-    });
-  });
-
-  return pr;
-}
-

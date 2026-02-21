@@ -147,11 +147,6 @@ export function ReportItem({ linha, onEdit, onDelete }: ReportItemProps) {
       <Label><span>Data:</span> {linha.data}</Label>
       <Label><span>Exercício:</span> {linha.exercicio}</Label>
       <Label><span>Ciclo:</span> {linha.ciclo}</Label>
-      {typeof linha.rpe === "number" && (
-        <Label>
-          <span>RPE:</span> {linha.rpe}
-        </Label>
-      )}
   
 
      {linha.series.map((s: SerieInfo) => (

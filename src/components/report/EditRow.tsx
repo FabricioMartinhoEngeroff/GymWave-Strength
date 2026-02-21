@@ -136,25 +136,6 @@ export function EditRow({
       </SeriesContainer>
 
       <FieldGroup>
-        <Label>RPE (Top Set)</Label>
-        <Input
-          type="number"
-          placeholder="1 a 10 (ex.: 8.5)"
-          value={
-            linhaEditada.rpe === undefined || linhaEditada.rpe === null
-              ? ""
-              : String(linhaEditada.rpe)
-          }
-          onChange={(e) => {
-            const raw = e.target.value;
-            const n = raw === "" ? undefined : Number(raw);
-            setLinhaEditada((p) => ({ ...p, rpe: Number.isFinite(n as number) ? (n as number) : undefined }));
-          }}
-          isMobile={isMobile}
-        />
-      </FieldGroup>
-
-      <FieldGroup>
         <Label>Observações</Label>
         <Input
           type="text"

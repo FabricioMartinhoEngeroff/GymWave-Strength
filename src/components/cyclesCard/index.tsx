@@ -44,11 +44,9 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
     data,
     salvando,
     exercicioSelecionado,
-    rpe,
     setObs,
     setData,
     setExercicioSelecionado,
-    setRpe,
     handleArrayChange,
     salvar,
   } = useCycleCardLogic({
@@ -142,51 +140,6 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
   selected={parseData(data)}
   onChange={(date) => setData(date ? formatarData(date) : "")}
 />
-
-      <div style={{ marginTop: 6 }}>
-        <p style={{ margin: 0 }}>RPE (Top Set)</p>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            background: "#f5f7fb",
-            border: "1px solid #dbeafe",
-            borderRadius: 12,
-            padding: "10px 12px",
-          }}
-        >
-          <input
-            type="range"
-            min={1}
-            max={10}
-            step={0.5}
-            value={rpe ?? 8}
-            onChange={(e) => setRpe(Number(e.target.value))}
-            style={{ flex: 1 }}
-            aria-label="RPE"
-          />
-          <div
-            style={{
-              minWidth: 44,
-              textAlign: "center",
-              fontWeight: 800,
-              color: "#0d47a1",
-            }}
-            title="RPE da Top Set"
-          >
-            {typeof rpe === "number" ? rpe : "—"}
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setRpe(undefined)}
-            style={{ padding: "8px 10px", fontSize: 14 }}
-          >
-            Limpar
-          </Button>
-        </div>
-      </div>
 
      {[0, 1, 2].map((i) => (
   <div key={i} style={{ marginBottom: "16px" }}>
