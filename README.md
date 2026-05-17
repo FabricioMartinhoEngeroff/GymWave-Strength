@@ -1,155 +1,80 @@
- Sistema de Gerenciamento de Treino de Força Ondulatório
+💪 GymWave Strength
+Sistema pessoal de gerenciamento de treinos de força com periodização ondulatória.
+LINK: https://gym-wave-strength.vercel.app/#
 
-💡 Utilize este sistema para acompanhar sua evolução de forma simples e inteligente. Para cada exercício, recomenda-se iniciar os registros a partir do Ciclo 4, garantindo um ponto de comparação consistente para os próximos treinos.
+⚠️ Projeto pessoal — feito exclusivamente para uso próprio, sem autenticação robusta, sem backend e sem nenhuma preocupação com segurança. Os dados ficam salvos localmente no navegador via localStorage. Use por sua conta e risco.
 
-📘 Especificação Funcional
 
-1. Visão Geral
+📖 O que é isso?
+Um app web que eu construí para acompanhar minha evolução nos treinos de força. A ideia central é a periodização ondulatória: os treinos variam em intensidade a cada ciclo (Ciclo 0 ao Ciclo 4), e o sistema sugere o peso ideal para cada exercício com base no seu histórico.
+Nada de servidor, nada de banco de dados — tudo roda no navegador mesmo.
 
-Este documento descreve as funcionalidades da aplicação voltada ao controle de treinos de força com base em periodização ondulatória. O objetivo é permitir o registro prático, sugestão inteligente de cargas, acompanhamento da evolução e visualização acessível dos dados.
+🚀 Como usar
 
-2. Objetivo do Sistema
+Clone o repositório e instale as dependências:
 
-O sistema oferece:
+bashgit clone https://github.com/seu-usuario/GymWave-Strength.git
+cd GymWave-Strength
+npm install
 
-Sugestão automática de carga baseada no histórico do usuário e no último pico de desempenho.
+Inicie o projeto em modo desenvolvimento:
 
-Registro fixo de 3 séries por exercício.
+bashnpm run dev
 
-Armazenamento local via localStorage.
+Abra http://localhost:5173 no navegador.
 
-Interface mobile-first com foco em facilidade e clareza.
 
-3. Fluxo de Cadastro e Cálculo de Peso Sugerido
+Dica: Na primeira vez, recomendo começar pelo Ciclo 4 para ter uma base de comparação nos treinos seguintes.
 
-3.1 Seleção do Ciclo via Checkbox e Exercício via componente Multiselect
 
-O usuário seleciona o ciclo (ex: Ciclo 0 a Ciclo 4) através de checkboxes horizontais.
+✨ O que o app faz
 
-Abaixo dos checkboxes, é exibido um componente Multiselect para escolher um ou mais exercícios (ex: Agachamento, Supino...).
+Seleciona o ciclo e o exercício do dia via checkboxes e multiselect com autocomplete
+Sugere automaticamente o peso ideal com base no histórico registrado
+Registra 3 séries por exercício (peso + repetições)
+Salva tudo localmente no localStorage — funciona offline
+Exibe gráficos de evolução por exercício (barras com média e total)
+Permite filtrar registros por exercício e data
 
-Assim que ambos são selecionados, o sistema busca o último ciclo de pico registrado e:
 
-Exibe sugestão de carga ideal baseada nesse histórico.
+🛠️ Tecnologias usadas
+TecnologiaO que eu aprendi / apliqueiReact 19Componentes funcionais, composição, ciclo de vidaTypeScript 5.7Tipagem de props, interfaces, generics básicosReact Router DOM 7Rotas, navegação programática, rotas protegidasContext API + Custom HooksEstado global, useAuth, separação de lógicaStyled Components 6CSS-in-JS, temas, componentes estilizadosRechartsGráficos de barra e linha, visualização de dadosAxiosRequisições HTTP, interceptors, tratamento de errosReact SelectSelect avançado com autocomplete e multiselectDate-fnsFormatação e manipulação de dataslocalStoragePersistência offline sem backendViteBuild tool, HMR, configuração de ambienteESLintQualidade e padronização de código
 
-Informa o número recomendado de repetições.
+🧠 Aprendizados principais
+Este projeto foi meu laboratório prático de React. As coisas que mais aprendi:
+Arquitetura de componentes
+Entender quando criar um componente novo vs. reusar um existente. Quanto menor e mais focado o componente, mais fácil de manter.
+Custom Hooks
+Isolar lógica de negócio em hooks (useAuth, useWorkoutHistory) deixou os componentes muito mais limpos. Aprendi que hooks são só funções — mas funções poderosas.
+Estado global vs. local
+Nem tudo precisa ir pro Context. Estado que só um componente usa fica melhor com useState local mesmo.
+TypeScript na prática
+Tipar as interfaces dos dados de treino (WorkoutRecord, Exercise, Serie) me salvou de vários bugs bobos e tornou o autocomplete do editor muito mais útil.
+Persistência com localStorage
+Aprendi a serializar/deserializar objetos com JSON.stringify / JSON.parse e a lidar com dados que podem estar ausentes ou corrompidos.
+Visualização de dados
+Integrar o Recharts foi meu primeiro contato com gráficos em React. Aprendi a transformar arrays de dados no formato que a biblioteca espera.
 
-Apresenta mensagem motivacional: "Hoje, o ideal para você é 80kg em cada série!"
+📁 Estrutura do projeto
+src/
+├── components/      # Componentes reutilizáveis (SerieBlock, ExerciseSelect...)
+├── context/         # AuthContext, WorkoutContext
+├── hooks/           # Custom hooks
+├── pages/           # Telas principais (Home, History, Charts)
+├── services/        # Lógica de acesso ao localStorage
+├── types/           # Interfaces TypeScript
+└── styles/          # Temas e estilos globais
 
-3.2 Primeira vez no app
+⚙️ Requisitos
 
-É exibida uma nuvem introdutória:
+Node.js 18+
+npm 9+
+Navegador moderno (Chrome, Firefox, Edge)
 
-"Recomenda-se iniciar pelo Ciclo 4 para usar como base nos próximos treinos."
 
-4. Interface de Registro das Séries
+📝 Observações
 
-4.1 Estrutura das Séries
-
-Sempre são exibidos 3 blocos fixos:
-
-Série 1 – Insira como foi sua série
-
-Série 2 – Insira como foi sua série
-
-Série 3 – Insira como foi sua série
-
-Cada bloco contém:
-
-Campo de Peso (com seletor tipo relógio ou lista vertical)
-
-Campo de Repetições
-
-Esses campos são editáveis e refletem o treino real realizado.
-
-4.2 Observações
-
-Campo livre para comentários, sensações ou dificuldades (ex: "senti dor no joelho").
-
-5. Armazenamento
-
-Todos os dados são salvos no localStorage:
-
-ID único
-
-Ciclo
-
-Exercício
-
-Peso
-
-Repetições
-
-Data
-
-Observações
-
-6. Tela Inicial – Componentes Visuais
-
-Elemento
-
-Descrição
-
-Cabeçalho
-
-Nome do app e data atual (com campo de edição).
-
-Pergunta de entrada
-
-"Qual o ciclo e exercício que você vai fazer hoje?"
-
-Seleção de ciclo
-
-Checkboxes horizontais (Ciclo 0, Ciclo 1, Ciclo 2, etc.)
-
-Seletor de exercício multiselect com autocomplete
-
-Mensagem motivacional
-
-Aparece após seleção: "Com base no seu histórico, tente 80kg × 8 reps!"
-
-Blocos de Séries
-
-3 blocos com campos para peso e repetições por série
-
-Campo de Observações
-
-Texto livre
-
-Botão Salvar
-
-Fica desabilitado até preenchimento obrigatório
-
-7. Regras de Negócio
-
-As 3 séries são sempre exibidas, não há adição ou remoção dinâmica.
-
-O peso sugerido é informativo.
-
-O botão "Salvar" só é ativado após preenchimento de todos os campos obrigatórios.
-
-Campos incompletos são destacados com borda azul e mensagem: "Preencha todos os campos obrigatórios."
-
-8. Validações
-
-Peso e repetições: apenas números positivos (> 0).
-
-Data: formato DD/MM/AAAA (data futura permitida com alerta).
-
-Mensagens de erro visíveis abaixo do campo correspondente.
-
-9. Exibição de Resultados
-
-Gráficos: evolução por exercício em barras verticais (média e total).
-
-Relatórios: listagem de todos os registros com filtros por exercício e data.
-
-10. Requisitos Técnicos
-
-Armazenamento: localStorage para funcionamento offline.
-
-Responsivo: adaptado para celular (mobile-first).
-
-Compatível com: Chrome, Firefox, Edge.
-
-Acessível: suporte a navegação por teclado, foco visível, labels claros.
+Não tem login real nem proteção de dados. É pessoal mesmo.
+Limpar o localStorage do navegador apaga todos os registros.
+Funciona offline depois do primeiro carregamento.
+Mobile-first: foi pensado pra usar pelo celular na academia.
