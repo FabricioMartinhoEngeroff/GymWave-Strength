@@ -68,10 +68,10 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
       series_validas: Number(r.series_validas ?? 3),
       rep_min: Number(r.rep_min ?? 0),
       rep_max: Number(r.rep_max ?? 0),
-      peso_C1_kg: r.peso_C1_kg,
-      peso_C2_kg: r.peso_C2_kg,
-      peso_C3_kg: r.peso_C3_kg,
-      peso_C4_kg: r.peso_C4_kg,
+      peso_C1_kg: r.peso_C1_kg as string | number | undefined,
+      peso_C2_kg: r.peso_C2_kg as string | number | undefined,
+      peso_C3_kg: r.peso_C3_kg as string | number | undefined,
+      peso_C4_kg: r.peso_C4_kg as string | number | undefined,
     }))
     .filter((r) => r.exercicio !== "");
 }
