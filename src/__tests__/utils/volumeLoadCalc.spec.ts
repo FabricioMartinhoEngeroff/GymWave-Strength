@@ -48,7 +48,7 @@ describe("VolumeLoadCalc", () => {
         },
       });
       const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peito");
+      const peito = result.find((r) => r.musculo === "Peitoral");
       expect(peito).toBeUndefined();
     });
   });
@@ -66,7 +66,7 @@ describe("VolumeLoadCalc", () => {
         },
       });
       const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peito");
+      const peito = result.find((r) => r.musculo === "Peitoral");
       // 100×10 + 90×10 + 80×10 = 2700
       expect(peito?.volumeAtual).toBe(2700);
     });
@@ -91,7 +91,7 @@ describe("VolumeLoadCalc", () => {
         },
       });
       const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peito");
+      const peito = result.find((r) => r.musculo === "Peitoral");
       // 100×5 + 60×12 = 500 + 720 = 1220
       expect(peito?.volumeAtual).toBe(1220);
     });
@@ -108,7 +108,7 @@ describe("VolumeLoadCalc", () => {
         },
       });
       const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peito");
+      const peito = result.find((r) => r.musculo === "Peitoral");
       expect(peito?.delta).toBe(0);
     });
 
@@ -130,7 +130,7 @@ describe("VolumeLoadCalc", () => {
         },
       });
       const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peito");
+      const peito = result.find((r) => r.musculo === "Peitoral");
       // Atual: 1000, Anterior: 800 → delta = +25%
       expect(peito?.delta).toBe(25);
     });
@@ -153,7 +153,7 @@ describe("VolumeLoadCalc", () => {
         },
       });
       const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peito");
+      const peito = result.find((r) => r.musculo === "Peitoral");
       // Atual: 800, Anterior: 1000 → delta = -20%
       expect(peito?.delta).toBe(-20);
     });
@@ -198,7 +198,7 @@ describe("VolumeLoadCalc", () => {
           },
         },
       });
-      // Peito: 1000, Quadríceps: 650
+      // Peitoral: 1000, Quadríceps: 650
       expect(calcTotalVolumeWeek()).toBe(1650);
     });
   });

@@ -5,9 +5,13 @@ import GraphicsContainer from "../components/graphic";
 import ReportPage from "../components/report";
 import { PrivateRoute } from "../router/PrivateRoute";
 import { PowerliftingChart } from "../components/PowerliftChart"; // ✅ novo import
+import AdminImport from "../components/adminImport/AdminImport";
 
 export const router = createBrowserRouter([
   { path: "/", element: <AuthPage /> },
+
+  // Rota oculta (não aparece na BottomNav) — uso pessoal, sem autenticação
+  { path: "/admin", element: <AdminImport /> },
 
   {
     path: "/app",

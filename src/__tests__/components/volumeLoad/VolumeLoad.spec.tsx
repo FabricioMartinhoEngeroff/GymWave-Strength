@@ -44,7 +44,7 @@ describe("VolumeLoad — Componente de volume por músculo", () => {
   });
 
   describe("Estado com dados desta semana", () => {
-    it("exibe card do músculo Peito quando há treino de supino esta semana", () => {
+    it("exibe card do músculo Peitoral quando há treino de supino esta semana", () => {
       localStorage.setItem(
         "dadosTreino",
         JSON.stringify({
@@ -59,7 +59,7 @@ describe("VolumeLoad — Componente de volume por músculo", () => {
         })
       );
       render(<VolumeLoad />);
-      expect(screen.getByText("Peito")).toBeInTheDocument();
+      expect(screen.getByText("Peitoral")).toBeInTheDocument();
     });
 
     it("exibe card de Costas quando há treino de remada esta semana", () => {
