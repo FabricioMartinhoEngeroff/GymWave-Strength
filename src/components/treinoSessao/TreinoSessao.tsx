@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CICLOS } from "../../data/cycles";
 import { EXERCICIOS } from "../../data/exercise";
+import { SESSOES, SESSOES_LABELS, type SessaoTipo } from "../../data/sessionExercises";
 import {
   Screen,
   TopBar,
@@ -11,6 +12,7 @@ import {
   Label,
   CycleCheckboxRow,
   CycleChip,
+  SessaoRow,
   MultiSelectWrapper,
   MultiSelectInput,
   DropdownList,
@@ -54,9 +56,10 @@ function carregarDados(): Record<string, Record<string, { pesos?: string[]; reps
 function carregarUltimaSerie(exercicio: string, cicloId: string): SerieInput[] {
   const dados = carregarDados();
   const entry = dados[exercicio]?.[cicloId];
-  if (!entry) return [{ peso: "", reps: "" }, { peso: "", reps: "" }, { peso: "", reps: "" }];
-  const pesos = entry.pesos ?? ["", "", ""];
-  const reps = entry.reps ?? ["", "", ""];
+  const empty = (): SerieInput => ({ peso: "", reps: "" });
+  if (!entry) return [empty(), empty(), empty()];
+  const pesos = entry.pesos ?? [];
+  const reps = entry.reps ?? [];
   return [0, 1, 2].map((i) => ({ peso: pesos[i] ?? "", reps: reps[i] ?? "" }));
 }
 
@@ -72,6 +75,7 @@ export default function TreinoSessao() {
   const [cicloId, setCicloId] = useState<string>(() => {
     return localStorage.getItem("gymwave_ciclo") || "C1";
   });
+  const [sessao, setSessao] = useState<SessaoTipo | null>(null);
   const [exerciciosSelecionados, setExerciciosSelecionados] = useState<string[]>([]);
   const [series, setSeries] = useState<Record<string, SerieInput[]>>({});
   const [obs, setObs] = useState("");
@@ -79,7 +83,6 @@ export default function TreinoSessao() {
   const [salvo, setSalvo] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
 
-  // Multiselect state
   const [busca, setBusca] = useState("");
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -87,12 +90,10 @@ export default function TreinoSessao() {
 
   const cicloInfo = CICLOS.find((c) => c.id === cicloId) || CICLOS[0];
 
-  // Persist cycle selection
   useEffect(() => {
     localStorage.setItem("gymwave_ciclo", cicloId);
   }, [cicloId]);
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -108,7 +109,20 @@ export default function TreinoSessao() {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // When ciclo changes, reload series for all selected exercises from that ciclo's history
+  // Auto-load exercises when session is selected
+  useEffect(() => {
+    if (!sessao) return;
+    const exsDaSessao = SESSOES[sessao].map((e) => e.nome);
+    setExerciciosSelecionados(exsDaSessao);
+    const loaded: Record<string, SerieInput[]> = {};
+    exsDaSessao.forEach((ex) => {
+      loaded[ex] = carregarUltimaSerie(ex, cicloId);
+    });
+    setSeries(loaded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessao]);
+
+  // Reload history when ciclo changes
   useEffect(() => {
     if (exerciciosSelecionados.length === 0) return;
     setSeries((prev) => {
@@ -118,9 +132,9 @@ export default function TreinoSessao() {
       });
       return next;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cicloId]);
 
-  // Multiselect: filter exercises
   const exerciciosFiltrados = EXERCICIOS.filter(
     (ex) =>
       ex.toLowerCase().includes(busca.toLowerCase()) &&
@@ -149,13 +163,14 @@ export default function TreinoSessao() {
 
   function handleSerie(ex: string, serieIdx: number, campo: "peso" | "reps", valor: string) {
     setSeries((prev) => {
-      const seriesEx = prev[ex] ? [...prev[ex]] : [{ peso: "", reps: "" }, { peso: "", reps: "" }, { peso: "", reps: "" }];
+      const seriesEx = prev[ex]
+        ? [...prev[ex]]
+        : [{ peso: "", reps: "" }, { peso: "", reps: "" }, { peso: "", reps: "" }];
       seriesEx[serieIdx] = { ...seriesEx[serieIdx], [campo]: valor };
       return { ...prev, [ex]: seriesEx };
     });
   }
 
-  // Validation: série 1 of each exercise must have peso > 0 and reps > 0
   function canSave(): boolean {
     if (exerciciosSelecionados.length === 0) return false;
     return exerciciosSelecionados.every((ex) => {
@@ -171,13 +186,14 @@ export default function TreinoSessao() {
       return;
     }
     const db = carregarDados();
+    const numSeries = cicloInfo.seriesValidas;
     exerciciosSelecionados.forEach((ex) => {
       if (!db[ex]) db[ex] = {};
       const seriesEx = series[ex] || [];
       db[ex][cicloId] = {
         data,
-        pesos: seriesEx.map((s) => s.peso.trim()),
-        reps: seriesEx.map((s) => s.reps.trim()),
+        pesos: seriesEx.slice(0, numSeries).map((s) => s.peso.trim()),
+        reps: seriesEx.slice(0, numSeries).map((s) => s.reps.trim()),
         obs: obs.trim(),
         exercicio: ex,
       };
@@ -185,18 +201,17 @@ export default function TreinoSessao() {
     localStorage.setItem("dadosTreino", JSON.stringify(db));
     setSalvo(true);
     setShowInvalid(false);
-    // Reset form
     setExerciciosSelecionados([]);
     setSeries({});
+    setSessao(null);
     setObs("");
     setData(getTodayBR());
     setTimeout(() => setSalvo(false), 3000);
   }
 
-  // Determine if a serie 1 field is invalid (only after attempted save)
   function isFieldInvalid(ex: string, serieIdx: number, campo: "peso" | "reps"): boolean {
     if (!showInvalid) return false;
-    if (serieIdx !== 0) return false; // only série 1 is required
+    if (serieIdx !== 0) return false;
     const s = series[ex];
     if (!s || !s[0]) return true;
     if (campo === "peso") {
@@ -222,9 +237,26 @@ export default function TreinoSessao() {
       <Content>
         {salvo && <ToastBanner>Treino salvo com sucesso!</ToastBanner>}
 
-        {/* Selector card */}
+        {/* Seletor de sessão */}
         <Card>
-          <Label>Qual ciclo e exercício?</Label>
+          <Label>Sessão</Label>
+          <SessaoRow>
+            {SESSOES_LABELS.map((s) => (
+              <CycleChip
+                key={s}
+                $active={sessao === s}
+                onClick={() => setSessao(sessao === s ? null : s)}
+                type="button"
+              >
+                {s}
+              </CycleChip>
+            ))}
+          </SessaoRow>
+        </Card>
+
+        {/* Seletor de ciclo + busca */}
+        <Card>
+          <Label>Ciclo e exercício</Label>
 
           <CycleCheckboxRow>
             {CICLOS.map((c) => (
@@ -291,23 +323,28 @@ export default function TreinoSessao() {
           </div>
         </Card>
 
-        {/* Exercise cards */}
+        {/* Cards de exercício com séries dinâmicas */}
         {exerciciosSelecionados.map((ex) => {
-          const seriesEx = series[ex] || [{ peso: "", reps: "" }, { peso: "", reps: "" }, { peso: "", reps: "" }];
+          const seriesEx = series[ex] || [
+            { peso: "", reps: "" },
+            { peso: "", reps: "" },
+            { peso: "", reps: "" },
+          ];
+          const numSeries = cicloInfo.seriesValidas;
           return (
             <ExerciseCard key={ex}>
               <ExHeader>
                 <div>
                   <ExName>{ex}</ExName>
                   <ExSub>
-                    {cicloInfo.repMin}–{cicloInfo.repMax} reps
+                    {cicloInfo.repMin}–{cicloInfo.repMax} reps · {numSeries} série{numSeries > 1 ? "s" : ""}
                   </ExSub>
                 </div>
                 <Badge>{cicloInfo.sigla}</Badge>
               </ExHeader>
 
               <SeriesGrid>
-                {[0, 1, 2].map((i) => (
+                {Array.from({ length: numSeries }, (_, i) => i).map((i) => (
                   <SerieRow key={i}>
                     <SerieLabel>Série {i + 1}</SerieLabel>
                     <InputBox
@@ -334,7 +371,7 @@ export default function TreinoSessao() {
           );
         })}
 
-        {/* Obs */}
+        {/* Observações */}
         <Card>
           <Label>Observações</Label>
           <ObsInput

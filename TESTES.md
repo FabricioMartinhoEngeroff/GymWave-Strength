@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 353 testes | 35 arquivos de teste**
+**Total: 371 testes | 35 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -143,7 +143,9 @@
 
 ## 2. DATA
 
-### 2.1 cycles (14 testes)
+### 2.1 cycles (19 testes)
+
+Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C3 Acum. (9–12 · 3) → C4 Deload (12–15 · 2)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -153,14 +155,19 @@
 | 4 | Campos obrigatorios | Titulo, sigla e objetivo preenchidos |
 | 5 | Faixa de reps | repMin < repMax em todos |
 | 6 | Reps positivas | repMin e repMax > 0 |
-| 7 | Series validas | Valor e 2 ou 3 em todos |
-| 8 | C1 Acumulacao | 3 series validas (maximo volume) |
-| 9 | C2 Intensificacao | 3 series validas |
-| 10 | C3 Pico | 2 series validas (alta intensidade) |
-| 11 | C4 Deload | 2 series validas (recuperacao) |
-| 12 | C3 vs C1 | Pico tem reps mais baixas que Acumulacao |
-| 13 | C4 vs C1 | Deload tem mesma faixa de reps que Acumulacao |
-| 14 | Progressao Saizen | Logica de periodizacao consistente |
+| 7 | C1 Pico — faixa de reps | repMin=5, repMax=6 |
+| 8 | C2 Intensificacao — faixa de reps | repMin=7, repMax=8 |
+| 9 | C3 Acumulacao — faixa de reps | repMin=9, repMax=12 |
+| 10 | C4 Deload — faixa de reps | repMin=12, repMax=15 |
+| 11 | Series validas | Valor e 2 ou 3 em todos |
+| 12 | C1 Pico | 2 series validas (alta intensidade, poucos sets) |
+| 13 | C2 Intensificacao | 3 series validas |
+| 14 | C3 Acumulacao | 3 series validas (maximo volume) |
+| 15 | C4 Deload | 2 series validas (recuperacao) |
+| 16 | C1 vs demais | C1 Pico tem a menor faixa de reps |
+| 17 | C4 vs demais | C4 Deload tem a maior faixa de reps |
+| 18 | Progressao C1 a C3 | reps crescem de C1 para C3 |
+| 19 | C3 vs C2 | Acumulacao tem reps mais altas que Intensificacao |
 
 ---
 
@@ -414,32 +421,60 @@
 
 ## 9. COMPONENTES DE FEATURE
 
-### 9.1 TreinoSessao (22 testes)
+### 9.1 TreinoSessao (33 testes)
+
+**Renderização inicial (7)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 1 | Renderizacao inicial | Titulo `GymWave Strength` visivel |
+| 1 | Titulo | `GymWave Strength` visivel |
 | 2 | Ciclos Saizen | 4 ciclos C1-C4 exibidos |
-| 3 | Siglas dos ciclos | Acum, Intens, Pico, Deload visiveis |
-| 4 | Ciclo padrao | C1 selecionado por padrao |
+| 3 | Siglas dos ciclos | Pico, Intens., Acum., Deload visiveis |
+| 4 | Ciclo padrao | C1 (Pico) selecionado por padrao |
 | 5 | Campo de busca | Placeholder de busca presente |
 | 6 | Botao Salvar | Texto `Salvar treino` visivel |
 | 7 | Sem exercicios | Botao Salvar desabilitado |
-| 8 | Clicar em C2 | Seleciona C2 sem erro |
-| 9 | Digitar `Supino` na busca | Dropdown com `Supino Reto` |
-| 10 | Selecionar exercicio | Cria card com Series 1, 2, 3 |
-| 11 | Remover tag de exercicio | Card removido do DOM |
-| 12 | Adicionar 2 exercicios | 2 cards com Serie 1 cada |
-| 13 | Exercicio ja selecionado | Nao aparece no dropdown |
-| 14 | Serie 1 vazia | Botao Salvar permanece desabilitado |
-| 15 | Serie 1 com peso e reps | Botao Salvar habilitado |
-| 16 | Clicar Salvar com dados | Persiste no localStorage com ciclo C1 |
-| 17 | Apos salvar | Exibe toast `Treino salvo` |
-| 18 | Apos salvar | Formulario resetado (series somem) |
-| 19 | Exercicio com historico no ciclo | Auto-fill com pesos anteriores |
-| 20 | Exercicio sem historico | Inputs ficam vazios |
-| 21 | Campo de observacoes | Placeholder `como foi o treino` presente |
-| 22 | Salvar grava pesos corretamente | `pesos[0]` = valor digitado |
+
+**Seletor de sessão (7)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 8 | Chips de sessao | Upper A, Lower A, Upper B, Lower B, Braco visiveis |
+| 9 | Selecionar Upper A | Supino Reto carregado automaticamente |
+| 10 | Selecionar Lower A | Agachamento carregado automaticamente |
+| 11 | Selecionar Upper B | Barra fixa carregada automaticamente |
+| 12 | Selecionar Lower B | Levantamento Terra carregado automaticamente |
+| 13 | Selecionar Braco | Triceps Polia carregado automaticamente |
+| 14 | Apos selecionar sessao | Botao Salvar desabilitado (falta peso) |
+
+**Séries dinâmicas por ciclo (5)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 15 | C1 Pico (2 series) | Exibe apenas Serie 1 e Serie 2 |
+| 16 | C2 Intensificacao (3 series) | Exibe Serie 1, 2 e 3 |
+| 17 | C3 Acumulacao (3 series) | Exibe Serie 3 |
+| 18 | C4 Deload (2 series) | Exibe apenas Serie 1 e Serie 2 |
+| 19 | Trocar C2 para C1 | Serie 3 desaparece |
+
+**Seleção de ciclo / Multiselect / Validação / Save / Auto-fill / Obs (14)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 20 | Clicar em C2 | Seleciona C2 sem erro |
+| 21 | Digitar `Supino` na busca | Dropdown com `Supino Reto` |
+| 22 | Remover tag de exercicio | Card removido do DOM |
+| 23 | Adicionar 2 exercicios | 2 cards com Serie 1 cada |
+| 24 | Exercicio ja selecionado | Nao aparece no dropdown |
+| 25 | Serie 1 vazia | Botao Salvar permanece desabilitado |
+| 26 | Serie 1 com peso e reps | Botao Salvar habilitado |
+| 27 | Clicar Salvar com dados | Persiste no localStorage com ciclo C1 |
+| 28 | C1 salva 2 series | `pesos` tem length 2 |
+| 29 | Apos salvar | Exibe toast `Treino salvo` |
+| 30 | Apos salvar | Formulario resetado |
+| 31 | Exercicio com historico no ciclo | Auto-fill com pesos anteriores |
+| 32 | Exercicio sem historico | Inputs ficam vazios |
+| 33 | Campo de observacoes | Placeholder `como foi o treino` presente |
 
 ---
 
@@ -584,7 +619,7 @@
 | 25 | Resultado | Exibe total de registros salvos |
 | 26 | Feedback por sessao | Exibe `Upper A` e `Lower A` |
 | 27 | Apos confirmar | Preview resetado |
-| 28 | Reps salvas | Usa `rep_max` como valor de reps |
+| 28 | Reps salvas | Reps salvas vazias (usuario preenche no treino) |
 | 29 | Pesos duplicados | Repetidos para cada serie valida |
 
 **Limpar tudo (3)**
@@ -617,7 +652,7 @@
 | 14 | Resultado da importacao | Exibe total de registros salvos |
 | 15 | Feedback por sessao | Exibe `Upper A` e `Lower A` |
 | 16 | Apos confirmar | Preview resetado |
-| 17 | Reps salvas | Usa `rep_max` como valor de reps |
+| 17 | Reps salvas | Reps salvas vazias (usuario preenche no treino) |
 | 18 | Pesos duplicados | Repetidos para cada serie valida |
 | 19 | Clicar Limpar tudo | Abre `confirm` do navegador |
 | 20 | Cancelar confirm | Dados nao sao limpos |
@@ -652,13 +687,13 @@
 
 | Area | Arquivos | Testes |
 |------|----------|--------|
-| Utils | 8 | 71 |
-| Data | 4 | 55 |
+| Utils | 8 | 88 |
+| Data | 4 | 66 |
 | Services | 2 | 13 |
 | Contexts | 1 | 4 |
-| Hooks | 3 | 21 |
+| Hooks | 3 | 20 |
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 144 |
-| **Total** | **35** | **353** |
+| Componentes Feature | 10 | 135 |
+| **Total** | **35** | **371** |

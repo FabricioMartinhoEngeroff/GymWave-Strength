@@ -402,7 +402,7 @@ export default function Exportar() {
         db[row.exercicio][cicloId] = {
           data: today,
           pesos: Array(seriesCount).fill(pesoStr),
-          reps: Array(seriesCount).fill(String(row.rep_max || "")),
+          reps: Array(seriesCount).fill(""),
           obs: "",
           exercicio: row.exercicio,
         };

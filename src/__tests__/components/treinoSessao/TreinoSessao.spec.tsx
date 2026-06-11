@@ -1,8 +1,10 @@
 /**
  * TreinoSessaoTest → component
  * Testa o fluxo completo da tela de registro Saizen:
- * seleção de ciclo via chips, multiselect de exercícios,
- * 3 séries fixas, auto-fill do último registro, validação e salvamento.
+ * seleção de sessão (Upper A…Braço), seleção de ciclo via chips,
+ * carregamento automático de exercícios por sessão, séries dinâmicas
+ * por ciclo (2 ou 3), multiselect manual, auto-fill do último
+ * registro, validação e salvamento.
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -22,12 +24,24 @@ function addExercicio(nome: string) {
   fireEvent.mouseDown(item);
 }
 
+function selecionarSessao(nome: string) {
+  fireEvent.click(screen.getByRole("button", { name: nome }));
+}
+
+function selecionarCiclo(id: string) {
+  const chips = screen.getAllByRole("button");
+  const chip = chips.find((b) => b.textContent?.startsWith(id));
+  if (chip) fireEvent.click(chip);
+}
+
 // ─── testes ──────────────────────────────────────────────────────────────────
 
 describe("TreinoSessao — Fluxo de registro Saizen", () => {
   beforeEach(() => {
     localStorage.clear();
   });
+
+  // ── Renderização inicial ──────────────────────────────────────────────────
 
   describe("Renderização inicial", () => {
     it("exibe título da aplicação", () => {
@@ -44,9 +58,9 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
 
     it("exibe as siglas dos 4 ciclos", () => {
       renderFresh();
-      expect(screen.getByText(/Acum\./)).toBeInTheDocument();
-      expect(screen.getByText(/Intens\./)).toBeInTheDocument();
       expect(screen.getByText(/Pico/)).toBeInTheDocument();
+      expect(screen.getByText(/Intens\./)).toBeInTheDocument();
+      expect(screen.getByText(/Acum\./)).toBeInTheDocument();
       expect(screen.getByText(/Deload/)).toBeInTheDocument();
     });
 
@@ -54,7 +68,7 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       renderFresh();
       const chips = screen.getAllByRole("button");
       const c1chip = chips.find(
-        (b) => b.textContent?.includes("C1") && b.textContent?.includes("Acum")
+        (b) => b.textContent?.includes("C1") && b.textContent?.includes("Pico")
       );
       expect(c1chip).toBeDefined();
     });
@@ -78,6 +92,104 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
     });
   });
 
+  // ── Seletor de sessão ─────────────────────────────────────────────────────
+
+  describe("Seletor de sessão", () => {
+    it("exibe os 5 seletores de sessão", () => {
+      renderFresh();
+      expect(screen.getByRole("button", { name: "Upper A" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Lower A" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Upper B" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Lower B" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Braço" })).toBeInTheDocument();
+    });
+
+    it("selecionar 'Upper A' carrega exercícios da sessão automaticamente", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.getAllByText("Supino Reto").length).toBeGreaterThan(0);
+    });
+
+    it("selecionar 'Lower A' carrega exercícios de perna", () => {
+      renderFresh();
+      selecionarSessao("Lower A");
+      expect(screen.getAllByText("Agachamento").length).toBeGreaterThan(0);
+    });
+
+    it("selecionar 'Upper B' carrega Barra fixa", () => {
+      renderFresh();
+      selecionarSessao("Upper B");
+      expect(screen.getAllByText("Barra fixa").length).toBeGreaterThan(0);
+    });
+
+    it("selecionar 'Lower B' carrega Levantamento Terra", () => {
+      renderFresh();
+      selecionarSessao("Lower B");
+      expect(screen.getAllByText("Levantamento Terra").length).toBeGreaterThan(0);
+    });
+
+    it("selecionar 'Braço' carrega Tríceps Polia", () => {
+      renderFresh();
+      selecionarSessao("Braço");
+      expect(screen.getAllByText("Tríceps Polia").length).toBeGreaterThan(0);
+    });
+
+    it("após selecionar sessão o botão Salvar fica desabilitado (falta peso)", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      const btn = screen.getByText("Salvar treino").closest("button");
+      expect(btn).toBeDisabled();
+    });
+  });
+
+  // ── Séries dinâmicas por ciclo ────────────────────────────────────────────
+
+  describe("Séries dinâmicas por ciclo", () => {
+    it("C1 (Pico, 2 séries) exibe apenas Série 1 e Série 2", () => {
+      renderFresh();
+      addExercicio("Supino Reto");
+      expect(screen.getByText("Série 1")).toBeInTheDocument();
+      expect(screen.getByText("Série 2")).toBeInTheDocument();
+      expect(screen.queryByText("Série 3")).not.toBeInTheDocument();
+    });
+
+    it("C2 (Intensificação, 3 séries) exibe Série 1, 2 e 3", () => {
+      renderFresh();
+      selecionarCiclo("C2");
+      addExercicio("Supino Reto");
+      expect(screen.getByText("Série 1")).toBeInTheDocument();
+      expect(screen.getByText("Série 2")).toBeInTheDocument();
+      expect(screen.getByText("Série 3")).toBeInTheDocument();
+    });
+
+    it("C3 (Acumulação, 3 séries) exibe Série 1, 2 e 3", () => {
+      renderFresh();
+      selecionarCiclo("C3");
+      addExercicio("Supino Reto");
+      expect(screen.getByText("Série 3")).toBeInTheDocument();
+    });
+
+    it("C4 (Deload, 2 séries) exibe apenas Série 1 e Série 2", () => {
+      renderFresh();
+      selecionarCiclo("C4");
+      addExercicio("Supino Reto");
+      expect(screen.getByText("Série 1")).toBeInTheDocument();
+      expect(screen.getByText("Série 2")).toBeInTheDocument();
+      expect(screen.queryByText("Série 3")).not.toBeInTheDocument();
+    });
+
+    it("ao trocar ciclo de C2 para C1 os cards exibem 2 séries", () => {
+      renderFresh();
+      selecionarCiclo("C2");
+      addExercicio("Supino Reto");
+      expect(screen.getByText("Série 3")).toBeInTheDocument();
+      selecionarCiclo("C1");
+      expect(screen.queryByText("Série 3")).not.toBeInTheDocument();
+    });
+  });
+
+  // ── Seleção de ciclo ──────────────────────────────────────────────────────
+
   describe("Seleção de ciclo", () => {
     it("clicar em C2 seleciona C2 sem erro", () => {
       renderFresh();
@@ -91,20 +203,14 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
     });
   });
 
+  // ── Multiselect de exercícios ─────────────────────────────────────────────
+
   describe("Multiselect de exercícios", () => {
     it("digitar no campo de busca abre dropdown", () => {
       renderFresh();
       const input = screen.getByPlaceholderText(/buscar e adicionar exercício/i);
       fireEvent.change(input, { target: { value: "Supino" } });
       expect(screen.getByText("Supino Reto")).toBeInTheDocument();
-    });
-
-    it("selecionar exercício cria tag e card com 3 séries", () => {
-      renderFresh();
-      addExercicio("Supino Reto");
-      expect(screen.getByText("Série 1")).toBeInTheDocument();
-      expect(screen.getByText("Série 2")).toBeInTheDocument();
-      expect(screen.getByText("Série 3")).toBeInTheDocument();
     });
 
     it("remover tag remove o card do exercício", () => {
@@ -115,7 +221,7 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       expect(screen.queryByText("Série 1")).not.toBeInTheDocument();
     });
 
-    it("é possível adicionar múltiplos exercícios", () => {
+    it("é possível adicionar múltiplos exercícios manualmente", () => {
       renderFresh();
       addExercicio("Supino Reto");
       addExercicio("Agachamento");
@@ -135,6 +241,8 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
     });
   });
 
+  // ── Validação e botão Salvar ──────────────────────────────────────────────
+
   describe("Validação e botão Salvar", () => {
     it("botão Salvar permanece desabilitado se série 1 está vazia", () => {
       renderFresh();
@@ -148,11 +256,13 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       addExercicio("Supino Reto");
       const inputs = screen.getAllByRole("spinbutton");
       fireEvent.change(inputs[0], { target: { value: "80" } });
-      fireEvent.change(inputs[1], { target: { value: "10" } });
+      fireEvent.change(inputs[1], { target: { value: "5" } });
       const btn = screen.getByText("Salvar treino").closest("button");
       expect(btn).not.toBeDisabled();
     });
   });
+
+  // ── Salvamento no localStorage ────────────────────────────────────────────
 
   describe("Salvamento no localStorage", () => {
     it("clicar em Salvar persiste exercício no localStorage com ciclo correto", () => {
@@ -160,11 +270,22 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       addExercicio("Supino Reto");
       const inputs = screen.getAllByRole("spinbutton");
       fireEvent.change(inputs[0], { target: { value: "80" } });
-      fireEvent.change(inputs[1], { target: { value: "12" } });
+      fireEvent.change(inputs[1], { target: { value: "6" } });
       fireEvent.click(screen.getByText("Salvar treino"));
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
       expect(db["Supino Reto"]["C1"]).toBeDefined();
       expect(db["Supino Reto"]["C1"].pesos[0]).toBe("80");
+    });
+
+    it("salva apenas as séries válidas do ciclo (C1 salva 2 séries)", () => {
+      renderFresh();
+      addExercicio("Supino Reto");
+      const inputs = screen.getAllByRole("spinbutton");
+      fireEvent.change(inputs[0], { target: { value: "80" } });
+      fireEvent.change(inputs[1], { target: { value: "6" } });
+      fireEvent.click(screen.getByText("Salvar treino"));
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db["Supino Reto"]["C1"].pesos).toHaveLength(2);
     });
 
     it("após salvar exibe toast de sucesso", () => {
@@ -172,7 +293,7 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       addExercicio("Supino Reto");
       const inputs = screen.getAllByRole("spinbutton");
       fireEvent.change(inputs[0], { target: { value: "80" } });
-      fireEvent.change(inputs[1], { target: { value: "12" } });
+      fireEvent.change(inputs[1], { target: { value: "6" } });
       fireEvent.click(screen.getByText("Salvar treino"));
       expect(screen.getByText(/treino salvo/i)).toBeInTheDocument();
     });
@@ -182,11 +303,13 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       addExercicio("Supino Reto");
       const inputs = screen.getAllByRole("spinbutton");
       fireEvent.change(inputs[0], { target: { value: "80" } });
-      fireEvent.change(inputs[1], { target: { value: "12" } });
+      fireEvent.change(inputs[1], { target: { value: "6" } });
       fireEvent.click(screen.getByText("Salvar treino"));
       expect(screen.queryByText("Série 1")).not.toBeInTheDocument();
     });
   });
+
+  // ── Auto-fill de pesos ────────────────────────────────────────────────────
 
   describe("Auto-fill de pesos", () => {
     it("ao adicionar exercício preenche séries do último registro do mesmo ciclo", () => {
@@ -195,8 +318,8 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
         JSON.stringify({
           "Supino Reto": {
             C1: {
-              pesos: ["80", "75", "70"],
-              reps: ["12", "12", "12"],
+              pesos: ["80", "75"],
+              reps: ["6", "6"],
               data: "01/06/2026",
               exercicio: "Supino Reto",
             },
@@ -216,6 +339,8 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       expect(inputs[0].value).toBe("");
     });
   });
+
+  // ── Campo de observações ──────────────────────────────────────────────────
 
   describe("Campo de observações", () => {
     it("exibe campo de observações", () => {

@@ -279,11 +279,11 @@ describe("AdminImport — Importação de dados xlsx/csv", () => {
       expect(screen.queryByText("Pré-visualização")).not.toBeInTheDocument();
     });
 
-    it("rep_max é salvo como reps em todas as séries", async () => {
+    it("reps são salvas vazias (usuário preenche no treino)", async () => {
       await loadAndConfirm();
 
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-      expect(db["Supino Reto"]["C1"].reps[0]).toBe("10"); // rep_max = 10
+      expect(db["Supino Reto"]["C1"].reps[0]).toBe("");
     });
 
     it("pesos são repetidos para todas as séries válidas", async () => {

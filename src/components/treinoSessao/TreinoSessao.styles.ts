@@ -90,6 +90,15 @@ export const CycleChip = styled.button<CycleChipProps>`
   }
 `;
 
+/* ── Session selector ────────────────────────────────────────── */
+
+export const SessaoRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+`;
+
 /* ── First-use banner ────────────────────────────────────────── */
 
 export const FirstUseCloud = styled.div`

@@ -349,10 +349,10 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       expect(screen.queryByText(/pré-visualização/i)).not.toBeInTheDocument();
     });
 
-    it("salva rep_max como reps em todas as séries", async () => {
+    it("reps são salvas vazias (usuário preenche no treino)", async () => {
       await carregarEConfirmar();
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-      expect(db["Supino Reto"]["C1"].reps[0]).toBe("10");
+      expect(db["Supino Reto"]["C1"].reps[0]).toBe("");
     });
 
     it("repete pesos para todas as séries válidas", async () => {
