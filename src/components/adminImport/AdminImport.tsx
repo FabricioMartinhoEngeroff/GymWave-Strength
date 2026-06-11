@@ -56,6 +56,61 @@ const CICLO_COLS: { col: keyof ImportRow; cicloId: string }[] = [
   { col: "peso_C4_kg", cicloId: "C4" },
 ];
 
+// ─── Column name mapping ───────────────────────────────────────────────────────
+
+const COLUMN_MAP: [RegExp, string][] = [
+  [/sess[aã]o/i,           "sessao"],
+  [/ordem/i,               "ordem"],
+  [/exerc[ií]cio/i,        "exercicio"],
+  [/grupo|m[uú]sculo/i,    "musculo_primario"],
+  [/s[eé]ries/i,           "series_validas"],
+  [/rep.*m[ií]n/i,         "rep_min"],
+  [/rep.*m[aá]x/i,         "rep_max"],
+  [/peso\s*c1/i,           "peso_C1_kg"],
+  [/peso\s*c2/i,           "peso_C2_kg"],
+  [/peso\s*c3/i,           "peso_C3_kg"],
+  [/peso\s*c4/i,           "peso_C4_kg"],
+];
+
+function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
+  if (raw.length === 0) return raw;
+  const keyMap: Record<string, string> = {};
+  Object.keys(raw[0]).forEach((key) => {
+    const flat = key.replace(/\n/g, " ").trim();
+    for (const [pattern, target] of COLUMN_MAP) {
+      if (pattern.test(flat)) { keyMap[key] = target; break; }
+    }
+  });
+  return raw.map((row) => {
+    const out: Record<string, unknown> = {};
+    Object.entries(row).forEach(([k, v]) => { out[keyMap[k] ?? k] = v; });
+    return out;
+  });
+}
+
+/** Lê xlsx como array de arrays, detecta a linha de cabeçalho real e retorna JSON normalizado */
+function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
+  const arrays = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
+  // Encontra a primeira linha que contém "Sessão" ou "Exercício"
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(6, arrays.length); i++) {
+    const row = arrays[i] as string[];
+    if (row.some((cell) => /sess[aã]o|exerc[ií]cio/i.test(String(cell ?? "")))) {
+      headerIdx = i;
+      break;
+    }
+  }
+  const headers = arrays[headerIdx] as string[];
+  return arrays
+    .slice(headerIdx + 1)
+    .filter((row) => (row as unknown[]).filter((c) => c !== "" && c != null).length > 2)
+    .map((row) => {
+      const obj: Record<string, unknown> = {};
+      headers.forEach((h, i) => { obj[h] = (row as unknown[])[i] ?? ""; });
+      return obj;
+    });
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
@@ -111,7 +166,7 @@ export default function AdminImport() {
           header: true,
           skipEmptyLines: true,
         });
-        setRows(normalizeRows(parsed.data));
+        setRows(normalizeRows(mapColumns(parsed.data)));
       };
       reader.readAsText(file, "UTF-8");
     } else {
@@ -120,10 +175,8 @@ export default function AdminImport() {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-          defval: "",
-        });
-        setRows(normalizeRows(json));
+        const json = xlsxToJson(ws);
+        setRows(normalizeRows(mapColumns(json)));
       };
       reader.readAsArrayBuffer(file);
     }

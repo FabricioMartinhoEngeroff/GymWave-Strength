@@ -50,7 +50,16 @@ vi.mock("papaparse", () => ({
 vi.mock("xlsx", () => ({
   read: vi.fn(() => ({ Sheets: { Sheet1: {} }, SheetNames: ["Sheet1"] })),
   utils: {
-    sheet_to_json: vi.fn(() => MOCK_ROWS),
+    sheet_to_json: vi.fn((_ws: unknown, opts?: { header?: number }) => {
+      if (opts?.header === 1) {
+        // Retorna array de arrays: linha 0 = cabeçalho, linhas 1+ = dados
+        return [
+          ["sessao", "ordem", "exercicio", "musculo_primario", "series_validas", "rep_min", "rep_max", "peso_C1_kg", "peso_C2_kg", "peso_C3_kg", "peso_C4_kg"],
+          ...MOCK_ROWS.map((r) => [r.sessao, r.ordem, r.exercicio, r.musculo_primario, r.series_validas, r.rep_min, r.rep_max, r.peso_C1_kg, r.peso_C2_kg, r.peso_C3_kg, r.peso_C4_kg]),
+        ];
+      }
+      return MOCK_ROWS;
+    }),
   },
 }));
 
