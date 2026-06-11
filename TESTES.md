@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 329 testes | 35 arquivos de teste**
+**Total: 353 testes | 35 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -521,7 +521,9 @@
 
 ---
 
-### 9.8 Exportar (8 testes)
+### 9.8 Exportar (32 testes)
+
+**Renderização (6)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -529,10 +531,69 @@
 | 2 | Subtitulo | Texto `backup` presente |
 | 3 | Botao CSV | `Exportar como CSV` visivel |
 | 4 | Botao JSON | `Exportar como JSON` visivel |
-| 5 | Sem dados | Exibe `0 treinos` |
-| 6 | 3 registros no localStorage | Exibe `3 treinos` |
-| 7 | Clicar CSV | Download dispara sem erro |
-| 8 | Clicar JSON | Download dispara sem erro |
+| 5 | Botao de import | `Importar planilha` visivel |
+| 6 | Drop zone inicial | Nao visivel antes de abrir o import |
+
+**Contagem de registros (2)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 7 | Sem dados | Exibe `0 treinos` |
+| 8 | 3 registros no localStorage | Exibe `3 treinos` |
+
+**Download (2)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 9 | Clicar CSV | Download dispara sem erro |
+| 10 | Clicar JSON | Download dispara sem erro |
+
+**Toggle de importação (6)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 11 | Clicar `Importar planilha` | Drop zone aparece |
+| 12 | Clicar `Fechar importação` | Seção de import some |
+| 13 | Apos abrir | Botao muda para `Fechar importação` |
+| 14 | Botao Confirmar | Comeca desabilitado |
+| 15 | Botao Limpar tudo | Sempre habilitado |
+| 16 | Input de arquivo | Aceita apenas `.xlsx` e `.csv` |
+
+**Upload CSV (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 17 | Carregar CSV | Preview com contagem de linhas exibido |
+| 18 | Preview do CSV | Exercicios visiveis na tabela |
+| 19 | Apos carregar | Botao Confirmar habilitado |
+| 20 | Cabecalhos de ciclo | `C1 kg, C2 kg, C3 kg, C4 kg` exibidos |
+
+**Upload XLSX (1)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 21 | Carregar XLSX | Preview com contagem de linhas exibido |
+
+**Confirmação de importação (8)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 22 | Confirmar importacao | Dados salvos no localStorage |
+| 23 | Multiplos ciclos | C1, C2, C3 do mesmo exercicio salvos separados |
+| 24 | Peso vazio em ciclo | Ciclo nao e salvo |
+| 25 | Resultado | Exibe total de registros salvos |
+| 26 | Feedback por sessao | Exibe `Upper A` e `Lower A` |
+| 27 | Apos confirmar | Preview resetado |
+| 28 | Reps salvas | Usa `rep_max` como valor de reps |
+| 29 | Pesos duplicados | Repetidos para cada serie valida |
+
+**Limpar tudo (3)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 30 | Clicar Limpar tudo | Abre `confirm` do navegador |
+| 31 | Cancelar confirm | Dados nao sao limpos |
+| 32 | Aceitar confirm | localStorage limpo |
 
 ---
 
@@ -599,5 +660,5 @@
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 120 |
-| **Total** | **35** | **329** |
+| Componentes Feature | 10 | 144 |
+| **Total** | **35** | **353** |
