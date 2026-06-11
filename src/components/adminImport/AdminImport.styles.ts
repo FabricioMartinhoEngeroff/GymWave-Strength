@@ -219,3 +219,19 @@ export const BtnDanger = styled.button`
     background: #fef2f2;
   }
 `;
+
+export const BtnWarning = styled.button`
+  padding: 13px 20px;
+  background: none;
+  color: #d97706;
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:active {
+    background: #fffbeb;
+  }
+`;

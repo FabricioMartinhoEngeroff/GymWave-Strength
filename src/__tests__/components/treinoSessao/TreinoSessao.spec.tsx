@@ -142,49 +142,47 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
     });
   });
 
-  // ── Séries dinâmicas por ciclo ────────────────────────────────────────────
+  // ── Séries: sempre 3, 3ª opcional ────────────────────────────────────────
 
-  describe("Séries dinâmicas por ciclo", () => {
-    it("C1 (Pico, 2 séries) exibe apenas Série 1 e Série 2", () => {
+  describe("Séries — sempre 3 exibidas, 3ª opcional", () => {
+    it("sempre exibe Série 1, 2 e 3 independente do ciclo (C1)", () => {
       renderFresh();
-      addExercicio("Supino Reto");
-      expect(screen.getByText("Série 1")).toBeInTheDocument();
-      expect(screen.getByText("Série 2")).toBeInTheDocument();
-      expect(screen.queryByText("Série 3")).not.toBeInTheDocument();
-    });
-
-    it("C2 (Intensificação, 3 séries) exibe Série 1, 2 e 3", () => {
-      renderFresh();
-      selecionarCiclo("C2");
       addExercicio("Supino Reto");
       expect(screen.getByText("Série 1")).toBeInTheDocument();
       expect(screen.getByText("Série 2")).toBeInTheDocument();
       expect(screen.getByText("Série 3")).toBeInTheDocument();
     });
 
-    it("C3 (Acumulação, 3 séries) exibe Série 1, 2 e 3", () => {
-      renderFresh();
-      selecionarCiclo("C3");
-      addExercicio("Supino Reto");
-      expect(screen.getByText("Série 3")).toBeInTheDocument();
-    });
-
-    it("C4 (Deload, 2 séries) exibe apenas Série 1 e Série 2", () => {
+    it("C4 também exibe 3 séries (3ª é opcional)", () => {
       renderFresh();
       selecionarCiclo("C4");
       addExercicio("Supino Reto");
-      expect(screen.getByText("Série 1")).toBeInTheDocument();
-      expect(screen.getByText("Série 2")).toBeInTheDocument();
-      expect(screen.queryByText("Série 3")).not.toBeInTheDocument();
+      expect(screen.getByText("Série 3")).toBeInTheDocument();
     });
 
-    it("ao trocar ciclo de C2 para C1 os cards exibem 2 séries", () => {
+    it("salva 3 séries sempre — série 3 vazia salva como string vazia", () => {
       renderFresh();
-      selecionarCiclo("C2");
       addExercicio("Supino Reto");
-      expect(screen.getByText("Série 3")).toBeInTheDocument();
-      selecionarCiclo("C1");
-      expect(screen.queryByText("Série 3")).not.toBeInTheDocument();
+      const inputs = screen.getAllByRole("spinbutton");
+      fireEvent.change(inputs[0], { target: { value: "80" } });
+      fireEvent.change(inputs[1], { target: { value: "6" } });
+      fireEvent.click(screen.getByText("Salvar treino"));
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db["Supino Reto"]["C1"].pesos).toHaveLength(3);
+      expect(db["Supino Reto"]["C1"].pesos[2]).toBe("");
+    });
+
+    it("salva peso da série 3 quando preenchida", () => {
+      renderFresh();
+      selecionarCiclo("C3");
+      addExercicio("Supino Reto");
+      const inputs = screen.getAllByRole("spinbutton") as HTMLInputElement[];
+      fireEvent.change(inputs[0], { target: { value: "80" } });
+      fireEvent.change(inputs[1], { target: { value: "10" } });
+      fireEvent.change(inputs[4], { target: { value: "70" } });
+      fireEvent.click(screen.getByText("Salvar treino"));
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db["Supino Reto"]["C3"].pesos[2]).toBe("70");
     });
   });
 
@@ -277,7 +275,7 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       expect(db["Supino Reto"]["C1"].pesos[0]).toBe("80");
     });
 
-    it("salva apenas as séries válidas do ciclo (C1 salva 2 séries)", () => {
+    it("salva sempre 3 séries (série 3 vazia = string vazia)", () => {
       renderFresh();
       addExercicio("Supino Reto");
       const inputs = screen.getAllByRole("spinbutton");
@@ -285,7 +283,7 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       fireEvent.change(inputs[1], { target: { value: "6" } });
       fireEvent.click(screen.getByText("Salvar treino"));
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-      expect(db["Supino Reto"]["C1"].pesos).toHaveLength(2);
+      expect(db["Supino Reto"]["C1"].pesos).toHaveLength(3);
     });
 
     it("após salvar exibe toast de sucesso", () => {

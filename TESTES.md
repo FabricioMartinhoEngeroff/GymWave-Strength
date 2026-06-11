@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 371 testes | 35 arquivos de teste**
+**Total: 376 testes | 35 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -632,7 +632,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.9 AdminImport (23 testes)
+### 9.9 AdminImport (26 testes)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -659,6 +659,11 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 21 | Aceitar confirm | localStorage limpo |
 | 22 | Series validas = 3 | Array de pesos tem 3 elementos |
 | 23 | Supino C1 com peso 60 | `pesos[0]` = `"60"` |
+| 24 | Desfazer — backup salvo antes de importar | `dadosTreino_backup` no localStorage com dados anteriores |
+| 25 | Desfazer — botao visivel apos confirmar | Botao `Desfazer importacao` aparece no resultado |
+| 26 | Desfazer — confirm=true restaura backup | localStorage volta ao estado anterior, sem dados novos |
+| 27 | Desfazer — confirm=false nao restaura | Dados importados permanecem no localStorage |
+| 28 | Desfazer — esconde resultado apos desfazer | `Importacao concluida` sumido da tela |
 
 ---
 
@@ -695,5 +700,5 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 135 |
-| **Total** | **35** | **371** |
+| Componentes Feature | 10 | 140 |
+| **Total** | **35** | **376** |

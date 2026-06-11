@@ -24,7 +24,7 @@ export const CICLOS: CicloInfo[] = [
     sigla: "Intens.",
     repMin: 7,
     repMax: 8,
-    seriesValidas: 3,
+    seriesValidas: 2,
     objetivo: "Força e volume. Carga crescente com volume moderado.",
   },
   {
@@ -33,7 +33,7 @@ export const CICLOS: CicloInfo[] = [
     sigla: "Acum.",
     repMin: 9,
     repMax: 12,
-    seriesValidas: 3,
+    seriesValidas: 2,
     objetivo: "Volume alto. Acumular trabalho muscular e construir base.",
   },
   {

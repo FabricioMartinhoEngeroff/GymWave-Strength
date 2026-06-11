@@ -89,14 +89,20 @@ describe("CyclesData — Ciclos de periodização Saizen", () => {
       expect(c1?.seriesValidas).toBe(2);
     });
 
-    it("C2 Intensificação deve ter 3 séries válidas", () => {
+    it("C2 Intensificação deve ter 2 séries válidas (mínimo obrigatório)", () => {
       const c2 = CICLOS.find((c) => c.id === "C2");
-      expect(c2?.seriesValidas).toBe(3);
+      expect(c2?.seriesValidas).toBe(2);
     });
 
-    it("C3 Acumulação deve ter 3 séries válidas (máximo volume)", () => {
+    it("C3 Acumulação deve ter 2 séries válidas (mínimo obrigatório)", () => {
       const c3 = CICLOS.find((c) => c.id === "C3");
-      expect(c3?.seriesValidas).toBe(3);
+      expect(c3?.seriesValidas).toBe(2);
+    });
+
+    it("todos os ciclos têm 2 séries válidas — 3ª série é opcional", () => {
+      CICLOS.forEach((c) => {
+        expect(c.seriesValidas).toBe(2);
+      });
     });
 
     it("C4 Deload deve ter 2 séries válidas (recuperação)", () => {

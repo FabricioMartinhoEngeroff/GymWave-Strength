@@ -186,14 +186,13 @@ export default function TreinoSessao() {
       return;
     }
     const db = carregarDados();
-    const numSeries = cicloInfo.seriesValidas;
     exerciciosSelecionados.forEach((ex) => {
       if (!db[ex]) db[ex] = {};
       const seriesEx = series[ex] || [];
       db[ex][cicloId] = {
         data,
-        pesos: seriesEx.slice(0, numSeries).map((s) => s.peso.trim()),
-        reps: seriesEx.slice(0, numSeries).map((s) => s.reps.trim()),
+        pesos: seriesEx.map((s) => s.peso.trim()),
+        reps: seriesEx.map((s) => s.reps.trim()),
         obs: obs.trim(),
         exercicio: ex,
       };
@@ -330,21 +329,20 @@ export default function TreinoSessao() {
             { peso: "", reps: "" },
             { peso: "", reps: "" },
           ];
-          const numSeries = cicloInfo.seriesValidas;
           return (
             <ExerciseCard key={ex}>
               <ExHeader>
                 <div>
                   <ExName>{ex}</ExName>
                   <ExSub>
-                    {cicloInfo.repMin}–{cicloInfo.repMax} reps · {numSeries} série{numSeries > 1 ? "s" : ""}
+                    {cicloInfo.repMin}–{cicloInfo.repMax} reps · 3 séries (3ª opcional)
                   </ExSub>
                 </div>
                 <Badge>{cicloInfo.sigla}</Badge>
               </ExHeader>
 
               <SeriesGrid>
-                {Array.from({ length: numSeries }, (_, i) => i).map((i) => (
+                {[0, 1, 2].map((i) => (
                   <SerieRow key={i}>
                     <SerieLabel>Série {i + 1}</SerieLabel>
                     <InputBox

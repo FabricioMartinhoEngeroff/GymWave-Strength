@@ -296,6 +296,58 @@ describe("AdminImport — Importação de dados xlsx/csv", () => {
     });
   });
 
+  describe("Desfazer importação", () => {
+    async function importarDados() {
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByText("Confirmar importação"));
+    }
+
+    it("salva backup do dadosTreino antes de importar", async () => {
+      localStorage.setItem("dadosTreino", JSON.stringify({ "Agachamento": {} }));
+      await importarDados();
+      const backup = localStorage.getItem("dadosTreino_backup");
+      expect(backup).not.toBeNull();
+      expect(JSON.parse(backup!)).toHaveProperty("Agachamento");
+    });
+
+    it("exibe botão 'Desfazer importação' após confirmar", async () => {
+      await importarDados();
+      expect(screen.getByText(/desfazer importação/i)).toBeInTheDocument();
+    });
+
+    it("restaura dados do backup ao clicar em desfazer (confirm=true)", async () => {
+      localStorage.setItem("dadosTreino", JSON.stringify({ "Agachamento": {} }));
+      await importarDados();
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      fireEvent.click(screen.getByText(/desfazer importação/i));
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db).toHaveProperty("Agachamento");
+      expect(db).not.toHaveProperty("Supino Reto");
+    });
+
+    it("não restaura se o usuário cancelar o confirm", async () => {
+      await importarDados();
+      vi.spyOn(window, "confirm").mockReturnValue(false);
+      fireEvent.click(screen.getByText(/desfazer importação/i));
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db).toHaveProperty("Supino Reto");
+    });
+
+    it("esconde o resultado após desfazer", async () => {
+      await importarDados();
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      fireEvent.click(screen.getByText(/desfazer importação/i));
+      expect(screen.queryByText(/importação concluída/i)).not.toBeInTheDocument();
+    });
+  });
+
   describe("Limpar tudo", () => {
     it("abre confirm antes de limpar", () => {
       const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);

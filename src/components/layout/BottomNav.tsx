@@ -1,4 +1,6 @@
 import styled from "styled-components";
+import { Dumbbell, TrendingUp, Zap, ClipboardList, Download } from "lucide-react";
+import type { ReactNode } from "react";
 
 export type Tab =
   | "registrar"
@@ -38,7 +40,9 @@ const NavItem = styled.button<{ $active: boolean }>`
 `;
 
 const NavIcon = styled.span<{ $active: boolean }>`
-  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: ${(p) => (p.$active ? "#2563eb" : "#9ca3af")};
   line-height: 1;
 `;
@@ -49,12 +53,12 @@ const NavLabel = styled.span<{ $active: boolean }>`
   font-weight: ${(p) => (p.$active ? "500" : "400")};
 `;
 
-const ITEMS: { id: Tab; label: string; icon: string }[] = [
-  { id: "registrar", label: "Registrar", icon: "➕" },
-  { id: "graficos", label: "Gráficos", icon: "📈" },
-  { id: "volume", label: "Volume", icon: "⚡" },
-  { id: "relatorio", label: "Relatórios", icon: "📋" },
-  { id: "exportar", label: "Exportar", icon: "⬇" },
+const ITEMS: { id: Tab; label: string; icon: ReactNode }[] = [
+  { id: "registrar", label: "Registrar", icon: <Dumbbell size={20} strokeWidth={1.8} /> },
+  { id: "graficos", label: "Gráficos", icon: <TrendingUp size={20} strokeWidth={1.8} /> },
+  { id: "volume", label: "Volume", icon: <Zap size={20} strokeWidth={1.8} /> },
+  { id: "relatorio", label: "Relatórios", icon: <ClipboardList size={20} strokeWidth={1.8} /> },
+  { id: "exportar", label: "Exportar", icon: <Download size={20} strokeWidth={1.8} /> },
 ];
 
 export default function BottomNav({ active, onChange }: BottomNavProps) {

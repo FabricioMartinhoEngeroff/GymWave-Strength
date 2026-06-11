@@ -26,6 +26,7 @@ import {
   BtnRow,
   BtnPrimary,
   BtnDanger,
+  BtnWarning,
 } from "./AdminImport.styles";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -149,6 +150,7 @@ export default function AdminImport() {
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Parse file ─────────────────────────────────────────────
@@ -211,7 +213,17 @@ export default function AdminImport() {
 
   // ── Confirm import ─────────────────────────────────────────
 
+  function desfazerImport() {
+    const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
+    if (!ok) return;
+    const backup = localStorage.getItem("dadosTreino_backup");
+    if (backup) localStorage.setItem("dadosTreino", backup);
+    setResult(null);
+    setCanUndo(false);
+  }
+
   function confirmarImport() {
+    localStorage.setItem("dadosTreino_backup", localStorage.getItem("dadosTreino") || "{}");
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
     const porSessao: Record<string, number> = {};
     let total = 0;
@@ -241,6 +253,7 @@ export default function AdminImport() {
 
     localStorage.setItem("dadosTreino", JSON.stringify(db));
     setResult({ total, porSessao });
+    setCanUndo(true);
     setRows([]);
     setFileName(null);
   }
@@ -309,14 +322,21 @@ export default function AdminImport() {
 
       {/* Result feedback */}
       {result && (
-        <ResultCard>
-          <ResultTitle>Importação concluída — {result.total} registros salvos</ResultTitle>
-          {Object.entries(result.porSessao).map(([sessao, qtd]) => (
-            <ResultRow key={sessao}>
-              {sessao}: {qtd} registro{qtd > 1 ? "s" : ""}
-            </ResultRow>
-          ))}
-        </ResultCard>
+        <>
+          <ResultCard>
+            <ResultTitle>Importação concluída — {result.total} registros salvos</ResultTitle>
+            {Object.entries(result.porSessao).map(([sessao, qtd]) => (
+              <ResultRow key={sessao}>
+                {sessao}: {qtd} registro{qtd > 1 ? "s" : ""}
+              </ResultRow>
+            ))}
+          </ResultCard>
+          {canUndo && (
+            <BtnRow>
+              <BtnWarning onClick={desfazerImport}>Desfazer importação</BtnWarning>
+            </BtnRow>
+          )}
+        </>
       )}
 
       {/* Preview table */}
