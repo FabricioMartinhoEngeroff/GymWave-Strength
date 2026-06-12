@@ -123,6 +123,10 @@ interface ImportRow {
   exercicio: string;
   musculo_primario: string;
   series_validas: number;
+  series_C1_validas?: number;
+  series_C2_validas?: number;
+  series_C3_validas?: number;
+  series_C4_validas?: number;
   rep_min: number;
   rep_max: number;
   peso_C1_kg?: number | string;
@@ -145,17 +149,23 @@ const CICLO_COLS: { col: keyof ImportRow; cicloId: string }[] = [
 ];
 
 const COLUMN_MAP: [RegExp, string][] = [
-  [/sess[aã]o/i,           "sessao"],
-  [/ordem/i,               "ordem"],
-  [/exerc[ií]cio/i,        "exercicio"],
-  [/grupo|m[uú]sculo/i,    "musculo_primario"],
-  [/s[eé]ries/i,           "series_validas"],
-  [/rep.*m[ií]n/i,         "rep_min"],
-  [/rep.*m[aá]x/i,         "rep_max"],
-  [/peso\s*c1/i,           "peso_C1_kg"],
-  [/peso\s*c2/i,           "peso_C2_kg"],
-  [/peso\s*c3/i,           "peso_C3_kg"],
-  [/peso\s*c4/i,           "peso_C4_kg"],
+  [/sess[aã]o/i,              "sessao"],
+  [/^ord[.\s]/i,              "ordem"],   // "Ord." antes do padrão genérico
+  [/ordem/i,                  "ordem"],
+  [/exerc[ií]cio/i,           "exercicio"],
+  [/grupo|m[uú]sculo/i,       "musculo_primario"],
+  [/rep.*m[ií]n/i,            "rep_min"],
+  [/rep.*m[aá]x/i,            "rep_max"],
+  // séries por ciclo — devem vir ANTES do padrão genérico
+  [/s[eé]ries.*c1|c1.*s[eé]ries/i,  "series_C1_validas"],
+  [/s[eé]ries.*c2|c2.*s[eé]ries/i,  "series_C2_validas"],
+  [/s[eé]ries.*c3|c3.*s[eé]ries/i,  "series_C3_validas"],
+  [/s[eé]ries.*c4|c4.*s[eé]ries/i,  "series_C4_validas"],
+  [/s[eé]ries/i,              "series_validas"],  // fallback genérico
+  [/peso\s*c1/i,              "peso_C1_kg"],
+  [/peso\s*c2/i,              "peso_C2_kg"],
+  [/peso\s*c3/i,              "peso_C3_kg"],
+  [/peso\s*c4/i,              "peso_C4_kg"],
 ];
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -197,6 +207,12 @@ function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
     });
 }
 
+function parseSeries(val: unknown): number | undefined {
+  if (val === undefined || val === null || val === "") return undefined;
+  const n = Number(val);
+  return isNaN(n) ? undefined : Math.max(1, Math.min(3, n));
+}
+
 function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
   return raw
     .map((r) => ({
@@ -204,7 +220,11 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
       ordem: Number(r.ordem ?? 0),
       exercicio: String(r.exercicio ?? "").trim(),
       musculo_primario: String(r.musculo_primario ?? ""),
-      series_validas: Number(r.series_validas ?? 3),
+      series_validas: parseSeries(r.series_validas) ?? 3,
+      series_C1_validas: parseSeries(r.series_C1_validas),
+      series_C2_validas: parseSeries(r.series_C2_validas),
+      series_C3_validas: parseSeries(r.series_C3_validas),
+      series_C4_validas: parseSeries(r.series_C4_validas),
       rep_min: Number(r.rep_min ?? 0),
       rep_max: Number(r.rep_max ?? 0),
       peso_C1_kg: r.peso_C1_kg as string | number | undefined,
@@ -418,6 +438,10 @@ export default function Exportar() {
       planoNovo[sessao][row.exercicio] = {
         ordem: row.ordem,
         series_validas: seriesCount,
+        ...(row.series_C1_validas !== undefined && { series_C1: row.series_C1_validas }),
+        ...(row.series_C2_validas !== undefined && { series_C2: row.series_C2_validas }),
+        ...(row.series_C3_validas !== undefined && { series_C3: row.series_C3_validas }),
+        ...(row.series_C4_validas !== undefined && { series_C4: row.series_C4_validas }),
       };
 
       CICLO_COLS.forEach(({ col, cicloId }) => {

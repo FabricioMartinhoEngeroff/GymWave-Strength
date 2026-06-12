@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { CICLOS } from "../../data/cycles";
 import { EXERCICIOS } from "../../data/exercise";
 import { SESSOES, SESSOES_LABELS, type SessaoTipo } from "../../data/sessionExercises";
+import type { PlanoTreino } from "../../types/TrainingData";
 import {
   Screen,
   TopBar,
@@ -53,7 +54,7 @@ function carregarDados(): Record<string, Record<string, { pesos?: string[]; reps
   return JSON.parse(localStorage.getItem("dadosTreino") || "{}");
 }
 
-function carregarPlano(): Record<string, Record<string, { ordem: number; series_validas: number }>> {
+function carregarPlano(): PlanoTreino {
   return JSON.parse(localStorage.getItem("planoTreino") || "{}");
 }
 
@@ -87,7 +88,7 @@ export default function TreinoSessao() {
   const [salvo, setSalvo] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
 
-  const [planoTreino, setPlanoTreino] = useState<Record<string, Record<string, { ordem: number; series_validas: number }>>>({});
+  const [planoTreino, setPlanoTreino] = useState<PlanoTreino>({});
 
   const [busca, setBusca] = useState("");
   const [dropdownAberto, setDropdownAberto] = useState(false);
@@ -120,14 +121,19 @@ export default function TreinoSessao() {
     if (!sessao) return;
     const plano = carregarPlano();
     setPlanoTreino(plano);
-    const planoDaSessao = plano[sessao] ?? {};
-    const exsDaSessao = SESSOES[sessao]
-      .map((e) => e.nome)
-      .sort((a, b) => {
-        const oA = planoDaSessao[a]?.ordem ?? 999;
-        const oB = planoDaSessao[b]?.ordem ?? 999;
-        return oA - oB;
-      });
+    const planoDaSessao = plano[sessao];
+
+    let exsDaSessao: string[];
+    if (planoDaSessao && Object.keys(planoDaSessao).length > 0) {
+      // Usa exercícios do plano importado (com nomes e ordem da planilha)
+      exsDaSessao = Object.entries(planoDaSessao)
+        .sort(([, a], [, b]) => a.ordem - b.ordem)
+        .map(([nome]) => nome);
+    } else {
+      // Fallback: exercícios do template interno
+      exsDaSessao = SESSOES[sessao].map((e) => e.nome);
+    }
+
     setExerciciosSelecionados(exsDaSessao);
     const loaded: Record<string, SerieInput[]> = {};
     exsDaSessao.forEach((ex) => {
@@ -344,7 +350,11 @@ export default function TreinoSessao() {
             { peso: "", reps: "" },
             { peso: "", reps: "" },
           ];
-          const seriesValidas = sessao ? planoTreino[sessao]?.[ex]?.series_validas : undefined;
+          const planoEx = sessao ? planoTreino[sessao]?.[ex] : undefined;
+          const cicloSeriesKey = `series_${cicloId}` as keyof typeof planoEx;
+          const seriesValidas = planoEx
+            ? ((planoEx[cicloSeriesKey] as number | undefined) ?? planoEx.series_validas)
+            : undefined;
           const seriesLabel = seriesValidas === 2 ? "2 séries" : "3 séries (3ª opcional)";
           return (
             <ExerciseCard key={ex}>
