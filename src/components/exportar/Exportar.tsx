@@ -23,7 +23,6 @@ import {
   ResultRow,
   BtnRow,
   BtnPrimary,
-  BtnDanger,
   BtnWarning,
 } from "../adminImport/AdminImport.styles";
 
@@ -134,6 +133,7 @@ interface ImportRow {
 
 interface ImportResult {
   total: number;
+  preservados: number;
   porSessao: Record<string, number>;
 }
 
@@ -401,6 +401,7 @@ export default function Exportar() {
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
     const porSessao: Record<string, number> = {};
     let total = 0;
+    let preservados = 0;
     const today = getTodayBR();
 
     rows.forEach((row) => {
@@ -411,6 +412,13 @@ export default function Exportar() {
         if (!pesoStr) return;
 
         if (!db[row.exercicio]) db[row.exercicio] = {};
+
+        // Preserva entradas existentes — só adiciona ciclos ainda não registrados
+        if (db[row.exercicio][cicloId]) {
+          preservados++;
+          return;
+        }
+
         db[row.exercicio][cicloId] = {
           data: today,
           pesos: Array(seriesCount).fill(pesoStr),
@@ -426,19 +434,8 @@ export default function Exportar() {
     });
 
     localStorage.setItem("dadosTreino", JSON.stringify(db));
-    setResult({ total, porSessao });
+    setResult({ total, preservados, porSessao });
     setCanUndo(true);
-    setRows([]);
-    setFileName(null);
-  }
-
-  function limparTudo() {
-    const ok = window.confirm(
-      "Isso vai apagar TODOS os dados de treino do localStorage. Tem certeza?"
-    );
-    if (!ok) return;
-    localStorage.removeItem("dadosTreino");
-    setResult(null);
     setRows([]);
     setFileName(null);
   }
@@ -517,7 +514,7 @@ export default function Exportar() {
             {result && (
               <>
                 <ResultCard>
-                  <ResultTitle>Importação concluída — {result.total} registros salvos</ResultTitle>
+                  <ResultTitle>Migração concluída — {result.total} adicionado{result.total !== 1 ? "s" : ""} · {result.preservados} preservado{result.preservados !== 1 ? "s" : ""}</ResultTitle>
                   {Object.entries(result.porSessao).map(([sessao, qtd]) => (
                     <ResultRow key={sessao}>
                       {sessao}: {qtd} registro{qtd > 1 ? "s" : ""}
@@ -579,9 +576,6 @@ export default function Exportar() {
               >
                 Confirmar importação
               </BtnPrimary>
-              <BtnDanger onClick={limparTudo}>
-                Limpar tudo
-              </BtnDanger>
             </BtnRow>
           </ImportSection>
         )}

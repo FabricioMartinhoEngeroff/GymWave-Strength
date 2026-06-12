@@ -205,13 +205,6 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       expect(btn).toBeDisabled();
     });
 
-    it("botão Limpar tudo está sempre habilitado", () => {
-      render(<Exportar />);
-      openImportSection();
-      const btn = screen.getByText("Limpar tudo").closest("button");
-      expect(btn).not.toBeDisabled();
-    });
-
     it("input de arquivo aceita apenas .xlsx e .csv", () => {
       render(<Exportar />);
       openImportSection();
@@ -332,10 +325,11 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       expect(db["Agachamento"]["C2"]).toBeUndefined();
     });
 
-    it("exibe resultado com total de registros salvos", async () => {
+    it("exibe resultado com total de adicionados e preservados", async () => {
       await carregarEConfirmar();
-      expect(screen.getByText(/importação concluída/i)).toBeInTheDocument();
-      expect(screen.getByText(/4 registros salvos/i)).toBeInTheDocument();
+      expect(screen.getByText(/migração concluída/i)).toBeInTheDocument();
+      expect(screen.getByText(/4 adicionados/i)).toBeInTheDocument();
+      expect(screen.getByText(/0 preservados/i)).toBeInTheDocument();
     });
 
     it("exibe feedback por sessão", async () => {
@@ -364,33 +358,83 @@ describe("Exportar — Tela de exportação e importação inline", () => {
     });
   });
 
-  // ── 8. Limpar tudo ───────────────────────────────────────────────────────────
+  // ── 8. Migração inteligente ──────────────────────────────────────────────────
 
-  describe("Limpar tudo", () => {
-    it("abre confirm antes de limpar", () => {
-      const spy = vi.spyOn(window, "confirm").mockReturnValue(false);
+  describe("Migração inteligente", () => {
+    async function carregarEConfirmarComBanco(
+      banco: Record<string, unknown>
+    ) {
+      localStorage.setItem("dadosTreino", JSON.stringify(banco));
+      mockFileReader("mock csv content");
       render(<Exportar />);
       openImportSection();
-      fireEvent.click(screen.getByText("Limpar tudo"));
-      expect(spy).toHaveBeenCalledOnce();
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByText("Confirmar importação").closest("button")
+        ).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByText("Confirmar importação"));
+    }
+
+    it("exercício novo é adicionado normalmente ao banco", async () => {
+      await carregarEConfirmarComBanco({});
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db["Supino Reto"]["C1"]).toBeDefined();
+      expect(db["Agachamento"]["C1"]).toBeDefined();
     });
 
-    it("não limpa se o usuário cancelar", () => {
-      localStorage.setItem("dadosTreino", JSON.stringify({ "Supino Reto": {} }));
-      vi.spyOn(window, "confirm").mockReturnValue(false);
-      render(<Exportar />);
-      openImportSection();
-      fireEvent.click(screen.getByText("Limpar tudo"));
-      expect(localStorage.getItem("dadosTreino")).not.toBeNull();
+    it("ciclo existente é preservado e não sobrescrito", async () => {
+      const dadosAnteriores = {
+        "Supino Reto": {
+          C1: { data: "01/01/2026", pesos: ["120"], reps: ["5"], obs: "PR", exercicio: "Supino Reto" },
+        },
+      };
+      await carregarEConfirmarComBanco(dadosAnteriores);
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db["Supino Reto"]["C1"].data).toBe("01/01/2026");
+      expect(db["Supino Reto"]["C1"].pesos[0]).toBe("120");
+      expect(db["Supino Reto"]["C1"].obs).toBe("PR");
     });
 
-    it("limpa localStorage se o usuário confirmar", () => {
-      localStorage.setItem("dadosTreino", JSON.stringify({ "Supino Reto": {} }));
-      vi.spyOn(window, "confirm").mockReturnValue(true);
-      render(<Exportar />);
-      openImportSection();
-      fireEvent.click(screen.getByText("Limpar tudo"));
-      expect(localStorage.getItem("dadosTreino")).toBeNull();
+    it("ciclo novo em exercício existente é adicionado, outros ciclos preservados", async () => {
+      const dadosAnteriores = {
+        "Supino Reto": {
+          C1: { data: "01/01/2026", pesos: ["120"], reps: ["5"], obs: "", exercicio: "Supino Reto" },
+        },
+      };
+      await carregarEConfirmarComBanco(dadosAnteriores);
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      // C1 preservado
+      expect(db["Supino Reto"]["C1"].data).toBe("01/01/2026");
+      // C2 e C3 adicionados (estão na planilha)
+      expect(db["Supino Reto"]["C2"]).toBeDefined();
+      expect(db["Supino Reto"]["C3"]).toBeDefined();
+    });
+
+    it("resultado exibe adicionados e 0 preservados quando banco está vazio", async () => {
+      await carregarEConfirmarComBanco({});
+      expect(screen.getByText(/migração concluída/i)).toBeInTheDocument();
+      expect(screen.getByText(/4 adicionados/i)).toBeInTheDocument();
+      expect(screen.getByText(/0 preservados/i)).toBeInTheDocument();
+    });
+
+    it("resultado exibe preservados quando exercício já existia no banco", async () => {
+      const dadosAnteriores = {
+        "Supino Reto": {
+          C1: { data: "01/01/2026", pesos: ["120"], reps: ["5"], obs: "", exercicio: "Supino Reto" },
+          C2: { data: "01/01/2026", pesos: ["110"], reps: ["8"], obs: "", exercicio: "Supino Reto" },
+          C3: { data: "01/01/2026", pesos: ["100"], reps: ["10"], obs: "", exercicio: "Supino Reto" },
+        },
+      };
+      await carregarEConfirmarComBanco(dadosAnteriores);
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      // C1, C2, C3 do Supino preservados; C1 do Agachamento adicionado
+      expect(db["Supino Reto"]["C1"].pesos[0]).toBe("120");
+      expect(screen.getByText(/1 adicionado/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 preservados/i)).toBeInTheDocument();
     });
   });
 });

@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 376 testes | 35 arquivos de teste**
+**Total: 377 testes | 35 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -556,7 +556,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.8 Exportar (32 testes)
+### 9.8 Exportar (33 testes)
 
 **Renderização (6)**
 
@@ -583,7 +583,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 9 | Clicar CSV | Download dispara sem erro |
 | 10 | Clicar JSON | Download dispara sem erro |
 
-**Toggle de importação (6)**
+**Toggle de importação (5)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -591,8 +591,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 12 | Clicar `Fechar importação` | Seção de import some |
 | 13 | Apos abrir | Botao muda para `Fechar importação` |
 | 14 | Botao Confirmar | Comeca desabilitado |
-| 15 | Botao Limpar tudo | Sempre habilitado |
-| 16 | Input de arquivo | Aceita apenas `.xlsx` e `.csv` |
+| 15 | Input de arquivo | Aceita apenas `.xlsx` e `.csv` |
 
 **Upload CSV (4)**
 
@@ -616,19 +615,21 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 22 | Confirmar importacao | Dados salvos no localStorage |
 | 23 | Multiplos ciclos | C1, C2, C3 do mesmo exercicio salvos separados |
 | 24 | Peso vazio em ciclo | Ciclo nao e salvo |
-| 25 | Resultado | Exibe total de registros salvos |
+| 25 | Resultado | Exibe `Migração concluída` com adicionados e preservados |
 | 26 | Feedback por sessao | Exibe `Upper A` e `Lower A` |
 | 27 | Apos confirmar | Preview resetado |
 | 28 | Reps salvas | Reps salvas vazias (usuario preenche no treino) |
 | 29 | Pesos duplicados | Repetidos para cada serie valida |
 
-**Limpar tudo (3)**
+**Migração inteligente (5)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 30 | Clicar Limpar tudo | Abre `confirm` do navegador |
-| 31 | Cancelar confirm | Dados nao sao limpos |
-| 32 | Aceitar confirm | localStorage limpo |
+| 30 | Exercicio novo (nao existe no banco) | Ciclos com peso adicionados normalmente |
+| 31 | Exercicio existente com ciclo existente | Entrada existente preservada, nao sobrescrita |
+| 32 | Exercicio existente com ciclo novo | Novo ciclo adicionado, ciclos existentes intactos |
+| 33 | Resultado com dados novos (banco vazio) | Exibe `4 adicionado(s) · 0 preservado(s)` |
+| 34 | Resultado com exercicio ja existente | Exibe adicionados < total e preservados > 0 |
 
 ---
 
@@ -700,5 +701,5 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 140 |
-| **Total** | **35** | **376** |
+| Componentes Feature | 10 | 141 |
+| **Total** | **35** | **377** |
