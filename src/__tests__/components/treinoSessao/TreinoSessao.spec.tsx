@@ -348,4 +348,58 @@ describe("TreinoSessao — Fluxo de registro Saizen", () => {
       ).toBeInTheDocument();
     });
   });
+
+  // ── Plano de treino — ordem e séries ──────────────────────────────────────
+
+  describe("Plano de treino — ordem e séries", () => {
+    it("exercícios aparecem na ordem definida pelo planoTreino", () => {
+      // Lower B default: Levantamento Terra (idx 0), Agachamento (idx 1)
+      // Plano inverte: Agachamento ordem=1, Levantamento Terra ordem=2
+      localStorage.setItem(
+        "planoTreino",
+        JSON.stringify({
+          "Lower B": {
+            Agachamento: { ordem: 1, series_validas: 3 },
+            "Levantamento Terra": { ordem: 2, series_validas: 3 },
+          },
+        })
+      );
+      render(<TreinoSessao />);
+      selecionarSessao("Lower B");
+      const bodyText = document.body.textContent ?? "";
+      expect(bodyText.indexOf("Agachamento")).toBeLessThan(
+        bodyText.indexOf("Levantamento Terra")
+      );
+    });
+
+    it("exercício com series_validas=2 exibe '2 séries' no card", () => {
+      localStorage.setItem(
+        "planoTreino",
+        JSON.stringify({
+          "Upper A": { "Supino Reto": { ordem: 1, series_validas: 2 } },
+        })
+      );
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      expect(screen.getAllByText(/2 séries/i).length).toBeGreaterThan(0);
+    });
+
+    it("exercício com series_validas=3 exibe '3 séries (3ª opcional)' no card", () => {
+      localStorage.setItem(
+        "planoTreino",
+        JSON.stringify({
+          "Upper A": { "Supino Reto": { ordem: 1, series_validas: 3 } },
+        })
+      );
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      expect(screen.getAllByText(/3 séries \(3ª opcional\)/i).length).toBeGreaterThan(0);
+    });
+
+    it("sem planoTreino mantém label padrão '3 séries (3ª opcional)'", () => {
+      renderFresh();
+      addExercicio("Supino Reto");
+      expect(screen.getByText(/3 séries \(3ª opcional\)/i)).toBeInTheDocument();
+    });
+  });
 });

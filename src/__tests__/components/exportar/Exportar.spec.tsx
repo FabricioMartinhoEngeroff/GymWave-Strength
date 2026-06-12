@@ -358,7 +358,45 @@ describe("Exportar — Tela de exportação e importação inline", () => {
     });
   });
 
-  // ── 8. Migração inteligente ──────────────────────────────────────────────────
+  // ── 8. Plano de treino (planoTreino) ─────────────────────────────────────────
+
+  describe("Plano de treino (planoTreino)", () => {
+    async function importarPlanilha() {
+      mockFileReader("mock csv content");
+      render(<Exportar />);
+      openImportSection();
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+      await waitFor(() => {
+        expect(
+          screen.getByText("Confirmar importação").closest("button")
+        ).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByText("Confirmar importação"));
+    }
+
+    it("salva planoTreino no localStorage após confirmar", async () => {
+      await importarPlanilha();
+      expect(localStorage.getItem("planoTreino")).not.toBeNull();
+    });
+
+    it("planoTreino contém a ordem correta de cada exercício por sessão", async () => {
+      await importarPlanilha();
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Upper A"]["Supino Reto"].ordem).toBe(1);
+      expect(plano["Lower A"]["Agachamento"].ordem).toBe(1);
+    });
+
+    it("planoTreino contém series_validas correto de cada exercício por sessão", async () => {
+      await importarPlanilha();
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Upper A"]["Supino Reto"].series_validas).toBe(3);
+      expect(plano["Lower A"]["Agachamento"].series_validas).toBe(3);
+    });
+  });
+
+  // ── 9. Migração inteligente ──────────────────────────────────────────────────
 
   describe("Migração inteligente", () => {
     async function carregarEConfirmarComBanco(

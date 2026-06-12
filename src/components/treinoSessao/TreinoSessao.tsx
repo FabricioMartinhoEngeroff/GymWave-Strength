@@ -53,6 +53,10 @@ function carregarDados(): Record<string, Record<string, { pesos?: string[]; reps
   return JSON.parse(localStorage.getItem("dadosTreino") || "{}");
 }
 
+function carregarPlano(): Record<string, Record<string, { ordem: number; series_validas: number }>> {
+  return JSON.parse(localStorage.getItem("planoTreino") || "{}");
+}
+
 function carregarUltimaSerie(exercicio: string, cicloId: string): SerieInput[] {
   const dados = carregarDados();
   const entry = dados[exercicio]?.[cicloId];
@@ -83,6 +87,8 @@ export default function TreinoSessao() {
   const [salvo, setSalvo] = useState(false);
   const [showInvalid, setShowInvalid] = useState(false);
 
+  const [planoTreino, setPlanoTreino] = useState<Record<string, Record<string, { ordem: number; series_validas: number }>>>({});
+
   const [busca, setBusca] = useState("");
   const [dropdownAberto, setDropdownAberto] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -112,7 +118,16 @@ export default function TreinoSessao() {
   // Auto-load exercises when session is selected
   useEffect(() => {
     if (!sessao) return;
-    const exsDaSessao = SESSOES[sessao].map((e) => e.nome);
+    const plano = carregarPlano();
+    setPlanoTreino(plano);
+    const planoDaSessao = plano[sessao] ?? {};
+    const exsDaSessao = SESSOES[sessao]
+      .map((e) => e.nome)
+      .sort((a, b) => {
+        const oA = planoDaSessao[a]?.ordem ?? 999;
+        const oB = planoDaSessao[b]?.ordem ?? 999;
+        return oA - oB;
+      });
     setExerciciosSelecionados(exsDaSessao);
     const loaded: Record<string, SerieInput[]> = {};
     exsDaSessao.forEach((ex) => {
@@ -329,13 +344,15 @@ export default function TreinoSessao() {
             { peso: "", reps: "" },
             { peso: "", reps: "" },
           ];
+          const seriesValidas = sessao ? planoTreino[sessao]?.[ex]?.series_validas : undefined;
+          const seriesLabel = seriesValidas === 2 ? "2 séries" : "3 séries (3ª opcional)";
           return (
             <ExerciseCard key={ex}>
               <ExHeader>
                 <div>
                   <ExName>{ex}</ExName>
                   <ExSub>
-                    {cicloInfo.repMin}–{cicloInfo.repMax} reps · 3 séries (3ª opcional)
+                    {cicloInfo.repMin}–{cicloInfo.repMax} reps · {seriesLabel}
                   </ExSub>
                 </div>
                 <Badge>{cicloInfo.sigla}</Badge>

@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 377 testes | 35 arquivos de teste**
+**Total: 384 testes | 35 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -421,7 +421,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ## 9. COMPONENTES DE FEATURE
 
-### 9.1 TreinoSessao (33 testes)
+### 9.1 TreinoSessao (37 testes)
 
 **Renderização inicial (7)**
 
@@ -475,6 +475,15 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 31 | Exercicio com historico no ciclo | Auto-fill com pesos anteriores |
 | 32 | Exercicio sem historico | Inputs ficam vazios |
 | 33 | Campo de observacoes | Placeholder `como foi o treino` presente |
+
+**Plano de treino — ordem e séries (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 34 | `planoTreino` com ordem invertida para Lower B | Agachamento aparece antes de Levantamento Terra no DOM |
+| 35 | `planoTreino` com `series_validas=2` para exercicio | Card exibe `2 séries` |
+| 36 | `planoTreino` com `series_validas=3` para exercicio | Card exibe `3 séries (3ª opcional)` |
+| 37 | Sem `planoTreino` no localStorage | Label padrão `3 séries (3ª opcional)` mantido |
 
 ---
 
@@ -556,7 +565,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.8 Exportar (33 testes)
+### 9.8 Exportar (36 testes)
 
 **Renderização (6)**
 
@@ -620,6 +629,14 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 27 | Apos confirmar | Preview resetado |
 | 28 | Reps salvas | Reps salvas vazias (usuario preenche no treino) |
 | 29 | Pesos duplicados | Repetidos para cada serie valida |
+
+**Plano de treino — planoTreino (3)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 35 | Confirmar importacao | `planoTreino` salvo no localStorage |
+| 36 | `planoTreino` salvo | Contém `ordem` correto por exercicio/sessao |
+| 37 | `planoTreino` salvo | Contém `series_validas` correto por exercicio/sessao |
 
 **Migração inteligente (5)**
 
@@ -701,5 +718,5 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 141 |
-| **Total** | **35** | **377** |
+| Componentes Feature | 10 | 148 |
+| **Total** | **35** | **384** |

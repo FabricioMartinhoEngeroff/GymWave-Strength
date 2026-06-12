@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { DadosTreino } from "../../types/TrainingData";
+import type { DadosTreino, PlanoTreino } from "../../types/TrainingData";
 import {
   DropZone,
   DropIcon,
@@ -392,13 +392,18 @@ export default function Exportar() {
     if (!ok) return;
     const backup = localStorage.getItem("dadosTreino_backup");
     if (backup) localStorage.setItem("dadosTreino", backup);
+    const planoBackup = localStorage.getItem("planoTreino_backup");
+    if (planoBackup) localStorage.setItem("planoTreino", planoBackup);
     setResult(null);
     setCanUndo(false);
   }
 
   function confirmarImport() {
     localStorage.setItem("dadosTreino_backup", localStorage.getItem("dadosTreino") || "{}");
+    localStorage.setItem("planoTreino_backup", localStorage.getItem("planoTreino") || "{}");
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+    const planoNovo: PlanoTreino = {};
     const porSessao: Record<string, number> = {};
     let total = 0;
     let preservados = 0;
@@ -406,6 +411,14 @@ export default function Exportar() {
 
     rows.forEach((row) => {
       const seriesCount = Math.max(1, Math.min(3, row.series_validas));
+      const sessao = row.sessao || "Sem sessão";
+
+      // Atualiza plano sempre (sobrescreve — é template, não histórico)
+      if (!planoNovo[sessao]) planoNovo[sessao] = {};
+      planoNovo[sessao][row.exercicio] = {
+        ordem: row.ordem,
+        series_validas: seriesCount,
+      };
 
       CICLO_COLS.forEach(({ col, cicloId }) => {
         const pesoStr = parsePeso(row[col]);
@@ -427,13 +440,13 @@ export default function Exportar() {
           exercicio: row.exercicio,
         };
 
-        const sessao = row.sessao || "Sem sessão";
         porSessao[sessao] = (porSessao[sessao] || 0) + 1;
         total++;
       });
     });
 
     localStorage.setItem("dadosTreino", JSON.stringify(db));
+    localStorage.setItem("planoTreino", JSON.stringify({ ...planoExistente, ...planoNovo }));
     setResult({ total, preservados, porSessao });
     setCanUndo(true);
     setRows([]);

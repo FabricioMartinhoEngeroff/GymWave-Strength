@@ -1,3 +1,14 @@
+export interface PlanoExercicio {
+  ordem: number;
+  series_validas: number;
+}
+
+export type PlanoTreino = {
+  [sessao: string]: {
+    [exercicio: string]: PlanoExercicio;
+  };
+};
+
 export interface RegistroTreino {
   data: string;
   pesos?: string[];
