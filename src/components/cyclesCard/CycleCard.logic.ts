@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { EXERCICIOS } from "../../data/exercise";
-import { CicloInfo } from "../../data/cycles";
+import type { TreinoRotacao } from "../../data/cycles";
 
 interface CycleLogicParams {
   ciclo: string;
@@ -133,30 +133,23 @@ export function formatarData(date: Date): string {
 
 // --- Hook para sugestão de carga baseado no topset ---
 export function useSugestaoDePeso(
-  ciclo: CicloInfo,
+  _rotacao: TreinoRotacao,
   exercicio: string
 ): { pesoMaximo: number; sugestaoPeso: number } {
   return useMemo(() => {
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const ciclo4 = db?.[exercicio]?.["C4"];
-    if (!ciclo4 || !ciclo4.pesos) return { pesoMaximo: 0, sugestaoPeso: 0 };
+    const entries = db?.[exercicio];
+    if (!entries) return { pesoMaximo: 0, sugestaoPeso: 0 };
 
-    const pesos = ciclo4.pesos
-      .map((p: string) => parseFloat(p))
-      .filter((n: number) => !isNaN(n));
+    let pesoMaximo = 0;
+    Object.values(entries).forEach((reg: unknown) => {
+      const r = reg as { pesos?: string[] };
+      (r.pesos ?? []).forEach((p: string) => {
+        const n = parseFloat(p);
+        if (!isNaN(n) && n > pesoMaximo) pesoMaximo = n;
+      });
+    });
 
-    const pesoMaximo = pesos.length ? Math.max(...pesos) : 0;
-
-    const multiplicadores: Record<string, number> = {
-      C1: 0.8,
-      C2: 0.9,
-      C3: 0.95,
-      C4: 1.02,
-    };
-
-    const fator = multiplicadores[ciclo.id] ?? 1;
-    const sugestaoPeso = Math.round(pesoMaximo * fator);
-
-    return { pesoMaximo, sugestaoPeso }; // ✅ nomes iguais
-  }, [ciclo.id, exercicio]);
+    return { pesoMaximo, sugestaoPeso: pesoMaximo };
+  }, [exercicio]);
 }

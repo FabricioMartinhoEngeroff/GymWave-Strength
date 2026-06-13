@@ -1,44 +1,51 @@
+/** All exercise names used across sessions. */
 export const EXERCICIOS = [
-  // ===== PERNA (Lower) =====
-  // Compostos + posteriores/glúteo + panturrilha + máquinas isoladoras
-  "Agachamento",
-  "Levantamento Terra",
-  "Elevação Pélvica",
+  // ── Peitoral ──────────────────────────────────────────────────────────────
+  "Supino reto barra",
+  "Supino halteres amplitude",
+  "Crossover braço estendido",
+
+  // ── Costas ────────────────────────────────────────────────────────────────
+  "Barra fixa pronada",
+  "Puxada triângulo",
+  "Pull-around cabo",
+  "Pulldown inclinado",
+  "Remada peito apoiado",
+  "Desenvolvimento máquina",
+
+  // ── Ombro ─────────────────────────────────────────────────────────────────
+  "Elevação lateral livre",
+  "Elevação lateral cabo",
+
+  // ── Quadríceps ────────────────────────────────────────────────────────────
+  "Agachamento livre",
+  "Cadeira extensora",
+
+  // ── Posterior/Glúteo ──────────────────────────────────────────────────────
+  "Terra sumô",
   "Stiff",
-  "Cadeira/Mesa Flexora",
-  "Cadeira Extensora",
-  "Abdução máquina (abrir as pernas)",
-  "Adutor máquina (fechar as pernas)",
-  "Panturrilha Leg Press",
-  "Panturrilha no Smith",
+  "Elevação pélvica máquina",
+  "Cadeira flexora sentada",
+  "Cadeira flexora deitado",
+  "Adutor máquina",
+
+  // ── Panturrilha ───────────────────────────────────────────────────────────
+  "Panturrilha em pé",
   "Panturrilha sentado",
+  "Panturrilha leg press",
 
-  // ===== COSTAS (Back) =====
-  // Vertical pulls (largura) + remadas (espessura)
-  "Barra fixa",
-  "Puxada na Frente",
-  "pulldown cabo",
-  "Remada apoiada no peito",
-  "Remada Curvada",
-  "remada livre",
+  // ── Braço ─────────────────────────────────────────────────────────────────
+  "Tríceps testa halteres",
+  "Tríceps polia barra reta",
+  "Tríceps polia unilateral",
+  "Rosca inclinada 45°",
+  "Rosca scott unilateral",
+  "Rosca polia alta",
+  "Rosca inversa",
+  "Rolar barra cabo",
 
-  // ===== PEITO (Chest) =====
-  // Press + isolador
-  "Supino Reto",
-  "Voador Peck Deck / máquina",
-  "Crossover no cabo",
-
-  // ===== OMBRO (Shoulders) =====
-  // Deltoide lateral + press (frontal)
-  "Desenvolvimento Lateral cabo",
-  "Desenvolvimento Lateral livre",
-  "Desenvolvimento livre/maquina",
-
-  // ===== BRAÇOS (Arms) =====
-  "Bíceps Halteres/Polia",
-  "Rosca Scott unilateral",
-  "Tríceps Polia",
-
-  // ===== CORE (Abs) =====
-  "Abdômen no cabo",
+  // ── Core ──────────────────────────────────────────────────────────────────
+  "Abdômen cabo ajoelhado",
+  "Abdômen infra pendurado",
+  "Abdômen infra banco",
 ];

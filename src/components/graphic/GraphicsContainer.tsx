@@ -2,8 +2,8 @@ import React, { useMemo, useState, useEffect } from "react";
 import { useDadosTreino } from "../../hooks/useDadosTreino";
 import { ChartCard } from "./ChartCard";
 import styled from "styled-components";
+import { ROTACAO } from "../../data/cycles";
 import { CheckboxGroup } from "../ui/CheckboxGroup";
-import { CICLOS } from "../../data/cycles";
 import { NativeSelect } from "../ui/NativeSelect";
 import { getCutoffTs, TIME_INTERVAL_OPTIONS, type TimeInterval } from "../../utils/timeFilter";
 import type { RegistroGraficoRaw } from "../../hooks/useDadosTreino";
@@ -61,8 +61,8 @@ export const GraphicsContainer: React.FC = () => {
   const [isMobile, setIsMobile] = useState(computeIsMobile());
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
   const [intervalo, setIntervalo] = useState<TimeInterval>("Tudo");
-  const [ciclosSelecionados, setCiclosSelecionados] = useState<string[]>(
-    () => CICLOS.map((c) => c.id)
+  const [treinosSelecionados, setTreinosSelecionados] = useState<string[]>(
+    () => ROTACAO.map((r) => r.id)
   );
 
   useEffect(() => {
@@ -84,16 +84,21 @@ export const GraphicsContainer: React.FC = () => {
     const out: Record<string, RegistroGraficoRaw[]> = {};
     exercicios.forEach((ex) => {
       const arr = dadosAgrupados[ex] ?? [];
-      if (intervalo === "Tudo") {
-        out[ex] = arr;
-        return;
+      let filtered = arr;
+
+      // Filter by selected training sessions
+      filtered = filtered.filter((d) => treinosSelecionados.includes(d.cicloId));
+
+      if (intervalo !== "Tudo") {
+        const nowTs = filtered.length ? filtered[filtered.length - 1].dataTs : 0;
+        const cutoff = getCutoffTs(intervalo, nowTs);
+        filtered = filtered.filter((p) => p.dataTs >= cutoff);
       }
-      const nowTs = arr.length ? arr[arr.length - 1].dataTs : 0;
-      const cutoff = getCutoffTs(intervalo, nowTs);
-      out[ex] = arr.filter((p) => p.dataTs >= cutoff);
+
+      out[ex] = filtered;
     });
     return out;
-  }, [dadosAgrupados, exercicios, intervalo]);
+  }, [dadosAgrupados, exercicios, intervalo, treinosSelecionados]);
 
   const exerciciosExibidos = exercicioSelecionado
     ? [exercicioSelecionado]
@@ -103,22 +108,19 @@ export const GraphicsContainer: React.FC = () => {
     <GraphicsWrapper>
       <HeaderControls>
        <h2 style={{ textAlign: "center", width: "100%", color: "#0d47a1", fontSize: "20px", margin: 0 }}>
-  Gráficos de Intensidade
+  Progressão — Top Set + Back-off
 </h2>
         <p style={{ margin: 0, color: "#0d47a1", fontWeight: 600 }}>
-          Selecione os ciclos para comparar:
+          Filtrar por treino:
         </p>
         <CheckboxGroup
-          options={CICLOS.map((c, i) => {
-            const partes = c.titulo.split(" ");
-            return {
-              linhaCima: `Ciclo ${i + 1}`,
-              linhaBaixo: partes.slice(1).join(" "),
-              value: c.id,
-            };
-          })}
-          selected={ciclosSelecionados}
-          onChange={setCiclosSelecionados}
+          options={ROTACAO.map((r) => ({
+            linhaCima: r.titulo,
+            linhaBaixo: r.dia,
+            value: r.id,
+          }))}
+          selected={treinosSelecionados}
+          onChange={setTreinosSelecionados}
           multiple
         />
         <FilterRow>
@@ -149,7 +151,7 @@ export const GraphicsContainer: React.FC = () => {
           key={ex}
           exercicio={ex}
           dados={dadosPorExercicioFiltrados[ex] ?? []}
-          ciclosSelecionados={ciclosSelecionados}
+          ciclosSelecionados={treinosSelecionados}
           isMobile={isMobile}
         />
       ))}

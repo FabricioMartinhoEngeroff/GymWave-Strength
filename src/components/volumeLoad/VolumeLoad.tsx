@@ -130,6 +130,20 @@ const VlNum = styled.span`
   flex-shrink: 0;
 `;
 
+const SeriesBadge = styled.span<{ $status: "ok" | "low" | "high" }>`
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 6px;
+  background: ${(p) =>
+    p.$status === "ok" ? "#dcfce7" :
+    p.$status === "low" ? "#fefce8" : "#fef2f2"};
+  color: ${(p) =>
+    p.$status === "ok" ? "#166534" :
+    p.$status === "low" ? "#92400e" : "#991b1b"};
+`;
+
 const EmptyMsg = styled.p`
   text-align: center;
   color: #6b7280;
@@ -140,6 +154,19 @@ const EmptyMsg = styled.p`
 function fmt(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k kg`;
   return `${Math.round(n)} kg`;
+}
+
+function seriesStatus(series: number): "ok" | "low" | "high" {
+  if (series < 10) return "low";
+  if (series > 20) return "high";
+  return "ok";
+}
+
+function seriesLabel(series: number): string {
+  const status = seriesStatus(series);
+  if (status === "low") return "volume baixo";
+  if (status === "high") return "risco overtraining";
+  return "";
 }
 
 export default function VolumeLoad() {
@@ -201,15 +228,31 @@ export default function VolumeLoad() {
         {withData.map((d) => (
           <VlCard key={d.musculo}>
             <VlHeader>
-              <VlMusculo>{d.musculo}</VlMusculo>
+              <div>
+                <VlMusculo>
+                  {d.musculo}
+                  {d.seriesAtual > 0 && (
+                    <>
+                      <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 8 }}>
+                        {d.seriesAtual} séries
+                      </span>
+                      {seriesLabel(d.seriesAtual) && (
+                        <SeriesBadge $status={seriesStatus(d.seriesAtual)}>
+                          {seriesLabel(d.seriesAtual)}
+                        </SeriesBadge>
+                      )}
+                    </>
+                  )}
+                </VlMusculo>
+              </div>
               <VlDelta
                 $positive={d.delta > 0}
                 $zero={d.delta === 0}
               >
                 {d.delta > 0
-                  ? `↑ +${d.delta}%`
+                  ? `+${d.delta}%`
                   : d.delta < 0
-                  ? `↓ ${d.delta}%`
+                  ? `${d.delta}%`
                   : "—"}
               </VlDelta>
             </VlHeader>

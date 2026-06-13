@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
 import { carregarDados, salvarDados } from "../utils/storage";
-import { CICLOS } from "../data/cycles";
+import { ROTACAO } from "../data/cycles";
 import type { DadosTreino, LinhaRelatorio, SerieInfo } from "../types/TrainingData";
 import { getCutoffTs, type TimeInterval } from "../utils/timeFilter";
 
 export function useRelatorio() {
-  //Estado interno das linhas já processadas
   const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
   const [intervalo, setIntervalo] = useState<TimeInterval>("Tudo");
@@ -15,7 +14,6 @@ export function useRelatorio() {
     return new Date(`${ano}-${mes}-${dia}`);
   }
 
-  // Ao montar, lê storage e converte em LinhaRelatorio[]
   useEffect(() => {
     const bruto: DadosTreino = carregarDados();
     const geradas: LinhaRelatorio[] = [];
@@ -23,11 +21,8 @@ export function useRelatorio() {
     Object.entries(bruto).forEach(([exercicio, ciclos]) => {
       Object.entries(ciclos).forEach(([cicloKey, registro]) => {
         const { pesos = [], reps = [], obs = "", data = "" } = registro;
-        const cicloId = cicloKey.startsWith("Ciclo ")
-          ? `C${cicloKey.split(" ")[1]}`
-          : cicloKey;
-        const cicloNome =
-          CICLOS.find((c) => c.id === cicloId)?.titulo || "Ciclo não identificado";
+        const rotacao = ROTACAO.find((r) => r.id === cicloKey);
+        const cicloNome = rotacao?.titulo || cicloKey;
 
         const series: SerieInfo[] = reps.map((rep, idx) => ({
           serie: idx + 1,
@@ -54,27 +49,18 @@ export function useRelatorio() {
 
     if (linha.cicloKey && dadosDoExercicio[linha.cicloKey]) return linha.cicloKey;
 
-    const cid = CICLOS.find((c) => c.titulo === linha.ciclo)?.id;
-    if (cid && dadosDoExercicio[cid]) return cid;
-
-    // fallback: tenta formato legado "Ciclo N"
-    const match = cid?.match(/^C(\d+)$/);
-    if (match) {
-      const legado = `Ciclo ${match[1]}`;
-      if (dadosDoExercicio[legado]) return legado;
-    }
+    const rot = ROTACAO.find((r) => r.titulo === linha.ciclo);
+    if (rot && dadosDoExercicio[rot.id]) return rot.id;
 
     return null;
   };
 
-  //Função para salvar edição de uma linha (e sincronizar com storage)
   const salvarEdicao = (idx: number, linhaEditada: Partial<LinhaRelatorio>) => {
     setLinhas((prev) => {
       const novas = prev.map((item, i) =>
         i === idx ? ({ ...item, ...linhaEditada } as LinhaRelatorio) : item
       );
 
-      // Atualiza no localStorage
       const dados = carregarDados();
       const ex = novas[idx].exercicio;
       const cicloKey = resolveCicloKey(dados[ex], novas[idx]);
@@ -97,7 +83,6 @@ export function useRelatorio() {
     });
   };
 
-  // 5) Função para excluir uma linha (e sincronizar com storage)
   const excluirLinha = (idx: number) => {
     setLinhas((prev) => {
       const novas = [...prev];
@@ -118,7 +103,6 @@ export function useRelatorio() {
     });
   };
 
-  // 6) Linhas filtradas em função do termo de busca (useMemo para desempenho)
   const linhasFiltradas = useMemo(
     () => {
       const parseToTs = (data: string): number | null => {

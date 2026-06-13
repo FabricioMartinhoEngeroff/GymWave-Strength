@@ -1,4 +1,4 @@
-import type { DadosTreino, RegistroTreino } from "../types/TrainingData";
+import type { DadosTreino, RegistroTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
 
 export type SessionPoint = {
   ts: number;
@@ -85,6 +85,44 @@ export function buildExerciseHistory(db: DadosTreino): Record<string, SessionPoi
     });
 
     out[exercicio] = [...porDia.values()].sort((a, b) => a.ts - b.ts);
+  });
+
+  return out;
+}
+
+// ── New logbook-based history ────────────────────────────────────────────────
+
+export interface LogbookPoint {
+  ts: number;
+  data: string;
+  exercicio: string;
+  topSetKg: number;
+  topSetReps: number;
+  backoffKg: number;
+  backoffReps: number;
+  bateuTeto: boolean;
+  progrediu: boolean;
+}
+
+export function buildLogbookHistory(logbook?: Logbook): Record<string, LogbookPoint[]> {
+  const lb: Logbook = logbook ?? JSON.parse(localStorage.getItem("logbook") || "{}");
+  const out: Record<string, LogbookPoint[]> = {};
+
+  Object.entries(lb).forEach(([exercicio, registros]) => {
+    out[exercicio] = registros
+      .filter((r) => r.topSetKg > 0)
+      .map((r: RegistroExercicio) => ({
+        ts: r.dataTs,
+        data: r.data,
+        exercicio: r.exercicio,
+        topSetKg: r.topSetKg,
+        topSetReps: r.topSetReps,
+        backoffKg: r.backoffKg,
+        backoffReps: r.backoffReps,
+        bateuTeto: r.topSetBateuTeto,
+        progrediu: r.progrediu,
+      }))
+      .sort((a, b) => a.ts - b.ts);
   });
 
   return out;

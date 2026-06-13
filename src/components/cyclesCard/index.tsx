@@ -23,7 +23,7 @@ import { CheckCircle } from "phosphor-react";
 
 
 import { EXERCICIOS } from "../../data/exercise";
-import { CICLOS } from "../../data/cycles";
+import { ROTACAO } from "../../data/cycles";
 import type { RegistroTreino } from "../../types/TrainingData";
 import { useMemo, useState } from "react";
 
@@ -33,9 +33,9 @@ interface CycleCardProps {
 }
 
 export default function CycleCard({ value, onSave }: CycleCardProps) {
-  const [cicloSelecionado, setCicloSelecionado] = useState<string>(CICLOS[0].id);
+  const [cicloSelecionado, setCicloSelecionado] = useState<string>(ROTACAO[0].id);
 
-  const cicloInfo = CICLOS.find((c) => c.id === cicloSelecionado) || CICLOS[0];
+  const cicloInfo = ROTACAO.find((c) => c.id === cicloSelecionado) || ROTACAO[0];
 
   const {
     pesos,
@@ -96,14 +96,11 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
         Escolha o ciclo que você vai registrar hoje:
       </p>
       <CheckboxGroup
-  options={CICLOS.map((c, i) => {
-    const partes = c.titulo.split(" ");
-    return {
-      linhaCima: `Ciclo ${i + 1}`,
-      linhaBaixo: partes.slice(1).join(" "),
-      value: c.id,
-    };
-  })}
+  options={ROTACAO.map((r) => ({
+    linhaCima: r.titulo,
+    linhaBaixo: r.dia,
+    value: r.id,
+  }))}
   selected={[cicloSelecionado]}
   onChange={([value]) => setCicloSelecionado(value)}
 />
@@ -127,7 +124,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
       Sugestão para o ciclo atual:{" "}
       <span style={{ fontWeight: "bold", fontSize: "1.2em" }}>{sugestaoPeso} kg</span>.
       <br />
-      <em>{cicloInfo.objetivo}</em>
+      <em>{cicloInfo.titulo}</em>
     </>
   ) : (
     <>

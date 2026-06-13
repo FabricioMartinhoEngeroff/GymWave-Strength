@@ -1,7 +1,6 @@
 /**
- * VolumeLoadTest → component
- * Testa renderização e exibição de dados do VolumeLoad.
- * Usa localStorage real do jsdom para simular cenários.
+ * VolumeLoadTest -> component
+ * Testa renderizacao e exibicao de dados do VolumeLoad com series count.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { vi } from "vitest";
@@ -19,23 +18,23 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-describe("VolumeLoad — Componente de volume por músculo", () => {
+describe("VolumeLoad — Componente de volume por musculo", () => {
   describe("Estado sem dados", () => {
-    it("renderiza o header com título correto", () => {
+    it("renderiza o header com titulo correto", () => {
       render(<VolumeLoad />);
       expect(
         screen.getByText("Volume load por músculo")
       ).toBeInTheDocument();
     });
 
-    it("exibe subtítulo de comparação semanal", () => {
+    it("exibe subtitulo de comparacao semanal", () => {
       render(<VolumeLoad />);
       expect(
         screen.getByText("Semana atual vs semana anterior")
       ).toBeInTheDocument();
     });
 
-    it("exibe mensagem quando não há treinos registrados", () => {
+    it("exibe mensagem quando nao ha treinos registrados", () => {
       render(<VolumeLoad />);
       expect(
         screen.getByText(/nenhum treino registrado/i)
@@ -44,16 +43,16 @@ describe("VolumeLoad — Componente de volume por músculo", () => {
   });
 
   describe("Estado com dados desta semana", () => {
-    it("exibe card do músculo Peitoral quando há treino de supino esta semana", () => {
+    it("exibe card do musculo Peitoral quando ha treino de supino esta semana", () => {
       localStorage.setItem(
         "dadosTreino",
         JSON.stringify({
-          "Supino Reto": {
-            C1: {
+          "Supino reto barra": {
+            UA: {
               data: "10/06/2026",
-              pesos: ["100", "90"],
-              reps: ["10", "10"],
-              exercicio: "Supino Reto",
+              pesos: ["100", "85"],
+              reps: ["7", "12"],
+              exercicio: "Supino reto barra",
             },
           },
         })
@@ -62,22 +61,40 @@ describe("VolumeLoad — Componente de volume por músculo", () => {
       expect(screen.getByText("Peitoral")).toBeInTheDocument();
     });
 
-    it("exibe card de Costas quando há treino de remada esta semana", () => {
+    it("exibe card de Costas quando ha treino de remada esta semana", () => {
       localStorage.setItem(
         "dadosTreino",
         JSON.stringify({
-          "Remada Curvada": {
-            C1: {
+          "Remada peito apoiado": {
+            UB: {
               data: "10/06/2026",
               pesos: ["80"],
               reps: ["8"],
-              exercicio: "Remada Curvada",
+              exercicio: "Remada peito apoiado",
             },
           },
         })
       );
       render(<VolumeLoad />);
       expect(screen.getByText("Costas")).toBeInTheDocument();
+    });
+
+    it("exibe contagem de series quando ha dados", () => {
+      localStorage.setItem(
+        "dadosTreino",
+        JSON.stringify({
+          "Supino reto barra": {
+            UA: {
+              data: "10/06/2026",
+              pesos: ["100", "85"],
+              reps: ["7", "12"],
+              exercicio: "Supino reto barra",
+            },
+          },
+        })
+      );
+      render(<VolumeLoad />);
+      expect(screen.getByText(/2 séries/)).toBeInTheDocument();
     });
   });
 });

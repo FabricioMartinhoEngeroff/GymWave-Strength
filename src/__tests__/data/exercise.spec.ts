@@ -1,48 +1,53 @@
 import { describe, it, expect } from "vitest";
 import { EXERCICIOS } from "../../data/exercise";
 
-describe("exercise — Lista de exercícios", () => {
-  it("exporta um array não vazio", () => {
+describe("exercise — Lista de exercicios Saizen", () => {
+  it("exporta um array nao vazio", () => {
     expect(Array.isArray(EXERCICIOS)).toBe(true);
     expect(EXERCICIOS.length).toBeGreaterThan(0);
   });
 
-  it("todos os itens são strings não vazias", () => {
+  it("todos os itens sao strings nao vazias", () => {
     EXERCICIOS.forEach((ex) => {
       expect(typeof ex).toBe("string");
       expect(ex.trim().length).toBeGreaterThan(0);
     });
   });
 
-  it("não contém duplicatas", () => {
+  it("nao contem duplicatas", () => {
     const unicos = new Set(EXERCICIOS.map((e) => e.toLowerCase()));
     expect(unicos.size).toBe(EXERCICIOS.length);
   });
 
-  it("contém exercícios compostos principais", () => {
-    expect(EXERCICIOS).toContain("Agachamento");
-    expect(EXERCICIOS).toContain("Levantamento Terra");
-    expect(EXERCICIOS).toContain("Supino Reto");
+  it("contem exercicios compostos principais", () => {
+    expect(EXERCICIOS).toContain("Agachamento livre");
+    expect(EXERCICIOS).toContain("Terra sumô");
+    expect(EXERCICIOS).toContain("Supino reto barra");
   });
 
-  it("contém exercícios de isolamento", () => {
-    expect(EXERCICIOS).toContain("Cadeira Extensora");
-    expect(EXERCICIOS).toContain("Cadeira/Mesa Flexora");
-    expect(EXERCICIOS).toContain("Tríceps Polia");
+  it("contem exercicios de isolamento", () => {
+    expect(EXERCICIOS).toContain("Cadeira extensora");
+    expect(EXERCICIOS).toContain("Cadeira flexora sentada");
   });
 
-  it("contém exercícios de costas", () => {
-    expect(EXERCICIOS).toContain("Barra fixa");
-    expect(EXERCICIOS).toContain("Puxada na Frente");
-    expect(EXERCICIOS).toContain("Remada Curvada");
+  it("contem exercicios de costas", () => {
+    expect(EXERCICIOS).toContain("Barra fixa pronada");
+    expect(EXERCICIOS).toContain("Puxada triângulo");
+    expect(EXERCICIOS).toContain("Remada peito apoiado");
   });
 
-  it("contém exercício de core", () => {
-    expect(EXERCICIOS).toContain("Abdômen no cabo");
+  it("contem exercicio de core", () => {
+    expect(EXERCICIOS).toContain("Abdômen cabo ajoelhado");
   });
 
-  it("contém exercícios de panturrilha", () => {
+  it("contem exercicios de panturrilha", () => {
     const panturrilhas = EXERCICIOS.filter((e) => e.toLowerCase().includes("panturrilha"));
     expect(panturrilhas.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("contem exercicios de braco", () => {
+    expect(EXERCICIOS).toContain("Tríceps testa halteres");
+    expect(EXERCICIOS).toContain("Rosca inclinada 45°");
+    expect(EXERCICIOS).toContain("Rosca scott unilateral");
   });
 });

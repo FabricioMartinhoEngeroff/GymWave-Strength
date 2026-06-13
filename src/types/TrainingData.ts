@@ -1,17 +1,4 @@
-export interface PlanoExercicio {
-  ordem: number;
-  series_validas: number; // fallback quando não há dado por ciclo
-  series_C1?: number;
-  series_C2?: number;
-  series_C3?: number;
-  series_C4?: number;
-}
-
-export type PlanoTreino = {
-  [sessao: string]: {
-    [exercicio: string]: PlanoExercicio;
-  };
-};
+// ── Legacy types (kept for backward compatibility with dadosTreino) ──────────
 
 export interface RegistroTreino {
   data: string;
@@ -36,9 +23,62 @@ export interface SerieInfo {
 export interface LinhaRelatorio {
   data: string;
   exercicio: string;
-  /** Chave do ciclo no storage (ex.: "C1" ou legado "Ciclo 1"). */
   cicloKey: string;
   ciclo: string;
   series: SerieInfo[];
   obs?: string;
 }
+
+// ── New Saizen logbook types ────────────────────────────────────────────────
+
+export interface RegistroExercicio {
+  exercicio: string;
+  treinoId: string; // "UA", "UB", "LA", "LB", "BR"
+  data: string; // "DD/MM/YYYY"
+  dataTs: number;
+
+  // Top Set
+  topSetKg: number;
+  topSetReps: number;
+  topSetFaixaMin: number;
+  topSetFaixaMax: number;
+  topSetBateuTeto: boolean; // reps >= faixaMax -> sobe peso
+
+  // Back-off
+  backoffKg: number; // topSetKg * backoffPct
+  backoffReps: number;
+  backoffFaixaMin: number;
+  backoffFaixaMax: number;
+
+  // Breathing Cluster / Rest-Pause (optional)
+  tecnica?: "BC" | "RP" | null;
+  clusterReps?: number[]; // ex: [12, 5, 3] -> total 20
+
+  // Progression
+  pesoAnterior?: number;
+  repsAnterior?: number;
+  progrediu: boolean; // true if topSetKg > pesoAnterior
+
+  obs?: string;
+}
+
+// localStorage key: "logbook"
+// structure: { [exercicio]: RegistroExercicio[] }
+export type Logbook = Record<string, RegistroExercicio[]>;
+
+// ── Legacy plan type (kept for backward compatibility) ──────────────────────
+
+export interface PlanoExercicio {
+  ordem: number;
+  series_validas: number;
+  series_C1?: number;
+  series_C2?: number;
+  series_C3?: number;
+  series_C4?: number;
+}
+
+export type PlanoTreino = {
+  [sessao: string]: {
+    [exercicio: string]: PlanoExercicio;
+  };
+};

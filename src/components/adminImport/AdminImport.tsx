@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
+import type { RegistroExercicio } from "../../types/TrainingData";
+import { salvarRegistro } from "../../utils/storage";
 import {
   Screen,
   Header,
@@ -32,45 +34,52 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ImportRow {
-  sessao: string;
+  treino_id: string;
+  treino: string;
   ordem: number;
   exercicio: string;
-  musculo_primario: string;
-  series_validas: number;
-  rep_min: number;
-  rep_max: number;
-  peso_C1_kg?: number | string;
-  peso_C2_kg?: number | string;
-  peso_C3_kg?: number | string;
-  peso_C4_kg?: number | string;
+  grupo: string;
+  tipo: string;
+  faixa_top_min: number;
+  faixa_top_max: number;
+  faixa_backoff_min: number;
+  faixa_backoff_max: number;
+  top_set_kg?: number | string;
+  backoff_kg?: number | string;
+  tecnica?: string;
+  backoff_pct?: string;
+  cue?: string;
 }
 
 interface ImportResult {
   total: number;
-  porSessao: Record<string, number>;
+  porTreino: Record<string, number>;
 }
-
-const CICLO_COLS: { col: keyof ImportRow; cicloId: string }[] = [
-  { col: "peso_C1_kg", cicloId: "C1" },
-  { col: "peso_C2_kg", cicloId: "C2" },
-  { col: "peso_C3_kg", cicloId: "C3" },
-  { col: "peso_C4_kg", cicloId: "C4" },
-];
 
 // ─── Column name mapping ───────────────────────────────────────────────────────
 
 const COLUMN_MAP: [RegExp, string][] = [
-  [/sess[aã]o/i,           "sessao"],
-  [/ordem/i,               "ordem"],
-  [/exerc[ií]cio/i,        "exercicio"],
-  [/grupo|m[uú]sculo/i,    "musculo_primario"],
-  [/s[eé]ries/i,           "series_validas"],
-  [/rep.*m[ií]n/i,         "rep_min"],
-  [/rep.*m[aá]x/i,         "rep_max"],
-  [/peso\s*c1/i,           "peso_C1_kg"],
-  [/peso\s*c2/i,           "peso_C2_kg"],
-  [/peso\s*c3/i,           "peso_C3_kg"],
-  [/peso\s*c4/i,           "peso_C4_kg"],
+  [/treino\s*id/i,           "treino_id"],
+  [/^treino$/i,              "treino"],
+  [/ord/i,                   "ordem"],
+  [/exerc[ií]cio/i,         "exercicio"],
+  [/grupo|m[uú]sculo/i,     "grupo"],
+  [/tipo/i,                  "tipo"],
+  [/faixa\s*top.*m[ií]n/i,  "faixa_top_min"],
+  [/faixa\s*top.*m[aá]x/i,  "faixa_top_max"],
+  [/faixa\s*b.*off.*m[ií]n/i, "faixa_backoff_min"],
+  [/faixa\s*b.*off.*m[aá]x/i, "faixa_backoff_max"],
+  [/top\s*set.*kg/i,         "top_set_kg"],
+  [/back.*off.*kg/i,         "backoff_kg"],
+  [/t[eé]cnica/i,           "tecnica"],
+  [/back.*off.*%/i,          "backoff_pct"],
+  [/cue|foco/i,             "cue"],
+  // Legacy C1-C4 columns mapping
+  [/peso\s*c1/i,            "top_set_kg"],
+  [/sess[aã]o/i,            "treino"],
+  [/rep.*m[ií]n/i,          "faixa_top_min"],
+  [/rep.*m[aá]x/i,          "faixa_top_max"],
+  [/s[eé]ries/i,            "series_validas"],
 ];
 
 function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -92,11 +101,10 @@ function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
 /** Lê xlsx como array de arrays, detecta a linha de cabeçalho real e retorna JSON normalizado */
 function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
   const arrays = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
-  // Encontra a primeira linha que contém "Sessão" ou "Exercício"
   let headerIdx = 0;
   for (let i = 0; i < Math.min(6, arrays.length); i++) {
     const row = arrays[i] as string[];
-    if (row.some((cell) => /sess[aã]o|exerc[ií]cio/i.test(String(cell ?? "")))) {
+    if (row.some((cell) => /treino|exerc[ií]cio|sess[aã]o/i.test(String(cell ?? "")))) {
       headerIdx = i;
       break;
     }
@@ -114,29 +122,48 @@ function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const TREINO_ID_MAP: Record<string, string> = {
+  "Upper A": "UA",
+  "Upper B": "UB",
+  "Lower A": "LA",
+  "Lower B": "LB",
+  "Braço": "BR",
+};
+
 function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
   return raw
-    .map((r) => ({
-      sessao: String(r.sessao ?? ""),
-      ordem: Number(r.ordem ?? 0),
-      exercicio: String(r.exercicio ?? "").trim(),
-      musculo_primario: String(r.musculo_primario ?? ""),
-      series_validas: Number(r.series_validas ?? 3),
-      rep_min: Number(r.rep_min ?? 0),
-      rep_max: Number(r.rep_max ?? 0),
-      peso_C1_kg: r.peso_C1_kg as string | number | undefined,
-      peso_C2_kg: r.peso_C2_kg as string | number | undefined,
-      peso_C3_kg: r.peso_C3_kg as string | number | undefined,
-      peso_C4_kg: r.peso_C4_kg as string | number | undefined,
-    }))
+    .map((r) => {
+      const treino = String(r.treino ?? "").trim();
+      let treinoId = String(r.treino_id ?? "").trim();
+      if (!treinoId && treino) {
+        treinoId = TREINO_ID_MAP[treino] ?? treino.substring(0, 2).toUpperCase();
+      }
+      return {
+        treino_id: treinoId,
+        treino,
+        ordem: Number(r.ordem ?? 0),
+        exercicio: String(r.exercicio ?? "").trim(),
+        grupo: String(r.grupo ?? ""),
+        tipo: String(r.tipo ?? ""),
+        faixa_top_min: Number(r.faixa_top_min ?? 5),
+        faixa_top_max: Number(r.faixa_top_max ?? 9),
+        faixa_backoff_min: Number(r.faixa_backoff_min ?? 9),
+        faixa_backoff_max: Number(r.faixa_backoff_max ?? 15),
+        top_set_kg: r.top_set_kg as string | number | undefined,
+        backoff_kg: r.backoff_kg as string | number | undefined,
+        tecnica: String(r.tecnica ?? ""),
+        backoff_pct: String(r.backoff_pct ?? "85%"),
+        cue: String(r.cue ?? ""),
+      };
+    })
     .filter((r) => r.exercicio !== "");
 }
 
-function parsePeso(val: unknown): string | null {
+function parsePeso(val: unknown): number | null {
   if (val === undefined || val === null || val === "") return null;
   const n = Number(val);
   if (isNaN(n) || n <= 0) return null;
-  return String(n);
+  return n;
 }
 
 function getTodayBR(): string {
@@ -216,43 +243,71 @@ export default function AdminImport() {
   function desfazerImport() {
     const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
     if (!ok) return;
-    const backup = localStorage.getItem("dadosTreino_backup");
-    if (backup) localStorage.setItem("dadosTreino", backup);
+    const backup = localStorage.getItem("logbook_backup");
+    if (backup) localStorage.setItem("logbook", backup);
+    const backupLegacy = localStorage.getItem("dadosTreino_backup");
+    if (backupLegacy) localStorage.setItem("dadosTreino", backupLegacy);
     setResult(null);
     setCanUndo(false);
   }
 
   function confirmarImport() {
+    localStorage.setItem("logbook_backup", localStorage.getItem("logbook") || "{}");
     localStorage.setItem("dadosTreino_backup", localStorage.getItem("dadosTreino") || "{}");
-    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const porSessao: Record<string, number> = {};
+
+    const porTreino: Record<string, number> = {};
     let total = 0;
     const today = getTodayBR();
+    const todayTs = Date.now();
+
+    // Also maintain legacy dadosTreino for backward compatibility
+    const legacyDb = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
 
     rows.forEach((row) => {
-      const seriesCount = Math.max(1, Math.min(3, row.series_validas));
+      const topKg = parsePeso(row.top_set_kg);
+      if (!topKg) return;
 
-      CICLO_COLS.forEach(({ col, cicloId }) => {
-        const pesoStr = parsePeso(row[col]);
-        if (!pesoStr) return;
+      const boKg = parsePeso(row.backoff_kg) ?? Math.round(topKg * 0.85);
 
-        if (!db[row.exercicio]) db[row.exercicio] = {};
-        db[row.exercicio][cicloId] = {
-          data: today,
-          pesos: Array(seriesCount).fill(pesoStr),
-          reps: Array(seriesCount).fill(""),
-          obs: "",
-          exercicio: row.exercicio,
-        };
+      const registro: RegistroExercicio = {
+        exercicio: row.exercicio,
+        treinoId: row.treino_id,
+        data: today,
+        dataTs: todayTs,
+        topSetKg: topKg,
+        topSetReps: 0,
+        topSetFaixaMin: row.faixa_top_min,
+        topSetFaixaMax: row.faixa_top_max,
+        topSetBateuTeto: false,
+        backoffKg: boKg,
+        backoffReps: 0,
+        backoffFaixaMin: row.faixa_backoff_min,
+        backoffFaixaMax: row.faixa_backoff_max,
+        pesoAnterior: undefined,
+        repsAnterior: undefined,
+        progrediu: false,
+        obs: "Importado da planilha",
+      };
 
-        const sessao = row.sessao || "Sem sessão";
-        porSessao[sessao] = (porSessao[sessao] || 0) + 1;
-        total++;
-      });
+      salvarRegistro(registro);
+
+      // Legacy
+      if (!legacyDb[row.exercicio]) legacyDb[row.exercicio] = {};
+      legacyDb[row.exercicio][row.treino_id] = {
+        data: today,
+        pesos: [String(topKg), String(boKg)],
+        reps: ["", ""],
+        obs: "Importado da planilha",
+        exercicio: row.exercicio,
+      };
+
+      const label = row.treino || row.treino_id || "Sem treino";
+      porTreino[label] = (porTreino[label] || 0) + 1;
+      total++;
     });
 
-    localStorage.setItem("dadosTreino", JSON.stringify(db));
-    setResult({ total, porSessao });
+    localStorage.setItem("dadosTreino", JSON.stringify(legacyDb));
+    setResult({ total, porTreino });
     setCanUndo(true);
     setRows([]);
     setFileName(null);
@@ -262,10 +317,11 @@ export default function AdminImport() {
 
   function limparTudo() {
     const ok = window.confirm(
-      "Isso vai apagar TODOS os dados de treino do localStorage. Tem certeza?"
+      "Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) do localStorage. Tem certeza?"
     );
     if (!ok) return;
     localStorage.removeItem("dadosTreino");
+    localStorage.removeItem("logbook");
     setResult(null);
     setRows([]);
     setFileName(null);
@@ -274,14 +330,14 @@ export default function AdminImport() {
   // ── Derived data for preview ───────────────────────────────
 
   const totalLinhasComPeso = rows.filter((r) =>
-    CICLO_COLS.some(({ col }) => parsePeso(r[col]) !== null)
+    parsePeso(r.top_set_kg) !== null
   ).length;
 
   return (
     <Screen>
       <Header>
         <Title>Importar dados</Title>
-        <Subtitle>Carregue um arquivo .xlsx ou .csv para popular o histórico de treino</Subtitle>
+        <Subtitle>Carregue o logbook Saizen (.xlsx ou .csv) para popular o histórico</Subtitle>
       </Header>
 
       {/* Drop zone */}
@@ -311,12 +367,12 @@ export default function AdminImport() {
       />
 
       {fileName && !rows.length && !result && (
-        <FileName>Lendo: {fileName}…</FileName>
+        <FileName>Lendo: {fileName}...</FileName>
       )}
 
       {fileName && rows.length > 0 && (
         <FileName>
-          {fileName} — {rows.length} linhas ({totalLinhasComPeso} com peso preenchido)
+          {fileName} — {rows.length} exercícios ({totalLinhasComPeso} com peso)
         </FileName>
       )}
 
@@ -325,9 +381,9 @@ export default function AdminImport() {
         <>
           <ResultCard>
             <ResultTitle>Importação concluída — {result.total} registros salvos</ResultTitle>
-            {Object.entries(result.porSessao).map(([sessao, qtd]) => (
-              <ResultRow key={sessao}>
-                {sessao}: {qtd} registro{qtd > 1 ? "s" : ""}
+            {Object.entries(result.porTreino).map(([treino, qtd]) => (
+              <ResultRow key={treino}>
+                {treino}: {qtd} exercício{qtd > 1 ? "s" : ""}
               </ResultRow>
             ))}
           </ResultCard>
@@ -342,36 +398,38 @@ export default function AdminImport() {
       {/* Preview table */}
       {rows.length > 0 && (
         <>
-          <SectionLabel>Pré-visualização ({rows.length} linhas)</SectionLabel>
+          <SectionLabel>Pré-visualização ({rows.length} exercícios)</SectionLabel>
           <TableWrap>
             <Table>
               <thead>
                 <tr>
-                  <Th>Sessão</Th>
+                  <Th>Treino</Th>
                   <Th>Exercício</Th>
-                  <Th>Músculo</Th>
-                  <Th>Reps</Th>
-                  <Th>C1 kg</Th>
-                  <Th>C2 kg</Th>
-                  <Th>C3 kg</Th>
-                  <Th>C4 kg</Th>
+                  <Th>Grupo</Th>
+                  <Th>Faixa Top</Th>
+                  <Th>Faixa B-off</Th>
+                  <Th>Top Set kg</Th>
+                  <Th>B-off kg</Th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r, i) => (
                   <Tr key={i}>
-                    <Td>{r.sessao}</Td>
+                    <Td>{r.treino_id || r.treino}</Td>
                     <Td>{r.exercicio}</Td>
-                    <Td>{r.musculo_primario}</Td>
-                    <Td>{r.rep_min}–{r.rep_max}</Td>
-                    {CICLO_COLS.map(({ col }) => {
-                      const p = parsePeso(r[col]);
-                      return (
-                        <Td key={col}>
-                          {p ? <PesoBadge>{p} kg</PesoBadge> : <EmptyBadge>—</EmptyBadge>}
-                        </Td>
-                      );
-                    })}
+                    <Td>{r.grupo}</Td>
+                    <Td>{r.faixa_top_min}–{r.faixa_top_max}</Td>
+                    <Td>{r.faixa_backoff_min}–{r.faixa_backoff_max}</Td>
+                    <Td>
+                      {parsePeso(r.top_set_kg) !== null
+                        ? <PesoBadge>{parsePeso(r.top_set_kg)} kg</PesoBadge>
+                        : <EmptyBadge>—</EmptyBadge>}
+                    </Td>
+                    <Td>
+                      {parsePeso(r.backoff_kg) !== null
+                        ? <PesoBadge>{parsePeso(r.backoff_kg)} kg</PesoBadge>
+                        : <EmptyBadge>auto</EmptyBadge>}
+                    </Td>
                   </Tr>
                 ))}
               </tbody>

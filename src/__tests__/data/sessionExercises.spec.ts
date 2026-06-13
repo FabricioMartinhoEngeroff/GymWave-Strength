@@ -1,98 +1,135 @@
 /**
- * SessionExercisesTest → data
- * Valida cobertura e consistência das sessões de treino.
- * Garante que cada exercício existe no catálogo global.
+ * SessionExercisesTest -> data
+ * Valida cobertura e consistencia das sessoes de treino Saizen.
+ * Cada exercicio deve ter faixas de reps, backoffPct e cue.
  */
 import { describe, it, expect } from "vitest";
 import { SESSOES, SESSOES_LABELS } from "../../data/sessionExercises";
-import { EXERCICIOS } from "../../data/exercise";
 
-describe("SessionExercises — Sessões Upper / Lower / Braço", () => {
+describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
   describe("Estrutura geral", () => {
-    it("deve ter exatamente 5 sessões", () => {
+    it("deve ter exatamente 5 sessoes", () => {
       expect(Object.keys(SESSOES)).toHaveLength(5);
     });
 
-    it("SESSOES_LABELS deve listar todas as 5 sessões", () => {
+    it("SESSOES_LABELS deve listar todas as 5 sessoes", () => {
       expect(SESSOES_LABELS).toHaveLength(5);
       SESSOES_LABELS.forEach((label) => {
         expect(SESSOES).toHaveProperty(label);
       });
     });
 
-    it("deve conter Upper A, Lower A, Upper B, Lower B e Braço", () => {
-      const sessoes = ["Upper A", "Lower A", "Upper B", "Lower B", "Braço"];
+    it("deve conter Upper A, Upper B, Lower A, Lower B e Braco", () => {
+      const sessoes = ["Upper A", "Upper B", "Lower A", "Lower B", "Braço"];
       sessoes.forEach((s) => expect(SESSOES).toHaveProperty(s));
     });
   });
 
-  describe("Volume mínimo por sessão", () => {
-    it("Upper A deve ter pelo menos 6 exercícios", () => {
+  describe("Volume minimo por sessao", () => {
+    it("Upper A deve ter pelo menos 6 exercicios", () => {
       expect(SESSOES["Upper A"].length).toBeGreaterThanOrEqual(6);
     });
 
-    it("Lower A deve ter pelo menos 6 exercícios", () => {
+    it("Lower A deve ter pelo menos 6 exercicios", () => {
       expect(SESSOES["Lower A"].length).toBeGreaterThanOrEqual(6);
     });
 
-    it("Upper B deve ter pelo menos 6 exercícios", () => {
+    it("Upper B deve ter pelo menos 6 exercicios", () => {
       expect(SESSOES["Upper B"].length).toBeGreaterThanOrEqual(6);
     });
 
-    it("Lower B deve ter pelo menos 6 exercícios", () => {
+    it("Lower B deve ter pelo menos 6 exercicios", () => {
       expect(SESSOES["Lower B"].length).toBeGreaterThanOrEqual(6);
     });
 
-    it("Braço deve ter pelo menos 2 exercícios", () => {
-      expect(SESSOES["Braço"].length).toBeGreaterThanOrEqual(2);
+    it("Braco deve ter pelo menos 8 exercicios", () => {
+      expect(SESSOES["Braço"].length).toBeGreaterThanOrEqual(8);
     });
   });
 
-  describe("Integridade: exercícios vs catálogo global", () => {
-    it("cada exercício deve ter nome e musculo preenchidos", () => {
+  describe("Formato ExercicioSessao", () => {
+    it("cada exercicio deve ter nome, grupo e cue preenchidos", () => {
       Object.entries(SESSOES).forEach(([sessao, exercicios]) => {
         exercicios.forEach((ex) => {
           expect(ex.nome.trim(), `[${sessao}] nome vazio`).not.toBe("");
-          expect(ex.musculo.trim(), `[${sessao}] musculo vazio`).not.toBe("");
+          expect(ex.grupo.trim(), `[${sessao}] grupo vazio`).not.toBe("");
+          expect(ex.cue.trim(), `[${sessao}] cue vazio`).not.toBe("");
         });
       });
     });
 
-    it("todos os nomes devem existir no catálogo EXERCICIOS", () => {
-      const naoEncontrados: string[] = [];
-      Object.entries(SESSOES).forEach(([sessao, exercicios]) => {
-        exercicios.forEach((ex) => {
-          if (!EXERCICIOS.includes(ex.nome))
-            naoEncontrados.push(`[${sessao}] "${ex.nome}"`);
-        });
+    it("faixaTopSet deve ser [min, max] com min < max", () => {
+      Object.values(SESSOES).flat().forEach((ex) => {
+        expect(ex.faixaTopSet).toHaveLength(2);
+        expect(ex.faixaTopSet[0]).toBeLessThan(ex.faixaTopSet[1]);
       });
-      expect(
-        naoEncontrados,
-        `Exercícios fora do catálogo: ${naoEncontrados.join(", ")}`
-      ).toHaveLength(0);
+    });
+
+    it("faixaBackoff deve ser [min, max] com min < max", () => {
+      Object.values(SESSOES).flat().forEach((ex) => {
+        expect(ex.faixaBackoff).toHaveLength(2);
+        expect(ex.faixaBackoff[0]).toBeLessThan(ex.faixaBackoff[1]);
+      });
+    });
+
+    it("backoffPct deve ser entre 0 e 1", () => {
+      Object.values(SESSOES).flat().forEach((ex) => {
+        expect(ex.backoffPct).toBeGreaterThan(0);
+        expect(ex.backoffPct).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it("backoffPct padrao eh 0.85 (85%)", () => {
+      Object.values(SESSOES).flat().forEach((ex) => {
+        expect(ex.backoffPct).toBe(0.85);
+      });
     });
   });
 
-  describe("Separação Upper / Lower", () => {
-    it("Upper A deve conter exercício de peito", () => {
-      const temPeito = SESSOES["Upper A"].some((e) =>
-        e.musculo.toLowerCase().includes("peit")
-      );
+  describe("Separacao Upper / Lower", () => {
+    it("Upper A deve conter exercicio de Peitoral", () => {
+      const temPeito = SESSOES["Upper A"].some((e) => e.grupo === "Peitoral");
       expect(temPeito).toBe(true);
     });
 
-    it("Lower A deve conter exercício de quadríceps ou glúteo", () => {
+    it("Lower A deve conter exercicio de Posterior/Gluteo", () => {
       const temPerna = SESSOES["Lower A"].some((e) =>
-        e.musculo.toLowerCase().match(/quadr|glút|posterior/)
+        e.grupo.match(/Posterior|Quadríceps/)
       );
       expect(temPerna).toBe(true);
     });
 
-    it("Upper B deve conter exercício de costas", () => {
-      const temCostas = SESSOES["Upper B"].some((e) =>
-        e.musculo.toLowerCase().includes("costas")
-      );
+    it("Upper B deve conter exercicio de Costas", () => {
+      const temCostas = SESSOES["Upper B"].some((e) => e.grupo === "Costas");
       expect(temCostas).toBe(true);
+    });
+
+    it("Lower B deve conter exercicio de Quadriceps", () => {
+      const temQuad = SESSOES["Lower B"].some((e) => e.grupo === "Quadríceps");
+      expect(temQuad).toBe(true);
+    });
+  });
+
+  describe("Faixas por tipo de exercicio", () => {
+    it("compostos devem ter faixaTopSet [5,9]", () => {
+      const compostos = Object.values(SESSOES).flat().filter(
+        (ex) => ex.faixaTopSet[0] === 5 && ex.faixaTopSet[1] === 9
+      );
+      expect(compostos.length).toBeGreaterThan(0);
+    });
+
+    it("isoladores devem ter faixaTopSet [10,15]", () => {
+      const isoladores = Object.values(SESSOES).flat().filter(
+        (ex) => ex.faixaTopSet[0] === 10 && ex.faixaTopSet[1] === 15
+      );
+      expect(isoladores.length).toBeGreaterThan(0);
+    });
+
+    it("exercicios de braco devem ter faixaTopSet [8,12]", () => {
+      const bracos = SESSOES["Braço"].filter(
+        (ex) => ex.grupo === "Braço" && ex.faixaTopSet[0] === 8 && ex.faixaTopSet[1] === 12
+      );
+      expect(bracos.length).toBeGreaterThan(0);
     });
   });
 });

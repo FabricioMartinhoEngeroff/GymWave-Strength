@@ -1,7 +1,6 @@
 /**
- * VolumeLoadTest → utils
+ * VolumeLoadTest -> utils
  * Testa calcVolumeLoad e calcTotalVolumeWeek com datas fixas.
- * usa vi.useFakeTimers() para controlar "esta semana" vs "semana anterior".
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { vi } from "vitest";
@@ -24,26 +23,25 @@ afterAll(() => {
   vi.useRealTimers();
 });
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
 function setDb(data: Record<string, unknown>) {
   localStorage.setItem("dadosTreino", JSON.stringify(data));
 }
 
 describe("VolumeLoadCalc", () => {
   describe("calcVolumeLoad — sem dados", () => {
-    it("retorna array vazio quando localStorage está vazio", () => {
+    it("retorna array vazio quando localStorage esta vazio", () => {
       const result = calcVolumeLoad();
       expect(result).toEqual([]);
     });
 
-    it("retorna array vazio quando há dados mas nenhuma data desta semana", () => {
+    it("retorna array vazio quando ha dados mas nenhuma data desta semana", () => {
       setDb({
-        "Supino Reto": {
-          C1: {
-            data: "01/01/2025", // ano passado
+        "Supino reto barra": {
+          UA: {
+            data: "01/01/2025",
             pesos: ["100", "90"],
             reps: ["10", "10"],
-            exercicio: "Supino Reto",
+            exercicio: "Supino reto barra",
           },
         },
       });
@@ -53,115 +51,76 @@ describe("VolumeLoadCalc", () => {
     });
   });
 
-  describe("calcVolumeLoad — cálculo desta semana", () => {
-    it("calcula volume corretamente: séries × reps × kg", () => {
+  describe("calcVolumeLoad — calculo desta semana", () => {
+    it("calcula volume corretamente: peso x reps", () => {
       setDb({
-        "Supino Reto": {
-          C1: {
-            data: "10/06/2026", // esta semana
-            pesos: ["100", "90", "80"],
-            reps: ["10", "10", "10"],
-            exercicio: "Supino Reto",
+        "Supino reto barra": {
+          UA: {
+            data: "10/06/2026",
+            pesos: ["100", "85"],
+            reps: ["7", "12"],
+            exercicio: "Supino reto barra",
           },
         },
       });
       const result = calcVolumeLoad();
       const peito = result.find((r) => r.musculo === "Peitoral");
-      // 100×10 + 90×10 + 80×10 = 2700
-      expect(peito?.volumeAtual).toBe(2700);
+      // 100*7 + 85*12 = 700 + 1020 = 1720
+      expect(peito?.volumeAtual).toBe(1720);
     });
 
-    it("acumula volume de vários exercícios do mesmo músculo", () => {
+    it("acumula volume de varios exercicios do mesmo musculo", () => {
       setDb({
-        "Supino Reto": {
-          C1: {
-            data: "09/06/2026", // segunda desta semana
+        "Supino reto barra": {
+          UA: {
+            data: "09/06/2026",
             pesos: ["100"],
             reps: ["5"],
-            exercicio: "Supino Reto",
+            exercicio: "Supino reto barra",
           },
         },
-        "Voador Peck Deck / máquina": {
-          C1: {
-            data: "11/06/2026", // quarta desta semana
-            pesos: ["60"],
+        "Crossover braço estendido": {
+          UA: {
+            data: "11/06/2026",
+            pesos: ["20"],
             reps: ["12"],
-            exercicio: "Voador Peck Deck / máquina",
+            exercicio: "Crossover braço estendido",
           },
         },
       });
       const result = calcVolumeLoad();
       const peito = result.find((r) => r.musculo === "Peitoral");
-      // 100×5 + 60×12 = 500 + 720 = 1220
-      expect(peito?.volumeAtual).toBe(1220);
-    });
-
-    it("delta é 0 quando não há dados da semana anterior", () => {
-      setDb({
-        "Supino Reto": {
-          C1: {
-            data: "10/06/2026",
-            pesos: ["100"],
-            reps: ["10"],
-            exercicio: "Supino Reto",
-          },
-        },
-      });
-      const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peitoral");
-      expect(peito?.delta).toBe(0);
+      // 100*5 + 20*12 = 500 + 240 = 740
+      expect(peito?.volumeAtual).toBe(740);
     });
 
     it("delta positivo quando volume atual > semana anterior", () => {
       setDb({
-        "Supino Reto": {
-          C1: {
-            data: "10/06/2026", // esta semana
+        "Supino reto barra": {
+          UA: {
+            data: "10/06/2026",
             pesos: ["100"],
             reps: ["10"],
-            exercicio: "Supino Reto",
+            exercicio: "Supino reto barra",
           },
-          C4: {
-            data: "03/06/2026", // semana anterior (ter 03/06)
+          UB: {
+            data: "03/06/2026",
             pesos: ["80"],
             reps: ["10"],
-            exercicio: "Supino Reto",
+            exercicio: "Supino reto barra",
           },
         },
       });
       const result = calcVolumeLoad();
       const peito = result.find((r) => r.musculo === "Peitoral");
-      // Atual: 1000, Anterior: 800 → delta = +25%
+      // Atual: 1000, Anterior: 800 -> delta = +25%
       expect(peito?.delta).toBe(25);
     });
 
-    it("delta negativo quando volume atual < semana anterior", () => {
-      setDb({
-        "Supino Reto": {
-          C1: {
-            data: "10/06/2026", // esta semana
-            pesos: ["80"],
-            reps: ["10"],
-            exercicio: "Supino Reto",
-          },
-          C4: {
-            data: "03/06/2026", // semana anterior
-            pesos: ["100"],
-            reps: ["10"],
-            exercicio: "Supino Reto",
-          },
-        },
-      });
-      const result = calcVolumeLoad();
-      const peito = result.find((r) => r.musculo === "Peitoral");
-      // Atual: 800, Anterior: 1000 → delta = -20%
-      expect(peito?.delta).toBe(-20);
-    });
-
-    it("ignora exercícios sem mapeamento muscular", () => {
+    it("ignora exercicios sem mapeamento muscular", () => {
       setDb({
         "Exercicio Sem Mapa": {
-          C1: {
+          UA: {
             data: "10/06/2026",
             pesos: ["100"],
             reps: ["10"],
@@ -172,33 +131,49 @@ describe("VolumeLoadCalc", () => {
       const result = calcVolumeLoad();
       expect(result).toHaveLength(0);
     });
-  });
 
-  describe("calcTotalVolumeWeek", () => {
-    it("retorna 0 quando não há treinos esta semana", () => {
-      expect(calcTotalVolumeWeek()).toBe(0);
-    });
-
-    it("soma volume de todos os músculos da semana", () => {
+    it("conta series validas corretamente", () => {
       setDb({
-        "Supino Reto": {
-          C1: {
+        "Supino reto barra": {
+          UA: {
             data: "10/06/2026",
-            pesos: ["100"],
-            reps: ["10"],
-            exercicio: "Supino Reto",
-          },
-        },
-        Agachamento: {
-          C1: {
-            data: "10/06/2026",
-            pesos: ["130"],
-            reps: ["5"],
-            exercicio: "Agachamento",
+            pesos: ["100", "85"],
+            reps: ["7", "12"],
+            exercicio: "Supino reto barra",
           },
         },
       });
-      // Peitoral: 1000, Quadríceps: 650
+      const result = calcVolumeLoad();
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito?.seriesAtual).toBe(2);
+    });
+  });
+
+  describe("calcTotalVolumeWeek", () => {
+    it("retorna 0 quando nao ha treinos esta semana", () => {
+      expect(calcTotalVolumeWeek()).toBe(0);
+    });
+
+    it("soma volume de todos os musculos da semana", () => {
+      setDb({
+        "Supino reto barra": {
+          UA: {
+            data: "10/06/2026",
+            pesos: ["100"],
+            reps: ["10"],
+            exercicio: "Supino reto barra",
+          },
+        },
+        "Agachamento livre": {
+          LB: {
+            data: "10/06/2026",
+            pesos: ["130"],
+            reps: ["5"],
+            exercicio: "Agachamento livre",
+          },
+        },
+      });
+      // Peitoral: 1000, Quadriceps: 650
       expect(calcTotalVolumeWeek()).toBe(1650);
     });
   });

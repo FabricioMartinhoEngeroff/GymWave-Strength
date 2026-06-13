@@ -1,11 +1,12 @@
 import { MUSCLE_MAP } from "../data/muscleMap";
-import type { DadosTreino } from "../types/TrainingData";
+import type { DadosTreino, Logbook } from "../types/TrainingData";
 
 export interface VolumeMusculo {
   musculo: string;
   volumeAtual: number;
   volumeAnterior: number;
   delta: number; // percentage change, 0 if no previous data
+  seriesAtual: number; // total valid sets this week
 }
 
 function getISOWeekBounds(weeksAgo: number): { start: number; end: number } {
@@ -38,17 +39,34 @@ function calcVolumeEntry(pesos: string[], reps: string[]): number {
   return total;
 }
 
+function countValidSets(pesos: string[], reps: string[]): number {
+  let count = 0;
+  for (let i = 0; i < pesos.length; i++) {
+    const p = parseFloat(pesos[i]) || 0;
+    const r = parseFloat(reps[i]) || 0;
+    if (p > 0 && r > 0) count++;
+  }
+  return count;
+}
+
 export function calcVolumeLoad(): VolumeMusculo[] {
+  // Read from both dadosTreino (legacy) and logbook (new)
   const db = JSON.parse(
     localStorage.getItem("dadosTreino") || "{}"
   ) as DadosTreino;
+
+  const logbook = JSON.parse(
+    localStorage.getItem("logbook") || "{}"
+  ) as Logbook;
 
   const thisWeek = getISOWeekBounds(0);
   const lastWeek = getISOWeekBounds(1);
 
   const musculoAtual: Record<string, number> = {};
   const musculoAnterior: Record<string, number> = {};
+  const musculoSeries: Record<string, number> = {};
 
+  // Process legacy dadosTreino
   Object.entries(db).forEach(([exercicio, ciclos]) => {
     const musculo = MUSCLE_MAP[exercicio];
     if (!musculo) return;
@@ -62,6 +80,35 @@ export function calcVolumeLoad(): VolumeMusculo[] {
 
       if (ts >= thisWeek.start && ts <= thisWeek.end) {
         musculoAtual[musculo] = (musculoAtual[musculo] || 0) + vol;
+        musculoSeries[musculo] = (musculoSeries[musculo] || 0) + countValidSets(reg.pesos || [], reg.reps || []);
+      } else if (ts >= lastWeek.start && ts <= lastWeek.end) {
+        musculoAnterior[musculo] = (musculoAnterior[musculo] || 0) + vol;
+      }
+    });
+  });
+
+  // Process logbook (new format) — only if no dadosTreino for the same exercise+date
+  Object.entries(logbook).forEach(([exercicio, registros]) => {
+    const musculo = MUSCLE_MAP[exercicio];
+    if (!musculo) return;
+
+    registros.forEach((reg) => {
+      const ts = reg.dataTs;
+      if (!ts) return;
+
+      // Top set + backoff volumes
+      const topVol = reg.topSetKg * reg.topSetReps;
+      const boVol = reg.backoffKg * reg.backoffReps;
+      const vol = topVol + boVol;
+      if (vol <= 0) return;
+
+      let sets = 0;
+      if (reg.topSetKg > 0 && reg.topSetReps > 0) sets++;
+      if (reg.backoffKg > 0 && reg.backoffReps > 0) sets++;
+
+      if (ts >= thisWeek.start && ts <= thisWeek.end) {
+        musculoAtual[musculo] = (musculoAtual[musculo] || 0) + vol;
+        musculoSeries[musculo] = (musculoSeries[musculo] || 0) + sets;
       } else if (ts >= lastWeek.start && ts <= lastWeek.end) {
         musculoAnterior[musculo] = (musculoAnterior[musculo] || 0) + vol;
       }
@@ -79,7 +126,8 @@ export function calcVolumeLoad(): VolumeMusculo[] {
     const anterior = musculoAnterior[musculo] || 0;
     const delta =
       anterior > 0 ? Math.round(((atual - anterior) / anterior) * 100) : 0;
-    result.push({ musculo, volumeAtual: atual, volumeAnterior: anterior, delta });
+    const seriesAtual = musculoSeries[musculo] || 0;
+    result.push({ musculo, volumeAtual: atual, volumeAnterior: anterior, delta, seriesAtual });
   });
 
   return result.sort((a, b) => b.volumeAtual - a.volumeAtual);
