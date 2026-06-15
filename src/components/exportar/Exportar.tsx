@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { DadosTreino, PlanoTreino } from "../../types/TrainingData";
+import type { DadosTreino, Logbook, PlanoTreino } from "../../types/TrainingData";
 import {
   DropZone,
   DropIcon,
@@ -307,26 +307,27 @@ function exportJSON() {
 }
 
 function exportCSV() {
-  const db = JSON.parse(
-    localStorage.getItem("dadosTreino") || "{}"
-  ) as DadosTreino;
+  const logbook = JSON.parse(
+    localStorage.getItem("logbook") || "{}"
+  ) as Logbook;
 
   const rows: string[] = [
-    "data,exercicio,ciclo,serie,peso_kg,reps",
+    "data,exercicio,treino_id,top_set_kg,top_set_reps,backoff_kg,backoff_reps,series_validas,extra_kg,extra_reps",
   ];
 
-  Object.entries(db).forEach(([exercicio, ciclos]) => {
-    Object.entries(ciclos).forEach(([ciclo, reg]) => {
-      (reg.pesos || []).forEach((peso, i) => {
-        const rep = (reg.reps || [])[i] || "";
-        if (peso || rep) {
-          rows.push(
-            [reg.data, exercicio, ciclo, i + 1, peso, rep]
-              .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-              .join(",")
-          );
-        }
-      });
+  Object.values(logbook).forEach((registros) => {
+    registros.forEach((reg) => {
+      rows.push(
+        [
+          reg.data, reg.exercicio, reg.treinoId,
+          reg.topSetKg, reg.topSetReps,
+          reg.backoffKg, reg.backoffReps,
+          reg.seriesValidas ?? 2,
+          reg.extraKg ?? "", reg.extraReps ?? "",
+        ]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(",")
+      );
     });
   });
 

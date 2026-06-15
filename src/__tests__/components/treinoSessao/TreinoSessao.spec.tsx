@@ -145,6 +145,98 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     });
   });
 
+  // ── Série Extra ─────────────────────────────────────────────────────────
+
+  describe("Série Extra (seriesValidas)", () => {
+    function setupLogbookComSeriesValidas3() {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "01/01/2026",
+          dataTs: 1000,
+          topSetKg: 100,
+          topSetReps: 7,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 85,
+          backoffReps: 12,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 3,
+          progrediu: false,
+        }],
+      }));
+    }
+
+    it("exibe badge '3 válidas' quando seriesValidas=3 vem do historico", () => {
+      setupLogbookComSeriesValidas3();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      expect(screen.getByText("3 válidas")).toBeInTheDocument();
+    });
+
+    it("exibe badge '2 válidas' quando nao ha historico (padrao)", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.getByText("2 válidas")).toBeInTheDocument();
+    });
+
+    it("exibe bloco Extra apos confirmar backoff quando seriesValidas=3", () => {
+      setupLogbookComSeriesValidas3();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
+      fireEvent.click(screen.getByText("Confirmar Top Set"));
+
+      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "12" } });
+      fireEvent.click(screen.getByText("Confirmar Back-off"));
+
+      expect(screen.getByText(/série extra/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Extra kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Extra reps/i)).toBeInTheDocument();
+    });
+
+    it("nao exibe bloco Extra quando seriesValidas=2 (padrao)", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
+      fireEvent.click(screen.getByText("Confirmar Top Set"));
+
+      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "12" } });
+      fireEvent.click(screen.getByText("Confirmar Back-off"));
+
+      expect(screen.queryByText(/série extra/i)).not.toBeInTheDocument();
+    });
+
+    it("salva seriesValidas e extra no logbook ao salvar treino", () => {
+      setupLogbookComSeriesValidas3();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      // Pula até o último exercício
+      for (let i = 0; i < 7; i++) {
+        fireEvent.click(screen.getByText("Pular"));
+      }
+
+      // Abdomen (8º) não tem histórico, seriesValidas=2
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "50" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "12" } });
+      fireEvent.click(screen.getByText("Confirmar Top Set"));
+      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "18" } });
+      fireEvent.click(screen.getByText("Confirmar Back-off"));
+      fireEvent.click(screen.getByText("Salvar treino"));
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      expect(logbook["Abdômen cabo ajoelhado"][0].seriesValidas).toBe(2);
+    });
+  });
+
   // ── Primeiro registro ───────────────────────────────────────────────────
 
   describe("Banners de progressao", () => {

@@ -54,6 +54,13 @@ export interface RegistroExercicio {
   tecnica?: "BC" | "RP" | null;
   clusterReps?: number[]; // ex: [12, 5, 3] -> total 20
 
+  // Series count (read from import spreadsheet, persisted per registro)
+  seriesValidas: 2 | 3; // 2 = Top Set + Back-off | 3 = + Série Extra
+
+  // Extra set (only present when seriesValidas === 3)
+  extraKg?: number;
+  extraReps?: number;
+
   // Progression
   pesoAnterior?: number;
   repsAnterior?: number;

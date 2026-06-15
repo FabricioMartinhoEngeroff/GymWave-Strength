@@ -96,15 +96,19 @@ export function calcVolumeLoad(): VolumeMusculo[] {
       const ts = reg.dataTs;
       if (!ts) return;
 
-      // Top set + backoff volumes
+      // Top set + backoff + optional extra volumes
       const topVol = reg.topSetKg * reg.topSetReps;
       const boVol = reg.backoffKg * reg.backoffReps;
-      const vol = topVol + boVol;
+      const extraVol = (reg.seriesValidas === 3 && reg.extraKg && reg.extraReps)
+        ? reg.extraKg * reg.extraReps
+        : 0;
+      const vol = topVol + boVol + extraVol;
       if (vol <= 0) return;
 
       let sets = 0;
       if (reg.topSetKg > 0 && reg.topSetReps > 0) sets++;
       if (reg.backoffKg > 0 && reg.backoffReps > 0) sets++;
+      if (reg.seriesValidas === 3 && reg.extraKg && reg.extraKg > 0 && reg.extraReps && reg.extraReps > 0) sets++;
 
       if (ts >= thisWeek.start && ts <= thisWeek.end) {
         musculoAtual[musculo] = (musculoAtual[musculo] || 0) + vol;

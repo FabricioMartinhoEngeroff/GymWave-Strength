@@ -46,6 +46,7 @@ interface ImportRow {
   faixa_backoff_max: number;
   top_set_kg?: number | string;
   backoff_kg?: number | string;
+  series_validas?: number;
   tecnica?: string;
   backoff_pct?: string;
   cue?: string;
@@ -151,6 +152,7 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
         faixa_backoff_max: Number(r.faixa_backoff_max ?? 15),
         top_set_kg: r.top_set_kg as string | number | undefined,
         backoff_kg: r.backoff_kg as string | number | undefined,
+        series_validas: Number(r.series_validas) === 3 ? 3 : 2,
         tecnica: String(r.tecnica ?? ""),
         backoff_pct: String(r.backoff_pct ?? "85%"),
         cue: String(r.cue ?? ""),
@@ -283,6 +285,7 @@ export default function AdminImport() {
         backoffReps: 0,
         backoffFaixaMin: row.faixa_backoff_min,
         backoffFaixaMax: row.faixa_backoff_max,
+        seriesValidas: (row.series_validas === 3 ? 3 : 2) as 2 | 3,
         pesoAnterior: undefined,
         repsAnterior: undefined,
         progrediu: false,
@@ -410,6 +413,7 @@ export default function AdminImport() {
                   <Th>Faixa B-off</Th>
                   <Th>Top Set kg</Th>
                   <Th>B-off kg</Th>
+                  <Th>Séries Válidas</Th>
                 </tr>
               </thead>
               <tbody>
@@ -429,6 +433,9 @@ export default function AdminImport() {
                       {parsePeso(r.backoff_kg) !== null
                         ? <PesoBadge>{parsePeso(r.backoff_kg)} kg</PesoBadge>
                         : <EmptyBadge>auto</EmptyBadge>}
+                    </Td>
+                    <Td>
+                      <PesoBadge>{r.series_validas ?? 2}</PesoBadge>
                     </Td>
                   </Tr>
                 ))}

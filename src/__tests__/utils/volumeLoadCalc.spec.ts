@@ -149,6 +149,92 @@ describe("VolumeLoadCalc", () => {
     });
   });
 
+  describe("calcVolumeLoad — logbook com seriesValidas", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("soma volume extra quando seriesValidas=3", () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "10/06/2026",
+          dataTs: new Date("2026-06-10T12:00:00").getTime(),
+          topSetKg: 100,
+          topSetReps: 7,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 85,
+          backoffReps: 12,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 3,
+          extraKg: 80,
+          extraReps: 15,
+          progrediu: false,
+        }],
+      }));
+      const result = calcVolumeLoad();
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      // 100*7 + 85*12 + 80*15 = 700 + 1020 + 1200 = 2920
+      expect(peito?.volumeAtual).toBe(2920);
+    });
+
+    it("conta 3 series quando seriesValidas=3 com extra preenchido", () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "10/06/2026",
+          dataTs: new Date("2026-06-10T12:00:00").getTime(),
+          topSetKg: 100,
+          topSetReps: 7,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 85,
+          backoffReps: 12,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 3,
+          extraKg: 80,
+          extraReps: 15,
+          progrediu: false,
+        }],
+      }));
+      const result = calcVolumeLoad();
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito?.seriesAtual).toBe(3);
+    });
+
+    it("conta 2 series quando seriesValidas=2 mesmo que extraKg exista", () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "10/06/2026",
+          dataTs: new Date("2026-06-10T12:00:00").getTime(),
+          topSetKg: 100,
+          topSetReps: 7,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 85,
+          backoffReps: 12,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 2,
+          progrediu: false,
+        }],
+      }));
+      const result = calcVolumeLoad();
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito?.seriesAtual).toBe(2);
+    });
+  });
+
   describe("calcTotalVolumeWeek", () => {
     it("retorna 0 quando nao ha treinos esta semana", () => {
       expect(calcTotalVolumeWeek()).toBe(0);

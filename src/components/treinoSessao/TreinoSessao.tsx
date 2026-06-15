@@ -42,6 +42,9 @@ interface ExerciseState {
   topSetReps: string;
   backoffKg: string;
   backoffReps: string;
+  extraKg: string;
+  extraReps: string;
+  seriesValidas: 2 | 3;
   topSetConfirmed: boolean;
   backoffConfirmed: boolean;
   tecnica: "BC" | "RP" | null;
@@ -80,6 +83,9 @@ function emptyExerciseState(): ExerciseState {
     topSetReps: "",
     backoffKg: "",
     backoffReps: "",
+    extraKg: "",
+    extraReps: "",
+    seriesValidas: 2,
     topSetConfirmed: false,
     backoffConfirmed: false,
     tecnica: null,
@@ -119,6 +125,7 @@ export default function TreinoSessao() {
           const increment = ultimo.topSetKg >= 40 ? 2 : 1;
           state.topSetKg = String(ultimo.topSetKg + increment);
         }
+        state.seriesValidas = (ultimo.seriesValidas ?? 2) as 2 | 3;
       }
       states[ex.nome] = state;
     });
@@ -139,6 +146,19 @@ export default function TreinoSessao() {
       setExerciseStates((prev) => ({
         ...prev,
         [currentEx.nome]: { ...prev[currentEx.nome], backoffKg: String(suggested) },
+      }));
+    }
+  }, [currentEx, exerciseStates]);
+
+  // Auto-fill extra kg from backoff when extra block appears
+  useEffect(() => {
+    if (!currentEx) return;
+    const state = exerciseStates[currentEx.nome];
+    if (!state?.backoffConfirmed || state.extraKg !== "" || state.seriesValidas !== 3) return;
+    if (state.backoffKg) {
+      setExerciseStates((prev) => ({
+        ...prev,
+        [currentEx.nome]: { ...prev[currentEx.nome], extraKg: state.backoffKg },
       }));
     }
   }, [currentEx, exerciseStates]);
@@ -229,6 +249,9 @@ export default function TreinoSessao() {
       const boReps = parseInt(state.backoffReps) || 0;
       if (topKg <= 0) return;
 
+      const extraKg = state.seriesValidas === 3 ? (parseFloat(state.extraKg) || 0) : 0;
+      const extraReps = state.seriesValidas === 3 ? (parseInt(state.extraReps) || 0) : 0;
+
       const ultimo = ultimoRegistro(ex.nome, treinoId);
       const bateuTeto = topReps >= ex.faixaTopSet[1];
       if (bateuTeto) subirPeso++;
@@ -247,6 +270,9 @@ export default function TreinoSessao() {
         backoffReps: boReps,
         backoffFaixaMin: ex.faixaBackoff[0],
         backoffFaixaMax: ex.faixaBackoff[1],
+        seriesValidas: state.seriesValidas,
+        extraKg: extraKg > 0 ? extraKg : undefined,
+        extraReps: extraReps > 0 ? extraReps : undefined,
         tecnica: state.tecnica,
         clusterReps: state.tecnica
           ? state.clusterReps.map(Number).filter((n) => n > 0)
@@ -260,12 +286,14 @@ export default function TreinoSessao() {
       salvarRegistro(registro);
       feitos++;
 
-      // Legacy compatibility: save to dadosTreino
+      // Legacy compatibility: save to dadosTreino (extra as 3rd element when present)
+      const legacyPesos = [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
+      const legacyReps = [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
       if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
       dadosDb[ex.nome][treinoId] = {
         data,
-        pesos: [String(topKg), String(boKg)],
-        reps: [String(topReps), String(boReps)],
+        pesos: legacyPesos,
+        reps: legacyReps,
         obs: state.obs.trim(),
         exercicio: ex.nome,
       };
@@ -438,7 +466,16 @@ export default function TreinoSessao() {
                         Top Set: {currentEx.faixaTopSet[0]}–{currentEx.faixaTopSet[1]} reps · Back-off: {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]} reps
                       </ExSub>
                     </div>
-                    <Badge>{treinoId}</Badge>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                      <Badge>{treinoId}</Badge>
+                      <span style={{
+                        fontSize: 10, padding: "2px 6px", borderRadius: 6, fontWeight: 600, whiteSpace: "nowrap",
+                        background: state.seriesValidas === 3 ? "#dcfce7" : "#f3f4f6",
+                        color: state.seriesValidas === 3 ? "#166534" : "#6b7280",
+                      }}>
+                        {state.seriesValidas === 3 ? "3 válidas" : "2 válidas"}
+                      </span>
+                    </div>
                   </ExHeader>
 
                   {renderProgressBanner(currentEx)}
@@ -567,6 +604,42 @@ export default function TreinoSessao() {
                           Confirmar Back-off
                         </button>
                       )}
+                    </Card>
+                  )}
+
+                  {/* EXTRA block (only when seriesValidas === 3 and backoff confirmed) */}
+                  {state.topSetConfirmed && state.backoffConfirmed && state.seriesValidas === 3 && (
+                    <Card style={{ background: "#fafafa" }}>
+                      <Label>Série Extra (volume)</Label>
+                      <SeriesGrid>
+                        <SerieRow>
+                          <SerieLabel>Peso</SerieLabel>
+                          <InputBox
+                            type="number"
+                            placeholder="kg"
+                            value={state.extraKg}
+                            onChange={(e) => updateState(currentEx.nome, { extraKg: e.target.value })}
+                            $invalid={false}
+                            aria-label={`Extra kg ${currentEx.nome}`}
+                          />
+                          <Unit>kg</Unit>
+                        </SerieRow>
+                        <SerieRow>
+                          <SerieLabel>Reps</SerieLabel>
+                          <InputSm
+                            type="number"
+                            placeholder="reps"
+                            value={state.extraReps}
+                            onChange={(e) => updateState(currentEx.nome, { extraReps: e.target.value })}
+                            $invalid={false}
+                            aria-label={`Extra reps ${currentEx.nome}`}
+                          />
+                          <Unit>reps</Unit>
+                        </SerieRow>
+                      </SeriesGrid>
+                      <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>
+                        Faixa: {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]} reps · não conta para teto
+                      </p>
                     </Card>
                   )}
 

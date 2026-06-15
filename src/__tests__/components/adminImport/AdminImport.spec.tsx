@@ -22,6 +22,7 @@ const MOCK_ROWS = [
     faixa_backoff_max: 15,
     top_set_kg: 100,
     backoff_kg: 85,
+    series_validas: 3,
   },
   {
     treino_id: "LA",
@@ -36,6 +37,7 @@ const MOCK_ROWS = [
     faixa_backoff_max: 15,
     top_set_kg: 160,
     backoff_kg: "",
+    series_validas: 2,
   },
 ];
 
@@ -53,8 +55,8 @@ vi.mock("xlsx", () => ({
     sheet_to_json: vi.fn((_ws: unknown, opts?: { header?: number }) => {
       if (opts?.header === 1) {
         return [
-          ["treino_id", "treino", "ordem", "exercicio", "grupo", "tipo", "faixa_top_min", "faixa_top_max", "faixa_backoff_min", "faixa_backoff_max", "top_set_kg", "backoff_kg"],
-          ...MOCK_ROWS.map((r) => [r.treino_id, r.treino, r.ordem, r.exercicio, r.grupo, r.tipo, r.faixa_top_min, r.faixa_top_max, r.faixa_backoff_min, r.faixa_backoff_max, r.top_set_kg, r.backoff_kg]),
+          ["treino_id", "treino", "ordem", "exercicio", "grupo", "tipo", "faixa_top_min", "faixa_top_max", "faixa_backoff_min", "faixa_backoff_max", "top_set_kg", "backoff_kg", "series_validas"],
+          ...MOCK_ROWS.map((r) => [r.treino_id, r.treino, r.ordem, r.exercicio, r.grupo, r.tipo, r.faixa_top_min, r.faixa_top_max, r.faixa_backoff_min, r.faixa_backoff_max, r.top_set_kg, r.backoff_kg, r.series_validas]),
         ];
       }
       return MOCK_ROWS;
@@ -173,7 +175,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       });
     });
 
-    it("exibe cabecalhos Top Set e Back-off na tabela", async () => {
+    it("exibe cabecalhos Top Set, Back-off e Séries Válidas na tabela", async () => {
       mockFileReader("mock csv content");
       render(<AdminImport />);
 
@@ -185,6 +187,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       await waitFor(() => {
         expect(screen.getByText("Top Set kg")).toBeInTheDocument();
         expect(screen.getByText("B-off kg")).toBeInTheDocument();
+        expect(screen.getByText("Séries Válidas")).toBeInTheDocument();
       });
     });
   });
@@ -228,6 +231,20 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
       // Terra sumo: top_set_kg=160, backoff_kg vazio -> 160*0.85=136
       expect(logbook["Terra sumô"][0].backoffKg).toBe(136);
+    });
+
+    it("salva seriesValidas=3 no logbook quando series_validas=3 na planilha", async () => {
+      await loadAndConfirm();
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      expect(logbook["Supino reto barra"][0].seriesValidas).toBe(3);
+    });
+
+    it("salva seriesValidas=2 no logbook quando series_validas=2 na planilha", async () => {
+      await loadAndConfirm();
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      expect(logbook["Terra sumô"][0].seriesValidas).toBe(2);
     });
 
     it("exibe resultado com total de registros salvos", async () => {
