@@ -275,22 +275,24 @@ export const SerieLabel = styled.span`
 
 interface InputBoxProps {
   $invalid?: boolean;
+  $isSuggestion?: boolean;
 }
 
 export const InputBox = styled.input<InputBoxProps>`
   flex: 1;
   background: #f5f6fa;
-  border: 0.5px solid ${(p) => (p.$invalid ? "#ef4444" : "rgba(0,0,0,0.08)")};
+  border: 0.5px solid ${(p) => (p.$invalid ? "#ef4444" : p.$isSuggestion ? "#93c5fd" : "rgba(0,0,0,0.08)")};
   border-radius: 8px;
   padding: 8px 10px;
   font-size: 13px;
-  color: #111827;
+  color: ${(p) => (p.$isSuggestion ? "#2563eb" : "#111827")};
   min-width: 0;
   box-sizing: border-box;
   outline: ${(p) => (p.$invalid ? "2px solid #fca5a5" : "none")};
   &:focus {
     outline: none;
     border-color: #2563eb;
+    color: #111827;
   }
   &::placeholder {
     color: #d1d5db;
@@ -301,17 +303,18 @@ export const InputSm = styled.input<InputBoxProps>`
   width: 52px;
   flex-shrink: 0;
   background: #f5f6fa;
-  border: 0.5px solid ${(p) => (p.$invalid ? "#ef4444" : "rgba(0,0,0,0.08)")};
+  border: 0.5px solid ${(p) => (p.$invalid ? "#ef4444" : p.$isSuggestion ? "#93c5fd" : "rgba(0,0,0,0.08)")};
   border-radius: 8px;
   padding: 8px 6px;
   font-size: 13px;
-  color: #111827;
+  color: ${(p) => (p.$isSuggestion ? "#2563eb" : "#111827")};
   text-align: center;
   box-sizing: border-box;
   outline: ${(p) => (p.$invalid ? "2px solid #fca5a5" : "none")};
   &:focus {
     outline: none;
     border-color: #2563eb;
+    color: #111827;
   }
   &::placeholder {
     color: #d1d5db;

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { ROTACAO } from "../../data/cycles";
 import { SESSOES, SESSOES_LABELS, type SessaoTipo, type ExercicioSessao } from "../../data/sessionExercises";
 import type { RegistroExercicio } from "../../types/TrainingData";
@@ -51,6 +51,12 @@ interface ExerciseState {
   clusterReps: string[];
   obs: string;
   skipped: boolean;
+  topSetKgIsSuggestion: boolean;
+  backoffKgIsSuggestion: boolean;
+}
+
+interface TreinoSessaoProps {
+  onUnsavedChanges?: (has: boolean) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -92,26 +98,80 @@ function emptyExerciseState(): ExerciseState {
     clusterReps: ["", "", ""],
     obs: "",
     skipped: false,
+    topSetKgIsSuggestion: false,
+    backoffKgIsSuggestion: false,
   };
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function TreinoSessao() {
+export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {}) {
   const [sessao, setSessao] = useState<SessaoTipo | null>(null);
   const [data, setData] = useState(getTodayBR());
   const [currentIdx, setCurrentIdx] = useState(0);
   const [exerciseStates, setExerciseStates] = useState<Record<string, ExerciseState>>({});
   const [salvo, setSalvo] = useState(false);
   const [resumo, setResumo] = useState<{ feitos: number; total: number; subirPeso: number } | null>(null);
+  const [mostrarRevisao, setMostrarRevisao] = useState(false);
+
+  // Refs to avoid stale closures in effects
+  const exerciseStatesRef = useRef(exerciseStates);
+  exerciseStatesRef.current = exerciseStates;
+
+  // Draft storage (in-memory only, per session type)
+  const rascunhosRef = useRef<Partial<Record<SessaoTipo, Record<string, ExerciseState>>>>({});
+  const prevSessaoRef = useRef<SessaoTipo | null>(null);
 
   const exercicios: ExercicioSessao[] = sessao ? SESSOES[sessao] : [];
   const currentEx = exercicios[currentIdx] ?? null;
   const treinoId = sessao ? getRotacaoId(sessao) : "";
 
-  // Load previous data when session changes
+  // Unsaved changes: session selected + not yet saved (no resumo) + has some data
+  const hasUnsavedChanges =
+    sessao !== null &&
+    resumo === null &&
+    Object.values(exerciseStates).some(
+      (s) => s.topSetKg !== "" || s.topSetReps !== "" || s.topSetConfirmed || s.backoffConfirmed
+    );
+
+  // Notify parent of unsaved state
+  useEffect(() => {
+    onUnsavedChanges?.(hasUnsavedChanges);
+  }, [hasUnsavedChanges, onUnsavedChanges]);
+
+  // Browser-level beforeunload guard
+  useEffect(() => {
+    if (!hasUnsavedChanges) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [hasUnsavedChanges]);
+
+  // Load session data (also saves draft of previous session)
   useEffect(() => {
     if (!sessao) return;
+
+    // Save draft of previous session before switching
+    if (prevSessaoRef.current !== null && prevSessaoRef.current !== sessao) {
+      rascunhosRef.current[prevSessaoRef.current] = exerciseStatesRef.current;
+    }
+    prevSessaoRef.current = sessao;
+
+    // Restore draft if switching back
+    const draft = rascunhosRef.current[sessao];
+    if (draft) {
+      setExerciseStates(draft);
+      setCurrentIdx(0);
+      setMostrarRevisao(false);
+      setResumo(null);
+      setSalvo(false);
+      return;
+    }
+
+    // Load from history
     const states: Record<string, ExerciseState> = {};
     const exs = SESSOES[sessao];
     const tId = getRotacaoId(sessao);
@@ -119,23 +179,25 @@ export default function TreinoSessao() {
       const state = emptyExerciseState();
       const ultimo = ultimoRegistro(ex.nome, tId);
       if (ultimo) {
-        state.topSetKg = String(ultimo.topSetKg);
+        let suggestedKg = ultimo.topSetKg;
         if (ultimo.topSetBateuTeto) {
-          // Suggest increased weight
           const increment = ultimo.topSetKg >= 40 ? 2 : 1;
-          state.topSetKg = String(ultimo.topSetKg + increment);
+          suggestedKg = ultimo.topSetKg + increment;
         }
+        state.topSetKg = String(suggestedKg);
+        state.topSetKgIsSuggestion = true;
         state.seriesValidas = (ultimo.seriesValidas ?? 2) as 2 | 3;
       }
       states[ex.nome] = state;
     });
     setExerciseStates(states);
     setCurrentIdx(0);
+    setMostrarRevisao(false);
     setResumo(null);
     setSalvo(false);
-  }, [sessao]);
+  }, [sessao]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Suggest backoff when top set is confirmed
+  // Suggest backoff kg when top set is confirmed and backoff is still empty
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
@@ -145,7 +207,11 @@ export default function TreinoSessao() {
       const suggested = Math.round(topKg * currentEx.backoffPct);
       setExerciseStates((prev) => ({
         ...prev,
-        [currentEx.nome]: { ...prev[currentEx.nome], backoffKg: String(suggested) },
+        [currentEx.nome]: {
+          ...prev[currentEx.nome],
+          backoffKg: String(suggested),
+          backoffKgIsSuggestion: true,
+        },
       }));
     }
   }, [currentEx, exerciseStates]);
@@ -198,16 +264,18 @@ export default function TreinoSessao() {
     return !isNaN(kg) && kg > 0 && !isNaN(reps) && reps > 0;
   }
 
+  function isExerciseDone(nome: string): boolean {
+    const state = exerciseStates[nome];
+    if (!state) return false;
+    return state.skipped || (state.topSetConfirmed && state.backoffConfirmed);
+  }
+
   function nextExercise() {
-    if (currentIdx < exercicios.length - 1) {
-      setCurrentIdx(currentIdx + 1);
-    }
+    if (currentIdx < exercicios.length - 1) setCurrentIdx(currentIdx + 1);
   }
 
   function prevExercise() {
-    if (currentIdx > 0) {
-      setCurrentIdx(currentIdx - 1);
-    }
+    if (currentIdx > 0) setCurrentIdx(currentIdx - 1);
   }
 
   function skipExercise() {
@@ -235,7 +303,6 @@ export default function TreinoSessao() {
     let feitos = 0;
     let subirPeso = 0;
 
-    // Also save to legacy dadosTreino for chart compatibility
     const dadosDb = carregarDados();
 
     exercicios.forEach((ex) => {
@@ -286,7 +353,6 @@ export default function TreinoSessao() {
       salvarRegistro(registro);
       feitos++;
 
-      // Legacy compatibility: save to dadosTreino (extra as 3rd element when present)
       const legacyPesos = [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
       const legacyReps = [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
       if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
@@ -300,6 +366,11 @@ export default function TreinoSessao() {
     });
 
     salvarDados(dadosDb);
+
+    // Clear draft after saving
+    if (sessao) delete rascunhosRef.current[sessao];
+
+    setMostrarRevisao(false);
     setResumo({ feitos, total: exercicios.length, subirPeso });
     setSalvo(true);
     setTimeout(() => setSalvo(false), 5000);
@@ -309,7 +380,6 @@ export default function TreinoSessao() {
 
   function renderDaysSince() {
     if (!sessao || !treinoId) return null;
-    // Find last record for any exercise in this session
     const exs = SESSOES[sessao];
     let lastDate: string | undefined;
     exs.forEach((ex) => {
@@ -364,6 +434,73 @@ export default function TreinoSessao() {
     );
   }
 
+  function renderRevisao() {
+    return (
+      <Card>
+        <Label>Revisar antes de salvar</Label>
+        {exercicios.map((ex, idx) => {
+          const state = exerciseStates[ex.nome];
+          const done = isExerciseDone(ex.nome);
+          return (
+            <div
+              key={ex.nome}
+              onClick={() => { setCurrentIdx(idx); setMostrarRevisao(false); }}
+              style={{
+                padding: "10px 0",
+                borderBottom: idx < exercicios.length - 1 ? "0.5px solid #e5e7eb" : "none",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: 8,
+              }}
+              aria-label={`Editar ${ex.nome}`}
+            >
+              <span style={{ color: done ? "#16a34a" : "#9ca3af", fontSize: 14, width: 16, flexShrink: 0, marginTop: 2 }}>
+                {done ? "✓" : "○"}
+              </span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "#111827" }}>{ex.nome}</p>
+                {state?.skipped && (
+                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#9ca3af" }}>Pulado</p>
+                )}
+                {!state?.skipped && state?.topSetConfirmed && (
+                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6b7280" }}>
+                    Top: {state.topSetKg}kg × {state.topSetReps}reps
+                    {state.backoffConfirmed && ` · Back-off: ${state.backoffKg}kg × ${state.backoffReps}reps`}
+                    {state.seriesValidas === 3 && state.extraKg && ` · Extra: ${state.extraKg}kg × ${state.extraReps}reps`}
+                  </p>
+                )}
+                {!state?.skipped && !state?.topSetConfirmed && (
+                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#9ca3af" }}>Não preenchido</p>
+                )}
+              </div>
+              <span style={{ fontSize: 11, color: "#2563eb", flexShrink: 0 }}>Editar</span>
+            </div>
+          );
+        })}
+        <SaveBtn
+          $disabled={false}
+          disabled={false}
+          onClick={handleSalvarTreino}
+          type="button"
+          style={{ marginTop: 12 }}
+        >
+          Confirmar e Salvar Treino
+        </SaveBtn>
+        <button
+          type="button"
+          onClick={() => setMostrarRevisao(false)}
+          style={{
+            width: "100%", padding: 10, marginTop: 8, border: "1px solid #d1d5db",
+            borderRadius: 8, background: "#fff", color: "#6b7280", fontSize: 13, cursor: "pointer",
+          }}
+        >
+          Voltar ao exercício
+        </button>
+      </Card>
+    );
+  }
+
   // ── Main render ───────────────────────────────────────────────────────────
 
   return (
@@ -414,26 +551,53 @@ export default function TreinoSessao() {
           </Card>
         )}
 
+        {/* Pre-save review screen */}
+        {sessao && mostrarRevisao && !resumo && renderRevisao()}
+
         {/* Exercise navigation */}
-        {sessao && exercicios.length > 0 && !resumo && (
+        {sessao && exercicios.length > 0 && !resumo && !mostrarRevisao && (
           <>
-            {/* Navigation arrows */}
+            {/* Navigation with progress dots */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
               <button
                 type="button"
                 onClick={prevExercise}
                 disabled={currentIdx === 0}
                 style={{
-                  background: "none", border: "none", fontSize: 20, cursor: currentIdx === 0 ? "default" : "pointer",
+                  background: "none", border: "none", fontSize: 20,
+                  cursor: currentIdx === 0 ? "default" : "pointer",
                   color: currentIdx === 0 ? "#d1d5db" : "#2563eb", padding: "4px 12px",
                 }}
                 aria-label="Exercício anterior"
               >
                 ‹
               </button>
-              <span style={{ fontSize: 12, color: "#6b7280" }}>
-                {currentIdx + 1} / {exercicios.length}
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 12, color: "#6b7280" }}>
+                  {currentIdx + 1} / {exercicios.length}
+                </span>
+                <div style={{ display: "flex", gap: 5 }}>
+                  {exercicios.map((ex, idx) => (
+                    <div
+                      key={ex.nome}
+                      onClick={() => setCurrentIdx(idx)}
+                      title={`${ex.nome}${isExerciseDone(ex.nome) ? " ✓" : ""}`}
+                      style={{
+                        width: 8, height: 8, borderRadius: "50%", cursor: "pointer",
+                        background: idx === currentIdx
+                          ? "#2563eb"
+                          : isExerciseDone(ex.nome)
+                          ? "#16a34a"
+                          : "#d1d5db",
+                        boxSizing: "border-box",
+                        border: idx === currentIdx ? "1.5px solid #1d4ed8" : "1.5px solid transparent",
+                        transition: "background 0.15s",
+                        flexShrink: 0,
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={nextExercise}
@@ -453,15 +617,19 @@ export default function TreinoSessao() {
             {currentEx && (() => {
               const state = exerciseStates[currentEx.nome] ?? emptyExerciseState();
               const topStatus = getTopSetStatus(currentEx, state);
+              const done = isExerciseDone(currentEx.nome);
 
               return (
                 <ExerciseCard key={currentEx.nome}>
                   <ExHeader>
                     <div>
-                      <ExName>{currentEx.nome}</ExName>
-                      <ExSub>
-                        {currentEx.grupo} · {currentEx.cue}
-                      </ExSub>
+                      <ExName>
+                        {currentEx.nome}
+                        {done && (
+                          <span style={{ color: "#16a34a", fontSize: 13, marginLeft: 6 }}>✓</span>
+                        )}
+                      </ExName>
+                      <ExSub>{currentEx.grupo} · {currentEx.cue}</ExSub>
                       <ExSub>
                         Top Set: {currentEx.faixaTopSet[0]}–{currentEx.faixaTopSet[1]} reps · Back-off: {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]} reps
                       </ExSub>
@@ -490,9 +658,15 @@ export default function TreinoSessao() {
                           type="number"
                           placeholder="kg"
                           value={state.topSetKg}
-                          onChange={(e) => updateState(currentEx.nome, { topSetKg: e.target.value, topSetConfirmed: false })}
+                          onChange={(e) =>
+                            updateState(currentEx.nome, {
+                              topSetKg: e.target.value,
+                              topSetKgIsSuggestion: false,
+                            })
+                          }
                           $invalid={false}
-                          disabled={state.topSetConfirmed}
+                          $isSuggestion={state.topSetKgIsSuggestion && !state.topSetConfirmed}
+                          data-suggestion={state.topSetKgIsSuggestion && !state.topSetConfirmed ? "true" : undefined}
                           aria-label={`Top Set kg ${currentEx.nome}`}
                         />
                         <Unit>kg</Unit>
@@ -503,9 +677,8 @@ export default function TreinoSessao() {
                           type="number"
                           placeholder="reps"
                           value={state.topSetReps}
-                          onChange={(e) => updateState(currentEx.nome, { topSetReps: e.target.value, topSetConfirmed: false })}
+                          onChange={(e) => updateState(currentEx.nome, { topSetReps: e.target.value })}
                           $invalid={false}
-                          disabled={state.topSetConfirmed}
                           aria-label={`Top Set reps ${currentEx.nome}`}
                         />
                         <Unit>reps</Unit>
@@ -552,11 +725,22 @@ export default function TreinoSessao() {
                             Na faixa — manter peso
                           </div>
                         )}
+                        <button
+                          type="button"
+                          onClick={() => updateState(currentEx.nome, { topSetConfirmed: false })}
+                          style={{
+                            width: "100%", padding: 8, marginTop: 6, border: "1px solid #d1d5db",
+                            borderRadius: 8, background: "#fff", color: "#6b7280",
+                            fontSize: 12, cursor: "pointer",
+                          }}
+                        >
+                          Editar Top Set
+                        </button>
                       </>
                     )}
                   </Card>
 
-                  {/* BACK-OFF block (shows after top set confirmed) */}
+                  {/* BACK-OFF block (after top set confirmed) */}
                   {state.topSetConfirmed && (
                     <Card style={{ background: "#fafafa" }}>
                       <Label>Back-off ({Math.round(currentEx.backoffPct * 100)}%)</Label>
@@ -567,9 +751,14 @@ export default function TreinoSessao() {
                             type="number"
                             placeholder="kg"
                             value={state.backoffKg}
-                            onChange={(e) => updateState(currentEx.nome, { backoffKg: e.target.value })}
+                            onChange={(e) =>
+                              updateState(currentEx.nome, {
+                                backoffKg: e.target.value,
+                                backoffKgIsSuggestion: false,
+                              })
+                            }
                             $invalid={false}
-                            disabled={state.backoffConfirmed}
+                            $isSuggestion={state.backoffKgIsSuggestion && !state.backoffConfirmed}
                             aria-label={`Back-off kg ${currentEx.nome}`}
                           />
                           <Unit>kg</Unit>
@@ -582,14 +771,13 @@ export default function TreinoSessao() {
                             value={state.backoffReps}
                             onChange={(e) => updateState(currentEx.nome, { backoffReps: e.target.value })}
                             $invalid={false}
-                            disabled={state.backoffConfirmed}
                             aria-label={`Back-off reps ${currentEx.nome}`}
                           />
                           <Unit>reps</Unit>
                         </SerieRow>
                       </SeriesGrid>
 
-                      {!state.backoffConfirmed && (
+                      {!state.backoffConfirmed ? (
                         <button
                           type="button"
                           onClick={confirmBackoff}
@@ -603,11 +791,23 @@ export default function TreinoSessao() {
                         >
                           Confirmar Back-off
                         </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => updateState(currentEx.nome, { backoffConfirmed: false })}
+                          style={{
+                            width: "100%", padding: 8, marginTop: 6, border: "1px solid #d1d5db",
+                            borderRadius: 8, background: "#fff", color: "#6b7280",
+                            fontSize: 12, cursor: "pointer",
+                          }}
+                        >
+                          Editar Back-off
+                        </button>
                       )}
                     </Card>
                   )}
 
-                  {/* EXTRA block (only when seriesValidas === 3 and backoff confirmed) */}
+                  {/* EXTRA block */}
                   {state.topSetConfirmed && state.backoffConfirmed && state.seriesValidas === 3 && (
                     <Card style={{ background: "#fafafa" }}>
                       <Label>Série Extra (volume)</Label>
@@ -643,7 +843,7 @@ export default function TreinoSessao() {
                     </Card>
                   )}
 
-                  {/* Technique block (optional) */}
+                  {/* Technique block */}
                   {state.topSetConfirmed && state.backoffConfirmed && (
                     <Card style={{ background: "#fafafa" }}>
                       <Label>Técnica (opcional)</Label>
@@ -723,21 +923,24 @@ export default function TreinoSessao() {
                           flex: 2, padding: 10, border: "none", borderRadius: 8,
                           background: state.topSetConfirmed ? "#2563eb" : "#e5e7eb",
                           color: state.topSetConfirmed ? "#fff" : "#9ca3af",
-                          fontSize: 13, fontWeight: 600, cursor: state.topSetConfirmed ? "pointer" : "not-allowed",
+                          fontSize: 13, fontWeight: 600,
+                          cursor: state.topSetConfirmed ? "pointer" : "not-allowed",
                         }}
                       >
                         Próximo
                       </button>
                     ) : (
-                      <SaveBtn
-                        $disabled={!state.topSetConfirmed}
-                        disabled={!state.topSetConfirmed}
-                        onClick={handleSalvarTreino}
+                      <button
                         type="button"
-                        style={{ flex: 2, marginTop: 0 }}
+                        onClick={() => setMostrarRevisao(true)}
+                        style={{
+                          flex: 2, padding: 10, border: "none", borderRadius: 8,
+                          background: "#2563eb", color: "#fff",
+                          fontSize: 13, fontWeight: 600, cursor: "pointer",
+                        }}
                       >
-                        Salvar treino
-                      </SaveBtn>
+                        Ver Resumo
+                      </button>
                     )}
                   </div>
                 </ExerciseCard>

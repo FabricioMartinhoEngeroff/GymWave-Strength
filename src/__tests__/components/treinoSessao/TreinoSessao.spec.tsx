@@ -1,9 +1,9 @@
 /**
- * TreinoSessaoTest -> component
- * Testa o fluxo Saizen: selecao de treino, Top Set + Back-off,
- * banners de progressao, navegacao entre exercicios.
+ * TreinoSessao — testes do fluxo Saizen Top Set + Back-off
+ * Inclui: navegação com edição, rascunho por sessão, sugestão visual,
+ *         tela de revisão, alterações não salvas.
  */
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
 
@@ -14,6 +14,26 @@ function renderFresh() {
 
 function selecionarSessao(nome: string) {
   fireEvent.click(screen.getByRole("button", { name: nome }));
+}
+
+// Helper: confirm Top Set for current exercise
+function confirmarTopSet(kg = "100", reps = "7") {
+  fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: kg } });
+  fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: reps } });
+  fireEvent.click(screen.getByText("Confirmar Top Set"));
+}
+
+// Helper: confirm Back-off for current exercise
+function confirmarBackoff(reps = "12") {
+  fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: reps } });
+  fireEvent.click(screen.getByText("Confirmar Back-off"));
+}
+
+// Navigate to last exercise of Upper A (8 exercises) via Pular
+function pularParaUltimo(total = 8) {
+  for (let i = 0; i < total - 1; i++) {
+    fireEvent.click(screen.getByText("Pular"));
+  }
 }
 
 describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
@@ -105,11 +125,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("confirmar Top Set habilita bloco Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      const kgInput = screen.getByLabelText(/Top Set kg/i);
-      const repsInput = screen.getByLabelText(/Top Set reps/i);
-      fireEvent.change(kgInput, { target: { value: "100" } });
-      fireEvent.change(repsInput, { target: { value: "7" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
+      confirmarTopSet();
       expect(screen.getByText("Confirmar Back-off")).toBeInTheDocument();
       expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
     });
@@ -117,9 +133,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("back-off sugere peso automatico (85%)", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
+      confirmarTopSet("100", "7");
       const boInput = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
       expect(boInput.value).toBe("85");
     });
@@ -128,9 +142,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
       // Supino reto barra faixa [5,9] -> 9 reps = teto
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "9" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
+      confirmarTopSet("100", "9");
       expect(screen.getByText(/teto atingido/i)).toBeInTheDocument();
     });
 
@@ -138,9 +150,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
       // Supino reto barra faixa [5,9] -> 3 reps = abaixo
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "3" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
+      confirmarTopSet("100", "3");
       expect(screen.getByText(/abaixo da faixa/i)).toBeInTheDocument();
     });
   });
@@ -187,14 +197,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       setupLogbookComSeriesValidas3();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
-
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
-
-      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "12" } });
-      fireEvent.click(screen.getByText("Confirmar Back-off"));
-
+      confirmarTopSet();
+      confirmarBackoff();
       expect(screen.getByText(/série extra/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Extra kg/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Extra reps/i)).toBeInTheDocument();
@@ -203,14 +207,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("nao exibe bloco Extra quando seriesValidas=2 (padrao)", () => {
       renderFresh();
       selecionarSessao("Upper A");
-
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
-
-      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "12" } });
-      fireEvent.click(screen.getByText("Confirmar Back-off"));
-
+      confirmarTopSet();
+      confirmarBackoff();
       expect(screen.queryByText(/série extra/i)).not.toBeInTheDocument();
     });
 
@@ -219,18 +217,13 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      // Pula até o último exercício
-      for (let i = 0; i < 7; i++) {
-        fireEvent.click(screen.getByText("Pular"));
-      }
+      pularParaUltimo();
 
-      // Abdomen (8º) não tem histórico, seriesValidas=2
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "50" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "12" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
-      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "18" } });
-      fireEvent.click(screen.getByText("Confirmar Back-off"));
-      fireEvent.click(screen.getByText("Salvar treino"));
+      // Abdomen (8º) sem histórico, seriesValidas=2
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
       expect(logbook["Abdômen cabo ajoelhado"][0].seriesValidas).toBe(2);
@@ -276,31 +269,17 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("salvar treino persiste no logbook e dadosTreino", () => {
       renderFresh();
       selecionarSessao("Upper A");
+      pularParaUltimo();
 
-      // Preenche e confirma top set para todos os exercicios
-      // Como estamos no ultimo exercicio, o botao muda para "Salvar treino"
-      // Vamos pular todos menos o ultimo
-      for (let i = 0; i < 7; i++) {
-        fireEvent.click(screen.getByText("Pular"));
-      }
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      // Ultimo exercicio: Abdomen cabo ajoelhado
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "50" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "12" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
-
-      // Confirma backoff
-      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "18" } });
-      fireEvent.click(screen.getByText("Confirmar Back-off"));
-
-      fireEvent.click(screen.getByText("Salvar treino"));
-
-      // Verifica logbook
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
       expect(logbook["Abdômen cabo ajoelhado"]).toBeDefined();
       expect(logbook["Abdômen cabo ajoelhado"][0].topSetKg).toBe(50);
 
-      // Verifica dadosTreino (compatibilidade)
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
       expect(db["Abdômen cabo ajoelhado"]).toBeDefined();
     });
@@ -308,20 +287,334 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("apos salvar exibe toast e resumo", () => {
       renderFresh();
       selecionarSessao("Upper A");
+      pularParaUltimo();
 
-      for (let i = 0; i < 7; i++) {
-        fireEvent.click(screen.getByText("Pular"));
-      }
-
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "50" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "12" } });
-      fireEvent.click(screen.getByText("Confirmar Top Set"));
-      fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: "18" } });
-      fireEvent.click(screen.getByText("Confirmar Back-off"));
-      fireEvent.click(screen.getByText("Salvar treino"));
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
       expect(screen.getByText(/treino salvo/i)).toBeInTheDocument();
       expect(screen.getByText(/resumo do treino/i)).toBeInTheDocument();
+    });
+  });
+
+  // ── Edição de exercícios já confirmados ────────────────────────────────
+
+  describe("Edicao de exercicios ja confirmados", () => {
+    it("inputs do Top Set nao ficam desabilitados apos confirmacao", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      expect(kgInput).not.toBeDisabled();
+    });
+
+    it("ao voltar a exercicio confirmado, campo kg mantem valor e e editavel", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      confirmarBackoff("12");
+
+      // Avanca para o segundo exercício
+      fireEvent.click(screen.getByLabelText(/próximo exercício/i));
+      expect(screen.getByText("2 / 8")).toBeInTheDocument();
+
+      // Volta ao primeiro
+      fireEvent.click(screen.getByLabelText(/exercício anterior/i));
+      expect(screen.getByText("1 / 8")).toBeInTheDocument();
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      expect(kgInput.value).toBe("100");
+      expect(kgInput).not.toBeDisabled();
+    });
+
+    it("editar valor do Top Set apos confirmacao atualiza em memoria", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      confirmarBackoff("12");
+
+      // Avanca e volta
+      fireEvent.click(screen.getByLabelText(/próximo exercício/i));
+      fireEvent.click(screen.getByLabelText(/exercício anterior/i));
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      fireEvent.change(kgInput, { target: { value: "105" } });
+      expect(kgInput.value).toBe("105");
+    });
+
+    it("botao Editar Top Set reabre o campo de confirmacao", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+
+      fireEvent.click(screen.getByText("Editar Top Set"));
+      expect(screen.getByText("Confirmar Top Set")).toBeInTheDocument();
+    });
+
+    it("indicador verde aparece no nome do exercicio quando confirmado", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      confirmarBackoff("12");
+
+      // O ✓ aparece no nome do exercício
+      expect(screen.getByText("✓")).toBeInTheDocument();
+    });
+  });
+
+  // ── Rascunho por sessão ────────────────────────────────────────────────
+
+  describe("Rascunho por sessao ao trocar UA e UB", () => {
+    it("preserva dados digitados em UA ao mudar para UB e voltar", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+
+      // Digita kg no Upper A sem confirmar
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "80" } });
+
+      // Troca para Upper B
+      selecionarSessao("Upper B");
+      expect(screen.getByText("Barra fixa pronada")).toBeInTheDocument();
+
+      // Volta para Upper A
+      selecionarSessao("Upper A");
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      expect(kgInput.value).toBe("80");
+    });
+
+    it("preserva estado de confirmacao no rascunho", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+
+      // Troca e volta
+      selecionarSessao("Upper B");
+      selecionarSessao("Upper A");
+
+      // Back-off ainda visivel (topSetConfirmed ainda true)
+      expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
+    });
+
+    it("rascunho de UB e independente de UA", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "80" } });
+
+      selecionarSessao("Upper B");
+      // UB começa limpo
+      const kgInputUB = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      expect(kgInputUB.value).toBe("");
+    });
+  });
+
+  // ── Diferenciação visual sugestão vs editado ───────────────────────────
+
+  describe("Diferenciacao visual sugestao do historico", () => {
+    function setupHistorico() {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "01/01/2026",
+          dataTs: 1000,
+          topSetKg: 100,
+          topSetReps: 7,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 85,
+          backoffReps: 12,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 2,
+          progrediu: false,
+        }],
+      }));
+    }
+
+    it("input de kg do Top Set tem data-suggestion quando vem do historico", () => {
+      setupHistorico();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      expect(kgInput).toHaveAttribute("data-suggestion", "true");
+    });
+
+    it("data-suggestion some quando usuario edita o valor", () => {
+      setupHistorico();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      fireEvent.change(kgInput, { target: { value: "110" } });
+      expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
+    });
+
+    it("sem historico, input nao tem data-suggestion", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
+    });
+
+    it("data-suggestion some apos confirmar o top set", () => {
+      setupHistorico();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      confirmarTopSet("100", "7");
+
+      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
+    });
+  });
+
+  // ── Tela de revisão antes de salvar ───────────────────────────────────
+
+  describe("Tela de revisao antes de salvar", () => {
+    it("ultimo exercicio exibe botao Ver Resumo em vez de Salvar treino", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      expect(screen.getByText("Ver Resumo")).toBeInTheDocument();
+      expect(screen.queryByText("Salvar treino")).not.toBeInTheDocument();
+    });
+
+    it("clicar Ver Resumo exibe tela de revisao com todos os exercicios", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      fireEvent.click(screen.getByText("Ver Resumo"));
+
+      expect(screen.getByText(/revisar antes de salvar/i)).toBeInTheDocument();
+      expect(screen.getByText("Confirmar e Salvar Treino")).toBeInTheDocument();
+    });
+
+    it("tela de revisao lista todos os exercicios", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      fireEvent.click(screen.getByText("Ver Resumo"));
+
+      // Todos os 8 exercícios devem aparecer na revisão
+      expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
+      expect(screen.getByText("Abdômen cabo ajoelhado")).toBeInTheDocument();
+    });
+
+    it("exercicio confirmado mostra valores no resumo", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      confirmarBackoff("12");
+      // Use the navigation arrow to advance without overwriting the confirmed state
+      fireEvent.click(screen.getByLabelText(/próximo exercício/i));
+      pularParaUltimo(7); // 6 more skips from idx=1 to reach idx=7
+      fireEvent.click(screen.getByText("Ver Resumo"));
+
+      expect(screen.getByText(/100kg/)).toBeInTheDocument();
+    });
+
+    it("exercicio pulado mostra 'Pulado' no resumo", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByText("Pular")); // pula exercicio 1
+      pularParaUltimo(7); // pula restantes até o último
+      fireEvent.click(screen.getByText("Ver Resumo"));
+
+      expect(screen.getAllByText("Pulado").length).toBeGreaterThan(0);
+    });
+
+    it("clicar Editar no resumo volta para o exercicio correspondente", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      fireEvent.click(screen.getByText("Ver Resumo"));
+
+      // Clica no primeiro Editar (exercício 1)
+      const editarBtns = screen.getAllByText("Editar");
+      fireEvent.click(editarBtns[0]);
+
+      // Volta para a tela do exercício 1
+      expect(screen.getByText("1 / 8")).toBeInTheDocument();
+      expect(screen.queryByText("Confirmar e Salvar Treino")).not.toBeInTheDocument();
+    });
+
+    it("botao Voltar ao exercicio fecha o resumo", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Voltar ao exercício"));
+
+      expect(screen.getByText("8 / 8")).toBeInTheDocument();
+      expect(screen.queryByText("Confirmar e Salvar Treino")).not.toBeInTheDocument();
+    });
+
+    it("Confirmar e Salvar Treino salva e exibe resumo pos-save", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      expect(screen.getByText(/treino salvo/i)).toBeInTheDocument();
+      expect(screen.getByText(/resumo do treino/i)).toBeInTheDocument();
+    });
+  });
+
+  // ── Alterações não salvas ──────────────────────────────────────────────
+
+  describe("Alteracoes nao salvas", () => {
+    it("onUnsavedChanges(true) quando usuario digita dados", () => {
+      const onUnsavedChanges = vi.fn();
+      render(<TreinoSessao onUnsavedChanges={onUnsavedChanges} />);
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+
+      expect(onUnsavedChanges).toHaveBeenCalledWith(true);
+    });
+
+    it("onUnsavedChanges(false) apos salvar treino", () => {
+      const onUnsavedChanges = vi.fn();
+      render(<TreinoSessao onUnsavedChanges={onUnsavedChanges} />);
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      expect(onUnsavedChanges).toHaveBeenLastCalledWith(false);
+    });
+
+    it("onUnsavedChanges(false) sem sessao selecionada", () => {
+      const onUnsavedChanges = vi.fn();
+      render(<TreinoSessao onUnsavedChanges={onUnsavedChanges} />);
+
+      // Sem selecionar sessão, não há alterações
+      expect(onUnsavedChanges).toHaveBeenLastCalledWith(false);
+    });
+
+    it("registra listener beforeunload quando ha alteracoes nao salvas", () => {
+      const addEventSpy = vi.spyOn(window, "addEventListener");
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+
+      const calls = addEventSpy.mock.calls.filter(([event]) => event === "beforeunload");
+      expect(calls.length).toBeGreaterThan(0);
+
+      addEventSpy.mockRestore();
     });
   });
 });
