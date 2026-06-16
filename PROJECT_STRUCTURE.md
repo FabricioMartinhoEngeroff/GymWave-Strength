@@ -66,6 +66,10 @@ src/
 │   │   ├── TreinoSessao.tsx        # Componente principal
 │   │   └── TreinoSessao.styles.ts  # Styled-components
 │   │
+│   ├── adminImport/        # Importação de planilha para seed do logbook
+│   │   ├── AdminImport.tsx         # Upload .xlsx/.csv → normaliza → salva no logbook
+│   │   └── AdminImport.styles.ts
+│   │
 │   ├── ui/                 # Componentes de UI reutilizáveis
 │   │   ├── Button.tsx
 │   │   ├── Input.tsx
@@ -86,10 +90,13 @@ src/
 │   └── useAuth.ts              # Hook para consumir AuthContext
 
 ├── data/                   # Dados estáticos / configuração
-│   ├── cycles.ts               # Ciclos Saizen: C1 Acum, C2 Intens, C3 Pico, C4 Deload
-│   ├── exercise.ts             # Lista master de exercícios
+│   ├── cycles.ts               # Rotação de treinos: UA, UB, LA, LB, BR
+│   ├── exercise.ts             # Lista master de exercícios (legado)
 │   ├── muscleMap.ts            # Mapa exercício → grupo muscular
-│   └── sessionExercises.ts     # Mapa sessão → exercícios (Upper A/B, Lower A/B, Braço)
+│   └── sessionExercises.ts     # Plano estático: exercícios por sessão com faixaTopSet,
+│                               # faixaBackoff, backoffPct e seriesValidas (2 | 3).
+│                               # seriesValidas=3 → exibe bloco "Série Extra" após back-off.
+│                               # Fonte de verdade do plano; AdminImport e logbook herdam esse valor.
 
 ├── hooks/                  # Hooks customizados
 │   ├── useBreakpoint.ts        # Detecta breakpoint responsivo
@@ -121,7 +128,8 @@ src/
 
 └── utils/                  # Funções utilitárias puras
     ├── handleApiError.ts       # Tratamento padronizado de erros de API
-    ├── storage.ts              # salvarDados() / carregarDados() → localStorage["dadosTreino"]
+    ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), exercicioDeveSubirPeso()
+    │                           # Legado: salvarDados() / carregarDados() → localStorage["dadosTreino"]
     ├── timeFilter.ts           # getCutoffTs() — corte de timestamp por intervalo (1M, 3M…)
     ├── validateUUID.ts         # Validação de UUID
     ├── validationErrors.ts     # Mensagens de erro centralizadas
@@ -195,35 +203,72 @@ src/__tests__/
 
 ## Modelo de dados (`localStorage`)
 
+### `logbook` — histórico novo (fonte principal)
+```
+logbook: {
+  [exercicio: string]: RegistroExercicio[]
+}
+
+RegistroExercicio {
+  exercicio: string
+  treinoId: string          // "UA" | "UB" | "LA" | "LB" | "BR"
+  data: string              // "DD/MM/YYYY"
+  dataTs: number            // timestamp para ordenação
+  topSetKg: number
+  topSetReps: number
+  topSetFaixaMin/Max: number
+  topSetBateuTeto: boolean  // reps >= faixaMax → sobe peso na próxima sessão
+  backoffKg: number         // topSetKg × backoffPct (sugerido automaticamente)
+  backoffReps: number
+  backoffFaixaMin/Max: number
+  seriesValidas: 2 | 3      // 3 → tem Série Extra (volume)
+  extraKg?: number          // só presente quando seriesValidas === 3
+  extraReps?: number
+  progrediu: boolean
+  obs?: string
+}
+```
+
+### `dadosTreino` — legado (mantido para gráficos e relatórios)
 ```
 dadosTreino: {
   [exercicio: string]: {
-    [cicloId: string]: {   // ex: "C1", "C2", "C3", "C4"
-      data: string;        // "DD/MM/YYYY"
-      pesos: string[];
-      reps: string[];
-      obs?: string;
-      exercicio: string;
+    [treinoId: string]: {
+      data: string
+      pesos: string[]
+      reps: string[]
+      obs?: string
+      exercicio: string
     }
   }
 }
 ```
 
-## Ciclos Saizen
+## Método Saizen / Heavy Duty
 
-| ID  | Nome            | Séries | Rep-range | Objetivo          |
-|-----|-----------------|--------|-----------|-------------------|
-| C1  | Acumulação      | 3      | 10–15     | Volume / base     |
-| C2  | Intensificação  | 3      | 6–10      | Força + volume    |
-| C3  | Pico            | 2      | 3–6       | Força máxima      |
-| C4  | Deload          | 2      | 10–15     | Recuperação ativa |
+Cada exercício tem **Top Set** (PR work) + **Back-off** (85% do Top Set) e opcionalmente **Série Extra** (volume, mesmo peso do back-off).
 
-## Sessões
+| Campo              | Descrição                                                   |
+|--------------------|-------------------------------------------------------------|
+| `seriesValidas: 2` | Top Set + Back-off (padrão para compostos e máquinas)       |
+| `seriesValidas: 3` | Top Set + Back-off + Série Extra (isoladores de alto volume)|
+| `topSetBateuTeto`  | reps ≥ faixaTopSet[1] → obrigatório subir peso (+1 ou +2kg) |
 
-| Sessão  | Foco               |
-|---------|--------------------|
-| Upper A | Peito, ombro, tríceps |
-| Upper B | Costas, bíceps     |
-| Lower A | Quadríceps, glúteo |
-| Lower B | Posterior, panturrilha |
-| Braço   | Bíceps, tríceps isolados |
+### Exercícios com `seriesValidas = 3` (definidos em `sessionExercises.ts`)
+
+| Sessão   | Exercícios                                                              |
+|----------|-------------------------------------------------------------------------|
+| Upper A  | Elevação lateral livre, Elevação lateral cabo, Pull-around cabo, Crossover braço estendido |
+| Upper B  | Elevação lateral livre, Elevação lateral cabo                          |
+| Lower A  | Cadeira flexora sentada, Adutor máquina, Panturrilha em pé, Panturrilha sentado |
+| Lower B  | Cadeira flexora deitado, Adutor máquina, Panturrilha leg press         |
+
+## Sessões / Rotação
+
+| ID  | Sessão   | Dia      | Foco principal                      |
+|-----|----------|----------|-------------------------------------|
+| UA  | Upper A  | Terça    | Peito, ombro, costas (cabos)        |
+| UB  | Upper B  | Sexta    | Costas, ombro, peito                |
+| LA  | Lower A  | Segunda  | Posterior, glúteo, panturrilha      |
+| LB  | Lower B  | Quinta   | Quadríceps, posterior, panturrilha  |
+| BR  | Braço    | Domingo  | Bíceps, tríceps isolados            |

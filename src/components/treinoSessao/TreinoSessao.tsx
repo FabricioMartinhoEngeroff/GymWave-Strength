@@ -177,6 +177,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     const tId = getRotacaoId(sessao);
     exs.forEach((ex) => {
       const state = emptyExerciseState();
+      state.seriesValidas = ex.seriesValidas;
       const ultimo = ultimoRegistro(ex.nome, tId);
       if (ultimo) {
         let suggestedKg = ultimo.topSetKg;
@@ -186,7 +187,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         }
         state.topSetKg = String(suggestedKg);
         state.topSetKgIsSuggestion = true;
-        state.seriesValidas = (ultimo.seriesValidas ?? 2) as 2 | 3;
+        state.seriesValidas = (ultimo.seriesValidas ?? ex.seriesValidas) as 2 | 3;
       }
       states[ex.nome] = state;
     });
