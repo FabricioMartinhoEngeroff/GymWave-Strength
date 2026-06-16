@@ -10,28 +10,36 @@ export interface ExercicioSessao {
   cue: string;
 }
 
-// ── Faixas padrão ────────────────────────────────────────────────────────────
-
-const COMPOSTO: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"> = {
-  faixaTopSet: [5, 9],
-  faixaBackoff: [9, 15],
+// ── Faixas Saizen por categoria ───────────────────────────────────────────────
+// Multiarticulares livres (terra, supino, agacho, barra fixa, remada)
+const MULTIARTICULAR: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"> = {
+  faixaTopSet: [5, 8],
+  faixaBackoff: [8, 10],
   backoffPct: 0.85,
 };
 
+// Máquinas/Press pesados (desenvolvimento, stiff, puxadas de cabo pesado)
+const MAQUINA: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"> = {
+  faixaTopSet: [8, 10],
+  faixaBackoff: [10, 12],
+  backoffPct: 0.85,
+};
+
+// Isoladores, cabos e máquinas leves (extensora, lateral, crossover, etc.)
 const ISOLADOR: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"> = {
-  faixaTopSet: [10, 15],
-  faixaBackoff: [15, 20],
+  faixaTopSet: [10, 12],
+  faixaBackoff: [12, 15],
   backoffPct: 0.85,
 };
 
 const PANTURRILHA: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"> = {
-  faixaTopSet: [10, 15],
-  faixaBackoff: [15, 20],
+  faixaTopSet: [10, 12],
+  faixaBackoff: [12, 15],
   backoffPct: 0.85,
 };
 
 const BRACO: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"> = {
-  faixaTopSet: [8, 12],
+  faixaTopSet: [10, 12],
   faixaBackoff: [12, 15],
   backoffPct: 0.85,
 };
@@ -40,8 +48,8 @@ const BRACO: Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct"
 
 export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
   "Upper A": [
-    { nome: "Supino reto barra", grupo: "Peitoral", ...COMPOSTO, cue: "PR work, fresco" },
-    { nome: "Puxada triângulo", grupo: "Costas", ...COMPOSTO, cue: "cotovelo ao corpo" },
+    { nome: "Supino reto barra", grupo: "Peitoral", ...MULTIARTICULAR, cue: "PR work, fresco" },
+    { nome: "Puxada triângulo", grupo: "Costas", ...MAQUINA, cue: "cotovelo ao corpo" },
     { nome: "Elevação lateral livre", grupo: "Ombro", ...ISOLADOR, cue: "até linha do ombro" },
     { nome: "Elevação lateral cabo", grupo: "Ombro", ...ISOLADOR, cue: "tensão contínua" },
     { nome: "Pull-around cabo", grupo: "Costas", ...ISOLADOR, cue: "v-taper, quadril" },
@@ -50,17 +58,17 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Abdômen cabo ajoelhado", grupo: "Core", ...ISOLADOR, cue: "progressão de carga" },
   ],
   "Upper B": [
-    { nome: "Barra fixa pronada", grupo: "Costas", ...COMPOSTO, cue: "PR work, peito à barra" },
+    { nome: "Barra fixa pronada", grupo: "Costas", ...MULTIARTICULAR, cue: "PR work, peito à barra" },
     { nome: "Elevação lateral livre", grupo: "Ombro", ...ISOLADOR, cue: "2ª sessão semanal" },
     { nome: "Elevação lateral cabo", grupo: "Ombro", ...ISOLADOR, cue: "12 séries deltóide total" },
-    { nome: "Desenvolvimento máquina", grupo: "Ombro", ...COMPOSTO, cue: "sem subir trapézio" },
-    { nome: "Remada peito apoiado", grupo: "Costas", ...COMPOSTO, cue: "espessura, cotovelo baixo" },
-    { nome: "Supino halteres amplitude", grupo: "Peitoral", ...COMPOSTO, cue: "-10% carga, técnico" },
+    { nome: "Desenvolvimento máquina", grupo: "Ombro", ...MAQUINA, cue: "sem subir trapézio" },
+    { nome: "Remada peito apoiado", grupo: "Costas", ...MULTIARTICULAR, cue: "espessura, cotovelo baixo" },
+    { nome: "Supino halteres amplitude", grupo: "Peitoral", ...MULTIARTICULAR, cue: "-10% carga, técnico" },
     { nome: "Pull-around cabo", grupo: "Costas", ...ISOLADOR, cue: "2 válidas, v-taper" },
     { nome: "Abdômen cabo ajoelhado", grupo: "Core", ...ISOLADOR, cue: "progressão de carga" },
   ],
   "Lower A": [
-    { nome: "Terra sumô", grupo: "Posterior/Glúteo", ...COMPOSTO, cue: "PR work, 4 min descanso" },
+    { nome: "Terra sumô", grupo: "Posterior/Glúteo", ...MULTIARTICULAR, cue: "PR work, 4 min descanso" },
     { nome: "Elevação pélvica máquina", grupo: "Posterior/Glúteo", ...ISOLADOR, cue: "pausa 2s no topo" },
     { nome: "Cadeira extensora", grupo: "Quadríceps", ...ISOLADOR, cue: "pico de contração" },
     { nome: "Cadeira flexora sentada", grupo: "Posterior/Glúteo", ...ISOLADOR, cue: "sem tirar quadril" },
@@ -70,10 +78,10 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Abdômen infra pendurado", grupo: "Core", ...ISOLADOR, cue: "pelve bascula" },
   ],
   "Lower B": [
-    { nome: "Agachamento livre", grupo: "Quadríceps", ...COMPOSTO, cue: "PR work, 3-4 min" },
+    { nome: "Agachamento livre", grupo: "Quadríceps", ...MULTIARTICULAR, cue: "PR work, 3-4 min" },
     { nome: "Panturrilha leg press", grupo: "Panturrilha", ...PANTURRILHA, cue: "pirâmide, amplitude" },
     { nome: "Cadeira flexora deitado", grupo: "Posterior/Glúteo", ...ISOLADOR, cue: "antes do stiff" },
-    { nome: "Stiff", grupo: "Posterior/Glúteo", ...COMPOSTO, cue: "pausa no alongamento" },
+    { nome: "Stiff", grupo: "Posterior/Glúteo", ...MAQUINA, cue: "pausa no alongamento" },
     { nome: "Cadeira extensora", grupo: "Quadríceps", ...ISOLADOR, cue: "pico de contração" },
     { nome: "Adutor máquina", grupo: "Posterior/Glúteo", ...ISOLADOR, cue: "2ª sessão semanal" },
     { nome: "Abdômen infra pendurado", grupo: "Core", ...ISOLADOR, cue: "reto inferior" },

@@ -60,28 +60,54 @@ interface ImportResult {
 // ─── Column name mapping ───────────────────────────────────────────────────────
 
 const COLUMN_MAP: [RegExp, string][] = [
-  [/treino\s*id/i,           "treino_id"],
-  [/^treino$/i,              "treino"],
-  [/ord/i,                   "ordem"],
-  [/exerc[ií]cio/i,         "exercicio"],
-  [/grupo|m[uú]sculo/i,     "grupo"],
-  [/tipo/i,                  "tipo"],
-  [/faixa\s*top.*m[ií]n/i,  "faixa_top_min"],
-  [/faixa\s*top.*m[aá]x/i,  "faixa_top_max"],
+  [/treino\s*id/i,             "treino_id"],
+  [/^treino$/i,                "treino"],
+  [/ord/i,                     "ordem"],
+  [/exerc[ií]cio/i,           "exercicio"],
+  [/grupo|m[uú]sculo/i,       "grupo"],
+  [/tipo/i,                    "tipo"],
+  // Faixa — formato "Faixa Top Mín" (legado) ou "Top Set Mín reps" (v2 planilha)
+  [/faixa\s*top.*m[ií]n/i,    "faixa_top_min"],
+  [/faixa\s*top.*m[aá]x/i,    "faixa_top_max"],
   [/faixa\s*b.*off.*m[ií]n/i, "faixa_backoff_min"],
   [/faixa\s*b.*off.*m[aá]x/i, "faixa_backoff_max"],
-  [/top\s*set.*kg/i,         "top_set_kg"],
-  [/back.*off.*kg/i,         "backoff_kg"],
-  [/t[eé]cnica/i,           "tecnica"],
-  [/back.*off.*%/i,          "backoff_pct"],
-  [/cue|foco/i,             "cue"],
+  [/top\s*set.*m[ií]n/i,      "faixa_top_min"],
+  [/top\s*set.*m[aá]x/i,      "faixa_top_max"],
+  [/back.*off.*m[ií]n/i,      "faixa_backoff_min"],
+  [/back.*off.*m[aá]x/i,      "faixa_backoff_max"],
+  [/top\s*set.*kg/i,           "top_set_kg"],
+  [/back.*off.*kg/i,           "backoff_kg"],
+  [/t[eé]cnica/i,             "tecnica"],
+  [/back.*off.*%/i,            "backoff_pct"],
+  [/cue|foco/i,               "cue"],
   // Legacy C1-C4 columns mapping
-  [/peso\s*c1/i,            "top_set_kg"],
-  [/sess[aã]o/i,            "treino"],
-  [/rep.*m[ií]n/i,          "faixa_top_min"],
-  [/rep.*m[aá]x/i,          "faixa_top_max"],
-  [/s[eé]ries/i,            "series_validas"],
+  [/peso\s*c1/i,              "top_set_kg"],
+  [/sess[aã]o/i,              "treino"],
+  [/rep.*m[ií]n/i,            "faixa_top_min"],
+  [/rep.*m[aá]x/i,            "faixa_top_max"],
+  [/s[eé]ries/i,              "series_validas"],
 ];
+
+// Normaliza nomes da planilha v2 (descritivos) para os nomes canônicos do app
+const NOME_MAP: Record<string, string> = {
+  "Panturrilha sentado máquina":              "Panturrilha sentado",
+  "Pull-around cabo polia baixa":             "Pull-around cabo",
+  "Pulldown braço estendido inclinado":       "Pulldown inclinado",
+  "Panturrilha no leg press":                 "Panturrilha leg press",
+  "Barra fixa pegada aberta pronada":         "Barra fixa pronada",
+  "Desenvolvimento máquina pegada neutra":    "Desenvolvimento máquina",
+  "Remada peito apoiado banco inclinado":     "Remada peito apoiado",
+  "Supino halteres com amplitude":            "Supino halteres amplitude",
+  "Tríceps testa halteres deitado":           "Tríceps testa halteres",
+  "Tríceps polia barra reta pronada":         "Tríceps polia barra reta",
+  "Tríceps polia alta unilateral supinada":   "Tríceps polia unilateral",
+  "Rosca inclinada halteres 45°":             "Rosca inclinada 45°",
+  "Rosca scott mesa unilateral":              "Rosca scott unilateral",
+  "Rosca polia alta unilateral":              "Rosca polia alta",
+  "Rosca inversa barra ou halteres":          "Rosca inversa",
+  "Rolar barra na mão no cabo":               "Rolar barra cabo",
+  "Abdômen infra banco inclinado":            "Abdômen infra banco",
+};
 
 function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
   if (raw.length === 0) return raw;
@@ -139,11 +165,13 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
       if (!treinoId && treino) {
         treinoId = TREINO_ID_MAP[treino] ?? treino.substring(0, 2).toUpperCase();
       }
+      const nomeRaw = String(r.exercicio ?? "").trim();
+      const exercicio = NOME_MAP[nomeRaw] ?? nomeRaw;
       return {
         treino_id: treinoId,
         treino,
         ordem: Number(r.ordem ?? 0),
-        exercicio: String(r.exercicio ?? "").trim(),
+        exercicio,
         grupo: String(r.grupo ?? ""),
         tipo: String(r.tipo ?? ""),
         faixa_top_min: Number(r.faixa_top_min ?? 5),
