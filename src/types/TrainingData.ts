@@ -52,7 +52,7 @@ export interface RegistroExercicio {
 
   // Breathing Cluster / Rest-Pause (optional)
   tecnica?: "BC" | "RP" | null;
-  clusterReps?: number[]; // ex: [12, 5, 3] -> total 20
+  clusterSeries?: { kg: number; reps: number }[];
 
   // Series count (read from import spreadsheet, persisted per registro)
   seriesValidas: 2 | 3; // 2 = Top Set + Back-off | 3 = + Série Extra

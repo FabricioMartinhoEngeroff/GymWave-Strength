@@ -48,11 +48,13 @@ interface ExerciseState {
   topSetConfirmed: boolean;
   backoffConfirmed: boolean;
   tecnica: "BC" | "RP" | null;
-  clusterReps: string[];
+  clusterSeries: { kg: string; reps: string }[];
+  tecnicaConfirmed: boolean;
   obs: string;
   skipped: boolean;
   topSetKgIsSuggestion: boolean;
   backoffKgIsSuggestion: boolean;
+  backoffKgWasUserEdited: boolean;
 }
 
 interface TreinoSessaoProps {
@@ -95,11 +97,13 @@ function emptyExerciseState(): ExerciseState {
     topSetConfirmed: false,
     backoffConfirmed: false,
     tecnica: null,
-    clusterReps: ["", "", ""],
+    clusterSeries: [],
+    tecnicaConfirmed: false,
     obs: "",
     skipped: false,
     topSetKgIsSuggestion: false,
     backoffKgIsSuggestion: false,
+    backoffKgWasUserEdited: false,
   };
 }
 
@@ -113,6 +117,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   const [salvo, setSalvo] = useState(false);
   const [resumo, setResumo] = useState<{ feitos: number; total: number; subirPeso: number } | null>(null);
   const [mostrarRevisao, setMostrarRevisao] = useState(false);
+  const [topSetWarning, setTopSetWarning] = useState(false);
+  const [backoffWarning, setBackoffWarning] = useState(false);
+  const [tecnicaWarning, setTecnicaWarning] = useState(false);
 
   // Refs to avoid stale closures in effects
   const exerciseStatesRef = useRef(exerciseStates);
@@ -131,7 +138,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     sessao !== null &&
     resumo === null &&
     Object.values(exerciseStates).some(
-      (s) => s.topSetKg !== "" || s.topSetReps !== "" || s.topSetConfirmed || s.backoffConfirmed
+      (s) =>
+        s.topSetKg !== "" || s.topSetReps !== "" || s.topSetConfirmed || s.backoffConfirmed ||
+        s.clusterSeries.some((b) => b.kg !== "" || b.reps !== "")
     );
 
   // Notify parent of unsaved state
@@ -198,11 +207,18 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setSalvo(false);
   }, [sessao]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Suggest backoff kg when top set is confirmed and backoff is still empty
+  // Reset validation warnings when navigating between exercises or sessions
+  useEffect(() => {
+    setTopSetWarning(false);
+    setBackoffWarning(false);
+    setTecnicaWarning(false);
+  }, [currentIdx, sessao]);
+
+  // Suggest backoff kg when top set is confirmed and backoff is still empty (and user hasn't manually edited it)
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
-    if (!state?.topSetConfirmed || state.backoffKg) return;
+    if (!state?.topSetConfirmed || state.backoffKg || state.backoffKgWasUserEdited) return;
     const topKg = parseFloat(state.topSetKg);
     if (!isNaN(topKg) && topKg > 0) {
       const suggested = Math.round(topKg * currentEx.backoffPct);
@@ -239,11 +255,21 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
   function confirmTopSet() {
     if (!currentEx) return;
+    if (!canConfirmTopSet()) {
+      setTopSetWarning(true);
+      return;
+    }
+    setTopSetWarning(false);
     updateState(currentEx.nome, { topSetConfirmed: true });
   }
 
   function confirmBackoff() {
     if (!currentEx) return;
+    if (!canConfirmBackoff()) {
+      setBackoffWarning(true);
+      return;
+    }
+    setBackoffWarning(false);
     updateState(currentEx.nome, { backoffConfirmed: true });
   }
 
@@ -265,10 +291,29 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     return !isNaN(kg) && kg > 0 && !isNaN(reps) && reps > 0;
   }
 
+  function canConfirmTecnica(): boolean {
+    if (!currentEx) return false;
+    const s = exerciseStates[currentEx.nome];
+    if (!s || !s.tecnica) return false;
+    return s.clusterSeries.some((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0);
+  }
+
+  function confirmTecnica() {
+    if (!currentEx) return;
+    if (!canConfirmTecnica()) {
+      setTecnicaWarning(true);
+      return;
+    }
+    setTecnicaWarning(false);
+    updateState(currentEx.nome, { tecnicaConfirmed: true });
+  }
+
   function isExerciseDone(nome: string): boolean {
     const state = exerciseStates[nome];
     if (!state) return false;
-    return state.skipped || (state.topSetConfirmed && state.backoffConfirmed);
+    if (state.skipped) return true;
+    if (state.tecnica) return state.tecnicaConfirmed;
+    return state.topSetConfirmed && state.backoffConfirmed;
   }
 
   function nextExercise() {
@@ -309,19 +354,27 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     exercicios.forEach((ex) => {
       const state = exerciseStates[ex.nome];
       if (!state || state.skipped) return;
-      if (!state.topSetConfirmed) return;
+
+      const isTecnicaMode = state.tecnica !== null && state.tecnicaConfirmed;
+      if (!isTecnicaMode && !state.topSetConfirmed) return;
 
       const topKg = parseFloat(state.topSetKg) || 0;
       const topReps = parseInt(state.topSetReps) || 0;
       const boKg = parseFloat(state.backoffKg) || 0;
       const boReps = parseInt(state.backoffReps) || 0;
-      if (topKg <= 0) return;
+      if (!isTecnicaMode && topKg <= 0) return;
 
       const extraKg = state.seriesValidas === 3 ? (parseFloat(state.extraKg) || 0) : 0;
       const extraReps = state.seriesValidas === 3 ? (parseInt(state.extraReps) || 0) : 0;
 
+      const clusterData = isTecnicaMode
+        ? state.clusterSeries
+            .map((b) => ({ kg: parseFloat(b.kg) || 0, reps: parseInt(b.reps) || 0 }))
+            .filter((b) => b.kg > 0 && b.reps > 0)
+        : undefined;
+
       const ultimo = ultimoRegistro(ex.nome, treinoId);
-      const bateuTeto = topReps >= ex.faixaTopSet[1];
+      const bateuTeto = !isTecnicaMode && topReps >= ex.faixaTopSet[1];
       if (bateuTeto) subirPeso++;
 
       const registro: RegistroExercicio = {
@@ -342,9 +395,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         extraKg: extraKg > 0 ? extraKg : undefined,
         extraReps: extraReps > 0 ? extraReps : undefined,
         tecnica: state.tecnica,
-        clusterReps: state.tecnica
-          ? state.clusterReps.map(Number).filter((n) => n > 0)
-          : undefined,
+        clusterSeries: clusterData,
         pesoAnterior: ultimo?.topSetKg,
         repsAnterior: ultimo?.topSetReps,
         progrediu: ultimo ? topKg > ultimo.topSetKg : false,
@@ -354,8 +405,12 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       salvarRegistro(registro);
       feitos++;
 
-      const legacyPesos = [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
-      const legacyReps = [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
+      const legacyPesos = isTecnicaMode
+        ? clusterData!.map((b) => String(b.kg))
+        : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
+      const legacyReps = isTecnicaMode
+        ? clusterData!.map((b) => String(b.reps))
+        : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
       if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
       dadosDb[ex.nome][treinoId] = {
         data,
@@ -471,7 +526,16 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     {state.seriesValidas === 3 && state.extraKg && ` · Extra: ${state.extraKg}kg × ${state.extraReps}reps`}
                   </p>
                 )}
-                {!state?.skipped && !state?.topSetConfirmed && (
+                {!state?.skipped && state?.tecnicaConfirmed && state?.tecnica && (
+                  <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6b7280" }}>
+                    {state.tecnica}:{" "}
+                    {(state.clusterSeries ?? [])
+                      .filter((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0)
+                      .map((b, i) => `R${i + 1}: ${b.kg}kg × ${b.reps}reps`)
+                      .join(" · ")}
+                  </p>
+                )}
+                {!state?.skipped && !state?.topSetConfirmed && !state?.tecnicaConfirmed && (
                   <p style={{ margin: "2px 0 0", fontSize: 11, color: "#9ca3af" }}>Não preenchido</p>
                 )}
               </div>
@@ -649,6 +713,153 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
                   {renderProgressBanner(currentEx)}
 
+                  {/* Técnica — chips sempre visíveis, substitui Top Set/Back-off quando ativo */}
+                  <Card style={{ background: "#fafafa" }}>
+                    <Label>Técnica</Label>
+                    <div style={{ display: "flex", gap: 8, marginBottom: state.tecnica ? 12 : 0 }}>
+                      <CycleChip
+                        $active={state.tecnica === "BC"}
+                        onClick={() => {
+                          setTecnicaWarning(false);
+                          if (state.tecnica === "BC") {
+                            updateState(currentEx.nome, { tecnica: null, clusterSeries: [], tecnicaConfirmed: false });
+                          } else {
+                            updateState(currentEx.nome, {
+                              tecnica: "BC",
+                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
+                              topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
+                              topSetConfirmed: false, backoffConfirmed: false,
+                              topSetKgIsSuggestion: false, backoffKgIsSuggestion: false, backoffKgWasUserEdited: false,
+                              tecnicaConfirmed: false,
+                            });
+                          }
+                        }}
+                        type="button"
+                      >
+                        BC
+                      </CycleChip>
+                      <CycleChip
+                        $active={state.tecnica === "RP"}
+                        onClick={() => {
+                          setTecnicaWarning(false);
+                          if (state.tecnica === "RP") {
+                            updateState(currentEx.nome, { tecnica: null, clusterSeries: [], tecnicaConfirmed: false });
+                          } else {
+                            updateState(currentEx.nome, {
+                              tecnica: "RP",
+                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }],
+                              topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
+                              topSetConfirmed: false, backoffConfirmed: false,
+                              topSetKgIsSuggestion: false, backoffKgIsSuggestion: false, backoffKgWasUserEdited: false,
+                              tecnicaConfirmed: false,
+                            });
+                          }
+                        }}
+                        type="button"
+                      >
+                        RP
+                      </CycleChip>
+                    </div>
+
+                    {state.tecnica && !state.tecnicaConfirmed && (
+                      <>
+                        {state.clusterSeries.map((bloco, i) => (
+                          <div key={i}>
+                            <p style={{ fontSize: 11, fontWeight: 600, color: "#374151", margin: "8px 0 4px" }}>
+                              Bloco {i + 1}
+                            </p>
+                            <SeriesGrid>
+                              <SerieRow>
+                                <SerieLabel>Peso</SerieLabel>
+                                <InputBox
+                                  type="number"
+                                  placeholder="kg"
+                                  value={bloco.kg}
+                                  onChange={(e) => {
+                                    const cs = [...state.clusterSeries];
+                                    cs[i] = { ...cs[i], kg: e.target.value };
+                                    updateState(currentEx.nome, { clusterSeries: cs });
+                                  }}
+                                  $invalid={false}
+                                  aria-label={`Bloco ${i + 1} kg ${currentEx.nome}`}
+                                />
+                                <Unit>kg</Unit>
+                              </SerieRow>
+                              <SerieRow>
+                                <SerieLabel>Reps</SerieLabel>
+                                <InputSm
+                                  type="number"
+                                  placeholder="reps"
+                                  value={bloco.reps}
+                                  onChange={(e) => {
+                                    const cs = [...state.clusterSeries];
+                                    cs[i] = { ...cs[i], reps: e.target.value };
+                                    updateState(currentEx.nome, { clusterSeries: cs });
+                                  }}
+                                  $invalid={false}
+                                  aria-label={`Bloco ${i + 1} reps ${currentEx.nome}`}
+                                />
+                                <Unit>reps</Unit>
+                              </SerieRow>
+                            </SeriesGrid>
+                          </div>
+                        ))}
+                        <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 4px" }}>
+                          Total: {state.clusterSeries.reduce((sum, b) => {
+                            return sum + (parseFloat(b.kg) || 0) * (parseInt(b.reps) || 0);
+                          }, 0)} kg·reps
+                        </p>
+                        <button
+                          type="button"
+                          onClick={confirmTecnica}
+                          style={{
+                            width: "100%", padding: 10, marginTop: 4, border: "none", borderRadius: 8,
+                            background: "#2563eb", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                          }}
+                        >
+                          Confirmar Técnica
+                        </button>
+                        {tecnicaWarning && (
+                          <div style={{
+                            background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+                            padding: "9px 12px", fontSize: 12, color: "#c2410c", marginTop: 8,
+                            display: "flex", alignItems: "center", gap: 6, fontWeight: 500,
+                          }}>
+                            ⚠ Preencha pelo menos um bloco com peso e repetições.
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {state.tecnica && state.tecnicaConfirmed && (
+                      <>
+                        <div style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>
+                          {state.clusterSeries
+                            .filter((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0)
+                            .map((b, i) => (
+                              <span key={i} style={{ marginRight: 8 }}>
+                                R{i + 1}: {b.kg}kg × {b.reps}reps
+                              </span>
+                            ))}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => updateState(currentEx.nome, { tecnicaConfirmed: false })}
+                          style={{
+                            width: "100%", padding: 8, border: "1px solid #d1d5db",
+                            borderRadius: 8, background: "#fff", color: "#6b7280",
+                            fontSize: 12, cursor: "pointer",
+                          }}
+                        >
+                          Editar Técnica
+                        </button>
+                      </>
+                    )}
+                  </Card>
+
+                  {/* TOP SET / BACK-OFF / EXTRA — ocultos quando técnica está ativa */}
+                  {!state.tecnica && (
+                  <>
                   {/* TOP SET block */}
                   <Card style={{ background: "#fafafa" }}>
                     <Label>Top Set</Label>
@@ -659,13 +870,14 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           type="number"
                           placeholder="kg"
                           value={state.topSetKg}
-                          onChange={(e) =>
+                          onChange={(e) => {
+                            setTopSetWarning(false);
                             updateState(currentEx.nome, {
                               topSetKg: e.target.value,
                               topSetKgIsSuggestion: false,
-                            })
-                          }
-                          $invalid={false}
+                            });
+                          }}
+                          $invalid={topSetWarning && !(parseFloat(state.topSetKg) > 0)}
                           $isSuggestion={state.topSetKgIsSuggestion && !state.topSetConfirmed}
                           data-suggestion={state.topSetKgIsSuggestion && !state.topSetConfirmed ? "true" : undefined}
                           aria-label={`Top Set kg ${currentEx.nome}`}
@@ -678,8 +890,11 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           type="number"
                           placeholder="reps"
                           value={state.topSetReps}
-                          onChange={(e) => updateState(currentEx.nome, { topSetReps: e.target.value })}
-                          $invalid={false}
+                          onChange={(e) => {
+                            setTopSetWarning(false);
+                            updateState(currentEx.nome, { topSetReps: e.target.value });
+                          }}
+                          $invalid={topSetWarning && !(parseInt(state.topSetReps) > 0)}
                           aria-label={`Top Set reps ${currentEx.nome}`}
                         />
                         <Unit>reps</Unit>
@@ -687,19 +902,30 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     </SeriesGrid>
 
                     {!state.topSetConfirmed ? (
-                      <button
-                        type="button"
-                        onClick={confirmTopSet}
-                        disabled={!canConfirmTopSet()}
-                        style={{
-                          width: "100%", padding: 10, marginTop: 8, border: "none", borderRadius: 8,
-                          background: canConfirmTopSet() ? "#2563eb" : "#e5e7eb",
-                          color: canConfirmTopSet() ? "#fff" : "#9ca3af",
-                          fontSize: 13, fontWeight: 600, cursor: canConfirmTopSet() ? "pointer" : "not-allowed",
-                        }}
-                      >
-                        Confirmar Top Set
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={confirmTopSet}
+                          disabled={!canConfirmTopSet()}
+                          style={{
+                            width: "100%", padding: 10, marginTop: 8, border: "none", borderRadius: 8,
+                            background: canConfirmTopSet() ? "#2563eb" : "#e5e7eb",
+                            color: canConfirmTopSet() ? "#fff" : "#9ca3af",
+                            fontSize: 13, fontWeight: 600, cursor: canConfirmTopSet() ? "pointer" : "not-allowed",
+                          }}
+                        >
+                          Confirmar Top Set
+                        </button>
+                        {topSetWarning && (
+                          <div style={{
+                            background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+                            padding: "9px 12px", fontSize: 12, color: "#c2410c", marginTop: 8,
+                            display: "flex", alignItems: "center", gap: 6, fontWeight: 500,
+                          }}>
+                            ⚠ Preencha o peso e as repetições do Top Set antes de confirmar.
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <>
                         {topStatus === "teto" && (
@@ -752,13 +978,15 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             type="number"
                             placeholder="kg"
                             value={state.backoffKg}
-                            onChange={(e) =>
+                            onChange={(e) => {
+                              setBackoffWarning(false);
                               updateState(currentEx.nome, {
                                 backoffKg: e.target.value,
                                 backoffKgIsSuggestion: false,
-                              })
-                            }
-                            $invalid={false}
+                                backoffKgWasUserEdited: true,
+                              });
+                            }}
+                            $invalid={backoffWarning && !(parseFloat(state.backoffKg) > 0)}
                             $isSuggestion={state.backoffKgIsSuggestion && !state.backoffConfirmed}
                             aria-label={`Back-off kg ${currentEx.nome}`}
                           />
@@ -770,8 +998,11 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             type="number"
                             placeholder="reps"
                             value={state.backoffReps}
-                            onChange={(e) => updateState(currentEx.nome, { backoffReps: e.target.value })}
-                            $invalid={false}
+                            onChange={(e) => {
+                              setBackoffWarning(false);
+                              updateState(currentEx.nome, { backoffReps: e.target.value });
+                            }}
+                            $invalid={backoffWarning && !(parseInt(state.backoffReps) > 0)}
                             aria-label={`Back-off reps ${currentEx.nome}`}
                           />
                           <Unit>reps</Unit>
@@ -779,19 +1010,28 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </SeriesGrid>
 
                       {!state.backoffConfirmed ? (
-                        <button
-                          type="button"
-                          onClick={confirmBackoff}
-                          disabled={!canConfirmBackoff()}
-                          style={{
-                            width: "100%", padding: 10, marginTop: 8, border: "none", borderRadius: 8,
-                            background: canConfirmBackoff() ? "#2563eb" : "#e5e7eb",
-                            color: canConfirmBackoff() ? "#fff" : "#9ca3af",
-                            fontSize: 13, fontWeight: 600, cursor: canConfirmBackoff() ? "pointer" : "not-allowed",
-                          }}
-                        >
-                          Confirmar Back-off
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            onClick={confirmBackoff}
+                            style={{
+                              width: "100%", padding: 10, marginTop: 8, border: "none", borderRadius: 8,
+                              background: "#2563eb", color: "#fff",
+                              fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            }}
+                          >
+                            Confirmar Back-off
+                          </button>
+                          {backoffWarning && (
+                            <div style={{
+                              background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+                              padding: "9px 12px", fontSize: 12, color: "#c2410c", marginTop: 8,
+                              display: "flex", alignItems: "center", gap: 6, fontWeight: 500,
+                            }}>
+                              ⚠ Preencha o peso e as repetições do Back-off antes de confirmar.
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <button
                           type="button"
@@ -843,54 +1083,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </p>
                     </Card>
                   )}
-
-                  {/* Technique block */}
-                  {state.topSetConfirmed && state.backoffConfirmed && (
-                    <Card style={{ background: "#fafafa" }}>
-                      <Label>Técnica (opcional)</Label>
-                      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                        <CycleChip
-                          $active={state.tecnica === "BC"}
-                          onClick={() => updateState(currentEx.nome, { tecnica: state.tecnica === "BC" ? null : "BC" })}
-                          type="button"
-                        >
-                          BC
-                        </CycleChip>
-                        <CycleChip
-                          $active={state.tecnica === "RP"}
-                          onClick={() => updateState(currentEx.nome, { tecnica: state.tecnica === "RP" ? null : "RP" })}
-                          type="button"
-                        >
-                          RP
-                        </CycleChip>
-                      </div>
-
-                      {state.tecnica && (
-                        <SeriesGrid>
-                          {(state.tecnica === "BC" ? [0, 1, 2] : [0, 1]).map((i) => (
-                            <SerieRow key={i}>
-                              <SerieLabel>R{i + 1}</SerieLabel>
-                              <InputSm
-                                type="number"
-                                placeholder="reps"
-                                value={state.clusterReps[i] ?? ""}
-                                onChange={(e) => {
-                                  const cr = [...state.clusterReps];
-                                  cr[i] = e.target.value;
-                                  updateState(currentEx.nome, { clusterReps: cr });
-                                }}
-                                $invalid={false}
-                                aria-label={`Cluster reps ${i + 1} ${currentEx.nome}`}
-                              />
-                              <Unit>reps</Unit>
-                            </SerieRow>
-                          ))}
-                          <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>
-                            Total: {state.clusterReps.map(Number).filter((n) => n > 0).reduce((a, b) => a + b, 0)} reps
-                          </p>
-                        </SeriesGrid>
-                      )}
-                    </Card>
+                  </>
                   )}
 
                   {/* Observations */}
@@ -918,14 +1111,19 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     {!isLastExercise() ? (
                       <button
                         type="button"
-                        onClick={nextExercise}
-                        disabled={!state.topSetConfirmed}
+                        onClick={() => {
+                          if (state.tecnica) {
+                            if (!state.tecnicaConfirmed) { setTecnicaWarning(true); return; }
+                          } else {
+                            if (!state.topSetConfirmed) { setTopSetWarning(true); return; }
+                            if (!state.backoffConfirmed) { setBackoffWarning(true); return; }
+                          }
+                          nextExercise();
+                        }}
                         style={{
                           flex: 2, padding: 10, border: "none", borderRadius: 8,
-                          background: state.topSetConfirmed ? "#2563eb" : "#e5e7eb",
-                          color: state.topSetConfirmed ? "#fff" : "#9ca3af",
-                          fontSize: 13, fontWeight: 600,
-                          cursor: state.topSetConfirmed ? "pointer" : "not-allowed",
+                          background: "#2563eb", color: "#fff",
+                          fontSize: 13, fontWeight: 600, cursor: "pointer",
                         }}
                       >
                         Próximo

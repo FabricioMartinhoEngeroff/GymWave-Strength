@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 384 testes | 35 arquivos de teste**
+**Total: 416 testes | 35 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -29,7 +29,7 @@
 
 ---
 
-### 1.2 storage (7 testes)
+### 1.2 storage (21 testes)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -37,9 +37,23 @@
 | 2 | Dados salvos via `setItem` | `carregarDados` retorna dados identicos |
 | 3 | Ciclo com todos pesos e reps vazios | `salvarDados` ignora o ciclo |
 | 4 | Ciclo com pelo menos um peso preenchido | Preserva o ciclo |
-| 5 | Ciclo com apenas observacao preenchida | Preserva o ciclo |
-| 6 | Todos os ciclos de um exercicio vazios | Remove exercicio inteiro |
-| 7 | Salvar e recuperar dados completos | Round-trip preserva todos os campos |
+| 5 | Salvar e recuperar registro no logbook | `carregarHistorico` retorna 1 entrada |
+| 6 | Dois registros para o mesmo exercicio | `carregarHistorico` retorna 2 entradas |
+| 7 | Exercicio sem historico | `carregarHistorico` retorna array vazio |
+| 8 | Registro com `seriesValidas=3` | Extra kg e reps persistidos |
+| 9 | `ultimoRegistro` — dois registros | Retorna o de maior `dataTs` |
+| 10 | `ultimoRegistro` — filtra por `treinoId` | Retorna so o do treino correto |
+| 11 | `ultimoRegistro` — sem registros | Retorna null |
+| 12 | `exercicioDeveSubirPeso` — sem historico | Retorna false |
+| 13 | `exercicioDeveSubirPeso` — bateu teto | Retorna true |
+| 14 | `exercicioDeveSubirPeso` — nao bateu teto | Retorna false |
+| 15 | BC com 4 blocos — `salvarRegistro` | `clusterSeries` com 4 objetos `{kg, reps}` persistido |
+| 16 | RP com 2 blocos — `salvarRegistro` | `clusterSeries` com 2 objetos, `tecnica="RP"` persistido |
+| 17 | `ultimoRegistro` com BC — `clusterSeries` | Array de 4 blocos preservado intacto |
+| 18 | Registro sem tecnica | `clusterSeries` e `tecnica` ficam `undefined` |
+| 19 | Mix normal + BC no mesmo historico | Ambos convivem: 2 entradas, tipos distintos |
+| 20 | BC com blocos parciais | Todos os 4 blocos salvos, inclusive os zerados |
+| 21 | `seriesValidas` no `ultimoRegistro` | Retorna o valor do registro mais recente |
 
 ---
 
@@ -60,21 +74,29 @@
 
 ---
 
-### 1.4 volumeLoadCalc (11 testes)
+### 1.4 volumeLoadCalc (19 testes)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
 | 1 | localStorage vazio | Retorna array vazio |
 | 2 | Dados de ano passado (fora da semana) | Nenhum musculo retornado |
-| 3 | Supino 100x10 + 90x10 + 80x10 esta semana | Volume = 2700 |
-| 4 | Dois exercicios do mesmo musculo | Acumula volumes (500+720 = 1220) |
-| 5 | Sem dados da semana anterior | Delta = 0 |
-| 6 | Volume atual > semana anterior (1000 vs 800) | Delta = +25% |
-| 7 | Volume atual < semana anterior (800 vs 1000) | Delta = -20% |
-| 8 | Exercicio sem mapeamento muscular | Ignorado (array vazio) |
-| 9 | Nenhum treino esta semana | `calcTotalVolumeWeek` retorna 0 |
-| 10 | Supino + Agachamento esta semana | Soma total = 1650 |
-| 11 | Dados apenas de data antiga | Volume da semana e 0 |
+| 3 | Supino 100x7 + 85x12 esta semana | Volume = 1720 |
+| 4 | Dois exercicios do mesmo musculo | Acumula volumes (500+240 = 740) |
+| 5 | Volume atual > semana anterior (1000 vs 800) | Delta = +25% |
+| 6 | Exercicio sem mapeamento muscular | Ignorado (array vazio) |
+| 7 | Conta series validas corretamente | `seriesAtual` = 2 para Top Set + Back-off |
+| 8 | Logbook: `seriesValidas=3` com extra | Volume inclui extra; `seriesAtual` = 3 |
+| 9 | Logbook: `seriesValidas=2` sem extra | `seriesAtual` = 2 |
+| 10 | Logbook: `seriesValidas=2` mesmo com extraKg | Extra ignorado; `seriesAtual` = 2 |
+| 11 | `calcTotalVolumeWeek` sem treinos | Retorna 0 |
+| 12 | `calcTotalVolumeWeek` Supino + Agachamento | Soma total = 1650 |
+| 13 | BC com 4 blocos todos preenchidos | Volume = 80×10+80×8+78×7+78×6 = 2454 |
+| 14 | RP com 2 blocos | Volume = 100×8+100×5 = 1300 |
+| 15 | BC com 2 blocos preenchidos e 2 zerados | `seriesAtual` = 2 (so os preenchidos) |
+| 16 | BC com 3 blocos zerados e 1 preenchido | Volume = apenas o bloco preenchido (800) |
+| 17 | BC com `clusterSeries: []` (vazio) | Fallback para topSet/backoff; volume = 1720 |
+| 18 | Registro normal sem `clusterSeries` | Caminho normal inalterado; volume = 1720 |
+| 19 | BC + registro normal do mesmo musculo mesma semana | Volumes acumulados corretamente (2454+500=2954) |
 
 ---
 
@@ -421,69 +443,116 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ## 9. COMPONENTES DE FEATURE
 
-### 9.1 TreinoSessao (37 testes)
+### 9.1 TreinoSessao (49 testes)
 
-**Renderização inicial (7)**
+**Renderização inicial (3)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
 | 1 | Titulo | `GymWave Strength` visivel |
-| 2 | Ciclos Saizen | 4 ciclos C1-C4 exibidos |
-| 3 | Siglas dos ciclos | Pico, Intens., Acum., Deload visiveis |
-| 4 | Ciclo padrao | C1 (Pico) selecionado por padrao |
-| 5 | Campo de busca | Placeholder de busca presente |
-| 6 | Botao Salvar | Texto `Salvar treino` visivel |
-| 7 | Sem exercicios | Botao Salvar desabilitado |
+| 2 | Seletores de sessao | Upper A, Upper B, Lower A, Lower B, Braço visiveis |
+| 3 | Sem sessao selecionada | Mensagem `selecione um treino` exibida |
 
-**Seletor de sessão (7)**
+**Seleção de sessão (6)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 8 | Chips de sessao | Upper A, Lower A, Upper B, Lower B, Braco visiveis |
-| 9 | Selecionar Upper A | Supino Reto carregado automaticamente |
-| 10 | Selecionar Lower A | Agachamento carregado automaticamente |
-| 11 | Selecionar Upper B | Barra fixa carregada automaticamente |
-| 12 | Selecionar Lower B | Levantamento Terra carregado automaticamente |
-| 13 | Selecionar Braco | Triceps Polia carregado automaticamente |
-| 14 | Apos selecionar sessao | Botao Salvar desabilitado (falta peso) |
+| 4 | Selecionar Upper A | `Supino reto barra` carregado como primeiro exercicio |
+| 5 | Selecionar Lower A | `Terra sumô` carregado como primeiro exercicio |
+| 6 | Selecionar Upper B | `Barra fixa pronada` carregado como primeiro exercicio |
+| 7 | Selecionar Lower B | `Agachamento livre` carregado como primeiro exercicio |
+| 8 | Selecionar Braço | `Tríceps testa halteres` carregado como primeiro exercicio |
+| 9 | Sessao com 8 exercicios | Contador `1 / 8` exibido |
 
-**Séries dinâmicas por ciclo (5)**
-
-| # | Cenario | Resultado Esperado |
-|---|---------|-------------------|
-| 15 | C1 Pico (2 series) | Exibe apenas Serie 1 e Serie 2 |
-| 16 | C2 Intensificacao (3 series) | Exibe Serie 1, 2 e 3 |
-| 17 | C3 Acumulacao (3 series) | Exibe Serie 3 |
-| 18 | C4 Deload (2 series) | Exibe apenas Serie 1 e Serie 2 |
-| 19 | Trocar C2 para C1 | Serie 3 desaparece |
-
-**Seleção de ciclo / Multiselect / Validação / Save / Auto-fill / Obs (14)**
+**Top Set + Back-off (6)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 20 | Clicar em C2 | Seleciona C2 sem erro |
-| 21 | Digitar `Supino` na busca | Dropdown com `Supino Reto` |
-| 22 | Remover tag de exercicio | Card removido do DOM |
-| 23 | Adicionar 2 exercicios | 2 cards com Serie 1 cada |
-| 24 | Exercicio ja selecionado | Nao aparece no dropdown |
-| 25 | Serie 1 vazia | Botao Salvar permanece desabilitado |
-| 26 | Serie 1 com peso e reps | Botao Salvar habilitado |
-| 27 | Clicar Salvar com dados | Persiste no localStorage com ciclo C1 |
-| 28 | C1 salva 2 series | `pesos` tem length 2 |
-| 29 | Apos salvar | Exibe toast `Treino salvo` |
-| 30 | Apos salvar | Formulario resetado |
-| 31 | Exercicio com historico no ciclo | Auto-fill com pesos anteriores |
-| 32 | Exercicio sem historico | Inputs ficam vazios |
-| 33 | Campo de observacoes | Placeholder `como foi o treino` presente |
+| 10 | Bloco Top Set | Campos kg e reps presentes com labels corretos |
+| 11 | Confirmar Top Set sem dados | Botao desabilitado (`disabled`) |
+| 12 | Confirmar Top Set com dados validos | Bloco Back-off aparece |
+| 13 | Back-off apos confirmar Top Set 100kg | Peso sugerido automaticamente = 85 (85%) |
+| 14 | Top Set com reps no teto (9 reps, faixa 5–9) | Badge verde `Teto atingido` exibido |
+| 15 | Top Set abaixo da faixa (3 reps, faixa 5–9) | Badge vermelho `Abaixo da faixa` exibido |
 
-**Plano de treino — ordem e séries (4)**
+**Série Extra (seriesValidas) (5)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 34 | `planoTreino` com ordem invertida para Lower B | Agachamento aparece antes de Levantamento Terra no DOM |
-| 35 | `planoTreino` com `series_validas=2` para exercicio | Card exibe `2 séries` |
-| 36 | `planoTreino` com `series_validas=3` para exercicio | Card exibe `3 séries (3ª opcional)` |
-| 37 | Sem `planoTreino` no localStorage | Label padrão `3 séries (3ª opcional)` mantido |
+| 16 | Logbook com `seriesValidas=3` | Badge `3 válidas` exibido |
+| 17 | Sem historico (padrao) | Badge `2 válidas` exibido |
+| 18 | `seriesValidas=3` + Top Set + Back-off confirmados | Bloco `Série Extra` aparece |
+| 19 | `seriesValidas=2` (padrao) | Bloco `Série Extra` nao aparece |
+| 20 | Salvar com `seriesValidas=2` | `seriesValidas=2` persistido no logbook |
+
+**Banners de progressão (1)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 21 | Primeiro registro do exercicio | Banner azul `Primeiro registro — defina o peso` |
+
+**Navegação entre exercícios (2)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 22 | Clicar `Pular` | Contador avanca para `2 / 8` |
+| 23 | Setas de navegacao anterior / proximo | Contador atualiza corretamente nos dois sentidos |
+
+**Salvamento (2)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 24 | Confirmar + Salvar | Registro persistido em `logbook` e `dadosTreino` no localStorage |
+| 25 | Apos salvar | Toast `treino salvo` visivel e bloco de resumo exibido |
+
+**Edição de exercícios já confirmados (5)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 26 | Campos Top Set apos confirmacao | Inputs continuam editaveis (nao desabilitados) |
+| 27 | Voltar para exercicio confirmado | Valor de kg preservado e editavel |
+| 28 | Editar kg apos confirmacao e navegar | Novo valor permanece ao voltar |
+| 29 | Clicar `Editar Top Set` | Botao `Confirmar Top Set` reaparece |
+| 30 | Top Set + Back-off confirmados | Indicador `✓` verde no nome do exercicio |
+
+**Rascunho por sessão (3)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 31 | Digitar em Upper A, trocar para Upper B e voltar | Valor digitado em Upper A restaurado |
+| 32 | Confirmar Top Set em Upper A, trocar e voltar | Estado de confirmacao (`topSetConfirmed`) preservado |
+| 33 | Upper B comeca limpo mesmo com dados em Upper A | Inputs de Upper B vazios |
+
+**Diferenciação visual — sugestão do histórico (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 34 | Peso vem do historico | Input tem `data-suggestion="true"` |
+| 35 | Usuario edita o campo sugerido | `data-suggestion` removido |
+| 36 | Sem historico | Input nao tem `data-suggestion` |
+| 37 | Apos confirmar Top Set com sugestao | `data-suggestion` removido |
+
+**Tela de revisão pré-save (8)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 38 | Ultimo exercicio | Botao `Ver Resumo` visivel em vez de `Salvar treino` |
+| 39 | Clicar `Ver Resumo` | Tela de revisao com `Revisar antes de salvar` aparece |
+| 40 | Tela de revisao | Todos os exercicios da sessao listados |
+| 41 | Exercicio com Top Set + Back-off confirmados | `Top: 100kg × 7reps` exibido no resumo |
+| 42 | Exercicio com `Pular` | `Pulado` exibido no resumo |
+| 43 | Clicar `Editar` no primeiro exercicio da revisao | Volta para exercicio 1 (`1 / 8`) |
+| 44 | Clicar `Voltar ao exercicio` | Revisao fecha; exercicio atual reexibido |
+| 45 | Clicar `Confirmar e Salvar Treino` | Dados persistidos; toast e resumo pos-save exibidos |
+
+**Alterações não salvas (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 46 | Digitar kg no Top Set | `onUnsavedChanges` chamado com `true` |
+| 47 | Apos salvar treino | `onUnsavedChanges` chamado com `false` |
+| 48 | Sem sessao selecionada | `onUnsavedChanges` chamado com `false` |
+| 49 | Com alteracoes nao salvas | Listener `beforeunload` registrado no `window` |
 
 ---
 
@@ -710,7 +779,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 | Area | Arquivos | Testes |
 |------|----------|--------|
-| Utils | 8 | 88 |
+| Utils | 8 | 114 |
 | Data | 4 | 66 |
 | Services | 2 | 13 |
 | Contexts | 1 | 4 |
@@ -718,5 +787,5 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 148 |
-| **Total** | **35** | **384** |
+| Componentes Feature | 10 | 154 |
+| **Total** | **35** | **416** |

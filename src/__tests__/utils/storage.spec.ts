@@ -168,4 +168,116 @@ describe("Storage — Persistencia no localStorage", () => {
       expect(exercicioDeveSubirPeso("Supino reto barra", "UA")).toBe(false);
     });
   });
+
+  describe("clusterSeries (BC/RP) — persistência no logbook", () => {
+    it("salva e recupera registro BC com 4 blocos completos", () => {
+      salvarRegistro(makeRegistro({
+        tecnica: "BC",
+        topSetKg: 0,
+        topSetReps: 0,
+        backoffKg: 0,
+        backoffReps: 0,
+        clusterSeries: [
+          { kg: 80, reps: 10 },
+          { kg: 80, reps: 8 },
+          { kg: 78, reps: 7 },
+          { kg: 78, reps: 6 },
+        ],
+      }));
+      const historico = carregarHistorico("Supino reto barra");
+      expect(historico[0].tecnica).toBe("BC");
+      expect(historico[0].clusterSeries).toHaveLength(4);
+      expect(historico[0].clusterSeries![0]).toEqual({ kg: 80, reps: 10 });
+      expect(historico[0].clusterSeries![3]).toEqual({ kg: 78, reps: 6 });
+    });
+
+    it("salva e recupera registro RP com 2 blocos", () => {
+      salvarRegistro(makeRegistro({
+        tecnica: "RP",
+        topSetKg: 0,
+        topSetReps: 0,
+        backoffKg: 0,
+        backoffReps: 0,
+        clusterSeries: [
+          { kg: 100, reps: 8 },
+          { kg: 100, reps: 5 },
+        ],
+      }));
+      const historico = carregarHistorico("Supino reto barra");
+      expect(historico[0].tecnica).toBe("RP");
+      expect(historico[0].clusterSeries).toHaveLength(2);
+      expect(historico[0].clusterSeries![1]).toEqual({ kg: 100, reps: 5 });
+    });
+
+    it("ultimoRegistro preserva clusterSeries intacto", () => {
+      salvarRegistro(makeRegistro({ dataTs: 1000 })); // normal, mais antigo
+      salvarRegistro(makeRegistro({
+        dataTs: 2000,
+        tecnica: "BC",
+        topSetKg: 0,
+        topSetReps: 0,
+        backoffKg: 0,
+        backoffReps: 0,
+        clusterSeries: [
+          { kg: 80, reps: 10 },
+          { kg: 80, reps: 8 },
+          { kg: 78, reps: 7 },
+          { kg: 78, reps: 6 },
+        ],
+      }));
+      const ultimo = ultimoRegistro("Supino reto barra", "UA");
+      expect(ultimo?.tecnica).toBe("BC");
+      expect(ultimo?.clusterSeries).toHaveLength(4);
+    });
+
+    it("registro sem tecnica tem clusterSeries undefined", () => {
+      salvarRegistro(makeRegistro());
+      const historico = carregarHistorico("Supino reto barra");
+      expect(historico[0].clusterSeries).toBeUndefined();
+      expect(historico[0].tecnica).toBeUndefined();
+    });
+
+    it("mix: registros normais e com BC convivem no mesmo historico", () => {
+      salvarRegistro(makeRegistro({ dataTs: 1000, topSetKg: 90 }));
+      salvarRegistro(makeRegistro({
+        dataTs: 2000,
+        tecnica: "BC",
+        topSetKg: 0,
+        topSetReps: 0,
+        backoffKg: 0,
+        backoffReps: 0,
+        clusterSeries: [
+          { kg: 80, reps: 10 },
+          { kg: 80, reps: 8 },
+          { kg: 78, reps: 7 },
+          { kg: 78, reps: 6 },
+        ],
+      }));
+      const historico = carregarHistorico("Supino reto barra");
+      expect(historico).toHaveLength(2);
+      const normal = historico.find((r) => !r.tecnica);
+      const bc = historico.find((r) => r.tecnica === "BC");
+      expect(normal?.topSetKg).toBe(90);
+      expect(bc?.clusterSeries).toHaveLength(4);
+    });
+
+    it("BC com blocos parciais salva todos os blocos inclusive os vazios", () => {
+      salvarRegistro(makeRegistro({
+        tecnica: "BC",
+        topSetKg: 0,
+        topSetReps: 0,
+        backoffKg: 0,
+        backoffReps: 0,
+        clusterSeries: [
+          { kg: 80, reps: 10 },
+          { kg: 80, reps: 8 },
+          { kg: 0, reps: 0 },
+          { kg: 0, reps: 0 },
+        ],
+      }));
+      const historico = carregarHistorico("Supino reto barra");
+      expect(historico[0].clusterSeries).toHaveLength(4);
+      expect(historico[0].clusterSeries![2]).toEqual({ kg: 0, reps: 0 });
+    });
+  });
 });
