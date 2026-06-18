@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 416 testes | 35 arquivos de teste**
+**Total: 453 testes | 37 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -97,6 +97,10 @@
 | 17 | BC com `clusterSeries: []` (vazio) | Fallback para topSet/backoff; volume = 1720 |
 | 18 | Registro normal sem `clusterSeries` | Caminho normal inalterado; volume = 1720 |
 | 19 | BC + registro normal do mesmo musculo mesma semana | Volumes acumulados corretamente (2454+500=2954) |
+| 20 | Musculo com 2 series na semana | Badge de classificacao retornado: `"abaixo_estimulo"` (< 4 series) |
+| 21 | Musculo com 6 series na semana | Badge retornado: `"adequado"` (4–10 series) |
+| 22 | Musculo com 12 series na semana | Badge retornado: `"volume_alto"` (11–16 series) |
+| 23 | Musculo com 18 series na semana | Badge retornado: `"risco_overtraining"` (> 16 series) |
 
 ---
 
@@ -160,6 +164,21 @@
 | 4 | Mensagem `passwordMismatch` | Contem a palavra `senhas` |
 | 5 | Mensagem `invalidCPF` | Contem formato `XXX.XXX.XXX-XX` |
 | 6 | Mensagem `invalidPhone` | Contem formato `(XX) XXXXX-XXXX` |
+
+---
+
+### 1.9 epleyCalc (8 testes)
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | `calcEpley(100, 5)` | Retorna 116.67 (100 × (1 + 5/30)) |
+| 2 | `calcEpley(100, 1)` | Retorna 103.33 |
+| 3 | `calcEpley(100, 0)` | Retorna 100 (reps=0 retorna o peso sem acrescimo) |
+| 4 | `calcEpley(0, 5)` | Retorna 0 |
+| 5 | Registro modo padrao — `extractReferenceBlock` | Retorna `{peso, reps}` do Top Set |
+| 6 | Registro modo BC — `extractReferenceBlock` | Retorna `{peso, reps}` do Bloco 1 (R1); demais blocos ignorados |
+| 7 | Registro modo RP — `extractReferenceBlock` | Retorna `{peso, reps}` do Bloco 1 (R1); demais blocos ignorados |
+| 8 | Registro BC sem Bloco 1 preenchido | `extractReferenceBlock` retorna null |
 
 ---
 
@@ -443,7 +462,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ## 9. COMPONENTES DE FEATURE
 
-### 9.1 TreinoSessao (49 testes)
+### 9.1 TreinoSessao (53 testes)
 
 **Renderização inicial (3)**
 
@@ -554,6 +573,15 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 48 | Sem sessao selecionada | `onUnsavedChanges` chamado com `false` |
 | 49 | Com alteracoes nao salvas | Listener `beforeunload` registrado no `window` |
 
+**Banner de PR em tempo real (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 50 | Top Set 100kg / 7reps, PR historico 1RM=100 → 1RM atual=123.33 | Banner `[banner_pr]` exibido (verde/dourado pulsante) |
+| 51 | Top Set 80kg / 5reps, PR historico 1RM=130 → 1RM atual=93.33 | Banner permanece no estado normal (abaixo do PR) |
+| 52 | Faixa 6–8reps, digitar reps=8 (teto) independente do peso historico | Banner `[banner_pr]` ativo ao atingir o teto da faixa |
+| 53 | Apagar campo de peso apos banner_pr estar ativo | Banner retorna ao estado normal imediatamente |
+
 ---
 
 ### 9.2 CycleCard (5 testes)
@@ -584,7 +612,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.4 GraphicsContainer (5 testes)
+### 9.4 GraphicsContainer (8 testes)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -593,10 +621,13 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 3 | Seletor de periodo | Label `Periodo` presente |
 | 4 | Seletor de ciclos | Texto `Ciclos para comparar` visivel |
 | 5 | Sem exercicios | Mensagem `Nenhum exercicio encontrado` |
+| 6 | Historico com Top Set igual ao repMax do exercicio | Ponto do Grafico de Repeticoes destacado em verde com icone seta para cima (↑) |
+| 7 | Historico com Top Set acima do repMax do exercicio | Ponto destacado em verde com icone seta para cima (↑) |
+| 8 | Historico com sessao usando tecnica BC ou RP | Barra do Grafico de Volume Load exibida em cor alternativa e tooltip contem nome da tecnica |
 
 ---
 
-### 9.5 VolumeLoad (5 testes)
+### 9.5 VolumeLoad (9 testes)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -605,6 +636,10 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 3 | Sem treinos | Mensagem `Nenhum treino registrado` |
 | 4 | Supino esta semana | Card `Peitoral` exibido |
 | 5 | Remada esta semana | Card `Costas` exibido |
+| 6 | Musculo com 2 series na semana | Badge `abaixo do estimulo` (amarelo) renderizado no card |
+| 7 | Musculo com 6 series na semana | Badge `adequado` (verde) renderizado no card |
+| 8 | Musculo com 12 series na semana | Badge `volume alto` (laranja) renderizado no card |
+| 9 | Musculo com 18 series na semana | Badge `risco overtraining` (vermelho) renderizado no card |
 
 ---
 
@@ -775,11 +810,49 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
+### 9.11 PowerliftingChart (14 testes)
+
+**Dados e cálculo (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | Sem dados no localStorage | Mensagem `[sem_dados]` exibida |
+| 2 | Registro modo padrao (100kg × 7reps) | 1RM plotado = 123.33 (Epley com Top Set) |
+| 3 | Registro modo BC — Bloco 1 com 100kg × 8reps, blocos 2-4 menores | 1RM calculado = 126.67 usando apenas Bloco 1 |
+| 4 | Registro modo RP — Bloco 1 com 120kg × 5reps | 1RM calculado = 140 usando apenas Bloco 1 |
+
+**Linha de PR e badges (2)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 5 | Historico com varios registros | Linha PR (dourada pontilhada) posicionada no maior 1RM historico |
+| 6 | Sessao que superou o PR historico vigente | Ponto do grafico exibe marcador de conquista (estrela ou anel brilhante) |
+
+**Card de estatísticas (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 7 | Exercicio com historico no periodo | Card de stats exibe 1RM atual, variacao, sessoes e data do ultimo PR |
+| 8 | 1RM atual maior que sessao anterior | Celula `Variacao` exibe valor positivo em verde |
+| 9 | 1RM atual menor que sessao anterior | Celula `Variacao` exibe valor negativo em vermelho |
+| 10 | Apenas uma sessao no periodo | Celula `Variacao` exibe `—` (sem comparacao) |
+
+**Layout responsivo (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 11 | Viewport mobile (< 768px) | Card de stats exibido em grid 2×2; filtro de periodo como chips |
+| 12 | Viewport desktop (>= 768px) | Card de stats em linha horizontal; filtros inline lado a lado |
+| 13 | Filtro de periodo — selecionar chip `1m` | Grafico e card de stats atualizam para os ultimos 30 dias |
+| 14 | Tooltip mobile — tocar na area do grafico | Card flutuante exibe data + 1RM + peso × reps + tecnica do ponto mais proximo |
+
+---
+
 ## Resumo por Area
 
 | Area | Arquivos | Testes |
 |------|----------|--------|
-| Utils | 8 | 114 |
+| Utils | 9 | 126 |
 | Data | 4 | 66 |
 | Services | 2 | 13 |
 | Contexts | 1 | 4 |
@@ -787,5 +860,5 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 10 | 154 |
-| **Total** | **35** | **416** |
+| Componentes Feature | 11 | 179 |
+| **Total** | **37** | **453** |

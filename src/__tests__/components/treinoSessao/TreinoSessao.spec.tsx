@@ -617,4 +617,84 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       addEventSpy.mockRestore();
     });
   });
+
+  // ── Banner de PR em tempo real (RG13) ──────────────────────────────────
+
+  describe("Banner de PR em tempo real", () => {
+    // Setup: historical record with 1RM equal to `pr1RM`
+    // calcEpley(pr1RM, 0) = pr1RM (reps=0 → peso × 1)
+    function setupHistoricoComPR(pr1RM: number) {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "01/01/2026",
+          dataTs: 1000,
+          topSetKg: pr1RM,
+          topSetReps: 0,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 8,
+          topSetBateuTeto: false,
+          backoffKg: 0,
+          backoffReps: 0,
+          backoffFaixaMin: 8,
+          backoffFaixaMax: 10,
+          seriesValidas: 2,
+          progrediu: false,
+        }],
+      }));
+    }
+
+    it("banner_pr exibido quando 1RM atual supera PR historico (100kg×7reps > PR 100)", () => {
+      // PR historico = 100 (calcEpley(100, 0) = 100)
+      // atual: 100kg × 7reps → calcEpley(100, 7) = 123.33 > 100
+      setupHistoricoComPR(100);
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
+
+      expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
+    });
+
+    it("banner permanece normal quando 1RM atual esta abaixo do PR historico (80kg×5reps < PR 130)", () => {
+      // PR historico = 130 (calcEpley(130, 0) = 130)
+      // atual: 80kg × 5reps → calcEpley(80, 5) = 93.33 < 130
+      setupHistoricoComPR(130);
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "80" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "5" } });
+
+      expect(screen.queryByText(/Ritmo de Recorde Pessoal/i)).not.toBeInTheDocument();
+    });
+
+    it("banner_pr ativo ao atingir teto de reps (reps=8, faixa 5-8) independente do historico", () => {
+      // Supino reto barra tem faixaTopSet [5, 8] — reps=8 toca o teto
+      renderFresh();
+      selecionarSessao("Upper A");
+
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "8" } });
+
+      expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
+    });
+
+    it("banner retorna ao estado normal ao apagar o campo de peso apos banner_pr ativo", () => {
+      setupHistoricoComPR(100);
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+
+      // Aciona o banner_pr
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
+      expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
+
+      // Apaga o campo de peso
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "" } });
+      expect(screen.queryByText(/Ritmo de Recorde Pessoal/i)).not.toBeInTheDocument();
+    });
+  });
 });

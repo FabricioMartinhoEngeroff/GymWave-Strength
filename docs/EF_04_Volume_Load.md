@@ -21,10 +21,11 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 - **RG1** – O cálculo é feito automaticamente com base nos dados do `localStorage` (`logbook`).
 - **RG2** – A tela compara a semana atual com a semana anterior por grupo muscular.
 - **RG3** – Volume Load = soma de (peso × repetições) de todas as séries do músculo na semana.
-- **RG4** – O sistema classifica o número de séries semanais por músculo em três categorias:
-  - **Volume baixo:** < 10 séries semanais.
-  - **Adequado (ok):** 10–20 séries.
-  - **Risco de overtraining:** > 20 séries.
+- **RG4** – O sistema classifica o número de séries semanais por músculo em quatro categorias, calibradas para o método Saizen/Heavy Duty:
+  - **Abaixo do estímulo:** < 4 séries semanais.
+  - **Adequado (ok):** 4–10 séries semanais.
+  - **Volume alto:** 11–16 séries (risco de junk volume para este método).
+  - **Risco de overtraining:** > 16 séries semanais.
 - **RG5** – Se não houver dados na semana atual nem na anterior, exibe a mensagem "Nenhum treino registrado esta semana ou na anterior."
 - **RG6** – Apenas grupos musculares com ao menos um registro são exibidos.
 
@@ -52,7 +53,7 @@ Para cada grupo muscular com dados, exibe:
 |---|---|
 | Nome do músculo | Ex.: Peito, Costas, Quadríceps |
 | Número de séries | Exibe qtd de séries na semana atual |
-| Badge de alerta | "volume baixo" (amarelo) ou "risco overtraining" (vermelho), se aplicável |
+| Badge de alerta | "abaixo do estímulo" (amarelo), "adequado" (verde), "volume alto" (laranja) ou "risco overtraining" (vermelho), conforme RG4 |
 | Variação percentual | Variação vs semana anterior (verde / vermelho / "—") |
 | Barra semana anterior | Barra cinza proporcional ao volume anterior |
 | Barra semana atual | Barra colorida (verde = crescimento, vermelho = queda, azul = igual) |

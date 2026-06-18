@@ -6,9 +6,11 @@ import {
   salvarRegistro,
   ultimoRegistro,
   exercicioDeveSubirPeso,
+  carregarHistorico,
   salvarDados,
   carregarDados,
 } from "../../utils/storage";
+import { calcEpley, extractReferenceBlock } from "../../utils/epleyCalc";
 import {
   Screen,
   TopBar,
@@ -55,6 +57,7 @@ interface ExerciseState {
   topSetKgIsSuggestion: boolean;
   backoffKgIsSuggestion: boolean;
   backoffKgWasUserEdited: boolean;
+  prConfirmado: boolean;
 }
 
 interface TreinoSessaoProps {
@@ -104,6 +107,7 @@ function emptyExerciseState(): ExerciseState {
     topSetKgIsSuggestion: false,
     backoffKgIsSuggestion: false,
     backoffKgWasUserEdited: false,
+    prConfirmado: false,
   };
 }
 
@@ -260,7 +264,18 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       return;
     }
     setTopSetWarning(false);
-    updateState(currentEx.nome, { topSetConfirmed: true });
+    const s = exerciseStates[currentEx.nome];
+    const kg = parseFloat(s?.topSetKg ?? "") || 0;
+    const reps = parseInt(s?.topSetReps ?? "") || 0;
+    const historico = carregarHistorico(currentEx.nome);
+    const maxHistPr = historico.reduce((max, r) => {
+      const ref = extractReferenceBlock(r);
+      return ref ? Math.max(max, calcEpley(ref.peso, ref.reps)) : max;
+    }, 0);
+    const current1RM = kg > 0 && reps > 0 ? calcEpley(kg, reps) : 0;
+    // prConfirmado somente quando supera PR historico existente (teto sem historico = "Teto atingido" normal)
+    const prConfirmado = maxHistPr > 0 && current1RM > maxHistPr;
+    updateState(currentEx.nome, { topSetConfirmed: true, prConfirmado });
   }
 
   function confirmBackoff() {
@@ -454,7 +469,28 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     );
   }
 
-  function renderProgressBanner(ex: ExercicioSessao) {
+  function renderProgressBanner(ex: ExercicioSessao, prAtivo: boolean) {
+    if (prAtivo) {
+      return (
+        <div
+          data-testid="banner-pr"
+          style={{
+            background: "linear-gradient(135deg, #166534, #d97706)",
+            border: "1px solid #D4AF37",
+            borderRadius: 8,
+            padding: "8px 10px",
+            fontSize: 12,
+            color: "#fff",
+            marginBottom: 8,
+            fontWeight: 600,
+            animation: "pulse 1.4s infinite",
+          }}
+        >
+          🔥 Ritmo de Recorde Pessoal! Confirme para validar o PR.
+        </div>
+      );
+    }
+
     const deveSubir = exercicioDeveSubirPeso(ex.nome, treinoId);
     const ultimo = ultimoRegistro(ex.nome, treinoId);
 
@@ -684,6 +720,22 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
               const topStatus = getTopSetStatus(currentEx, state);
               const done = isExerciseDone(currentEx.nome);
 
+              // PR detection — recalculated on every render from live inputs
+              const tsKg = parseFloat(state.topSetKg) || 0;
+              const tsReps = parseInt(state.topSetReps) || 0;
+              const historicoPr = carregarHistorico(currentEx.nome);
+              const maxHistPr = historicoPr.reduce((max, r) => {
+                const ref = extractReferenceBlock(r);
+                return ref ? Math.max(max, calcEpley(ref.peso, ref.reps)) : max;
+              }, 0);
+              const current1RM = tsKg > 0 && tsReps > 0 ? calcEpley(tsKg, tsReps) : 0;
+              // Live banner: teto da faixa OU superação do PR histórico (requer histórico existente)
+              const prAtivo =
+                !state.topSetConfirmed &&
+                tsKg > 0 &&
+                tsReps > 0 &&
+                (tsReps >= currentEx.faixaTopSet[1] || (maxHistPr > 0 && current1RM > maxHistPr));
+
               return (
                 <ExerciseCard key={currentEx.nome}>
                   <ExHeader>
@@ -711,7 +763,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     </div>
                   </ExHeader>
 
-                  {renderProgressBanner(currentEx)}
+                  {renderProgressBanner(currentEx, prAtivo)}
 
                   {/* Técnica — chips sempre visíveis, substitui Top Set/Back-off quando ativo */}
                   <Card style={{ background: "#fafafa" }}>
@@ -928,33 +980,46 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </>
                     ) : (
                       <>
-                        {topStatus === "teto" && (
+                        {state.prConfirmado ? (
                           <div style={{
-                            background: "#dcfce7", border: "1px solid #86efac", borderRadius: 8,
-                            padding: "6px 10px", fontSize: 12, color: "#166534", marginTop: 8, textAlign: "center",
+                            background: "linear-gradient(135deg, #166534, #d97706)",
+                            border: "1px solid #D4AF37", borderRadius: 8,
+                            padding: "6px 10px", fontSize: 12, color: "#fff", marginTop: 8, textAlign: "center",
+                            fontWeight: 600,
                           }}>
-                            Teto atingido — sobe peso no próximo
+                            🔥 PR Confirmado!
                           </div>
-                        )}
-                        {topStatus === "abaixo" && (
-                          <div style={{
-                            background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8,
-                            padding: "6px 10px", fontSize: 12, color: "#991b1b", marginTop: 8, textAlign: "center",
-                          }}>
-                            Abaixo da faixa
-                          </div>
-                        )}
-                        {topStatus === "faixa" && (
-                          <div style={{
-                            background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8,
-                            padding: "6px 10px", fontSize: 12, color: "#1d4ed8", marginTop: 8, textAlign: "center",
-                          }}>
-                            Na faixa — manter peso
-                          </div>
+                        ) : (
+                          <>
+                            {topStatus === "teto" && (
+                              <div style={{
+                                background: "#dcfce7", border: "1px solid #86efac", borderRadius: 8,
+                                padding: "6px 10px", fontSize: 12, color: "#166534", marginTop: 8, textAlign: "center",
+                              }}>
+                                Teto atingido — sobe peso no próximo
+                              </div>
+                            )}
+                            {topStatus === "abaixo" && (
+                              <div style={{
+                                background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8,
+                                padding: "6px 10px", fontSize: 12, color: "#991b1b", marginTop: 8, textAlign: "center",
+                              }}>
+                                Abaixo da faixa
+                              </div>
+                            )}
+                            {topStatus === "faixa" && (
+                              <div style={{
+                                background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8,
+                                padding: "6px 10px", fontSize: 12, color: "#1d4ed8", marginTop: 8, textAlign: "center",
+                              }}>
+                                Na faixa — manter peso
+                              </div>
+                            )}
+                          </>
                         )}
                         <button
                           type="button"
-                          onClick={() => updateState(currentEx.nome, { topSetConfirmed: false })}
+                          onClick={() => updateState(currentEx.nome, { topSetConfirmed: false, prConfirmado: false })}
                           style={{
                             width: "100%", padding: 8, marginTop: 6, border: "1px solid #d1d5db",
                             borderRadius: 8, background: "#fff", color: "#6b7280",

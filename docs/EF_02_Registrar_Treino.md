@@ -30,6 +30,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 - **RG10** – Após salvar todos os exercícios, é exibido um resumo com: quantidade feita / total, e quantos exercícios sobem de peso no próximo ciclo.
 - **RG11** – Exercícios podem ser pulados (botão "Pular"). Exercícios pulados não geram registro.
 - **RG12** – O rascunho de cada sessão é mantido em memória. Ao voltar para uma sessão já preenchida, os dados digitados são restaurados.
+- **RG13** – Durante o preenchimento do bloco Top Set, o sistema recalcula em tempo real o 1RM estimado pela fórmula de Epley: `1RM = Peso × (1 + Reps / 30)`. Se esse valor superar o recorde histórico daquele exercício — ou se as repetições atingirem ou ultrapassarem o teto da faixa cadastrada — o Banner de Progressão assume imediatamente o estado `[banner_pr]` (verde/dourado pulsante), antes mesmo de o usuário confirmar o Top Set. Ao apagar os campos ou reduzir os valores, o banner retorna ao estado anterior.
 
 ---
 
@@ -69,7 +70,7 @@ Exibe por exercício:
 | Faixa de reps Back-off | Ex.: 8–12 reps |
 | Badge treino | Identificador da sessão (UA, UB…) |
 | Badge séries | "2 válidas" ou "3 válidas" |
-| Banner de progressão | Informa se deve subir peso, manter ou primeiro registro |
+| Banner de progressão | Informa se deve subir peso, manter ou primeiro registro. Durante o preenchimento do Top Set assume o estado `[banner_pr]` quando o PR histórico é superado ou o teto de reps é atingido em tempo real (ver RG13) |
 
 ### 4.5 Bloco Técnica (chips BC / RP — sempre visíveis, topo do card)
 
@@ -106,10 +107,13 @@ Exibe por exercício:
 | 01 | Peso (kg) | Input numérico | Sim |
 | 02 | Repetições | Input numérico | Sim |
 
+**Detecção de PR em tempo real:**
+A cada alteração nos campos peso ou repetições, o sistema recalcula o 1RM estimado (`Peso × (1 + Reps / 30)`) e compara com o recorde histórico do exercício. Se o critério da RG13 for satisfeito, o Banner de Progressão muda para o estado `[banner_pr]` imediatamente. O cálculo é disparado no evento `onChange` de ambos os campos; ao esvaziar qualquer campo o banner retorna ao estado normal.
+
 **Botão "Confirmar Top Set":**
 - Sempre habilitado (clicável).
 - Se os campos não estiverem preenchidos com valores positivos: exibe banner de aviso e destaca os campos com borda vermelha.
-- Após confirmação: exibe status ("Teto atingido", "Na faixa" ou "Abaixo da faixa") e botão "Editar Top Set".
+- Após confirmação: exibe status ("Teto atingido", "Na faixa" ou "Abaixo da faixa") e botão "Editar Top Set". Se o estado `[banner_pr]` estava ativo ao confirmar, o status exibido é "🔥 PR Confirmado!" no lugar dos status padrão.
 
 ### 4.7 Bloco Back-off (obrigatório no modo padrão, oculto quando técnica ativa)
 
@@ -178,3 +182,4 @@ Visível quando `seriesValidas === 3` e Back-off confirmado.
 | `[aviso_tecnica]` | Aviso inline | Laranja | ⚠ | Preencha pelo menos um bloco com peso e repetições. |
 | `[alteracoes_nao_salvas]` | Confirmação | — | — | Você tem alterações não salvas. Sair mesmo assim? |
 | `[treino_salvo]` | Sucesso | Verde | — | Treino salvo com sucesso! (banner no topo por 5 s) |
+| `[banner_pr]` | Destaque motivacional | Verde/Dourado pulsante | 🔥 Ritmo de Recorde Pessoal! | Confirme para validar o PR. (exibido em tempo real durante preenchimento do Top Set, ver RG13) |

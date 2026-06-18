@@ -1,21 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  Bar,
   CartesianGrid,
   ComposedChart,
-  Legend,
+  Line,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Line,
 } from "recharts";
 import type { TooltipContentProps } from "recharts/types/component/Tooltip";
-import type {
-  NameType,
-  Payload,
-  ValueType,
-} from "recharts/types/component/DefaultTooltipContent";
+import type { NameType, Payload, ValueType } from "recharts/types/component/DefaultTooltipContent";
 
 import {
   ChartBox,
@@ -32,155 +27,180 @@ import {
 } from "./styles";
 
 import { NativeSelect } from "../ui/NativeSelect";
-import { carregarDados } from "../../utils/storage";
+import { carregarLogbookCompleto } from "../../utils/storage";
 import { getCutoffTs, TIME_INTERVAL_OPTIONS, type TimeInterval } from "../../utils/timeFilter";
-import {
-  buildExerciseHistory,
-  type SessionPoint,
-} from "../../utils/workoutMetrics";
+import { calcEpley, extractReferenceBlock } from "../../utils/epleyCalc";
+import type { RegistroExercicio } from "../../types/TrainingData";
 
-const dayMs = 24 * 60 * 60 * 1000;
+const GOLD = "#D4AF37";
 const BLUE = "#5470C6";
-const BLUE_SOFT_1 = "rgba(84,112,198,0.55)";
-const BLUE_SOFT_2 = "rgba(84,112,198,0.32)";
-const GRID = "rgba(255,255,255,0.22)";
+const GREEN = "#16a34a";
+const RED = "#dc2626";
 
-const formatarTick = (ts: number): string => {
+interface ChartPoint {
+  ts: number;
+  data: string;
+  rm1: number;
+  peso: number;
+  reps: number;
+  tecnica: "BC" | "RP" | null;
+  isPr: boolean;
+}
+
+function buildChartPoints(registros: RegistroExercicio[]): ChartPoint[] {
+  const points: ChartPoint[] = registros
+    .map((r) => {
+      const ref = extractReferenceBlock(r);
+      if (!ref || ref.peso <= 0) return null;
+      return {
+        ts: r.dataTs,
+        data: r.data,
+        rm1: calcEpley(ref.peso, ref.reps),
+        peso: ref.peso,
+        reps: ref.reps,
+        tecnica: r.tecnica ?? null,
+        isPr: false,
+      };
+    })
+    .filter((p): p is ChartPoint => p !== null)
+    .sort((a, b) => a.ts - b.ts);
+
+  // Mark PR points with running max
+  let runningMax = 0;
+  points.forEach((p) => {
+    if (p.rm1 > runningMax) {
+      p.isPr = runningMax > 0; // first point is baseline, not a "broken" PR
+      runningMax = p.rm1;
+    }
+  });
+
+  return points;
+}
+
+function formatarTick(ts: number): string {
   const d = new Date(ts);
   const dia = String(d.getDate()).padStart(2, "0");
   const mes = String(d.getMonth() + 1).padStart(2, "0");
   return `${dia}/${mes}`;
-};
+}
 
-function TooltipThermometer({
-  active,
-  payload,
-}: TooltipContentProps<ValueType, NameType>) {
+interface TooltipPayload extends ChartPoint {}
+
+function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
-  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as SessionPoint | undefined;
+  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as TooltipPayload | undefined;
   if (!p) return null;
 
   return (
     <TooltipBox>
-      <p>
-        <strong>{p.data}</strong>
-      </p>
-      <p>
-        Top Set: {Math.round(p.topSetPeso)} kg × {Math.round(p.topSetReps)} reps
-      </p>
-      {p.backoff1Peso > 0 || p.backoff1Reps > 0 ? (
-        <p>
-          Backoff 1: {Math.round(p.backoff1Peso)} kg × {Math.round(p.backoff1Reps)} reps
-        </p>
-      ) : null}
-      {p.backoff2Peso > 0 || p.backoff2Reps > 0 ? (
-        <p>
-          Backoff 2: {Math.round(p.backoff2Peso)} kg × {Math.round(p.backoff2Reps)} reps
-        </p>
-      ) : null}
-      {"mediaMensal" in p && typeof (p as any).mediaMensal === "number" ? (
-        <p>Média mensal (Top Set): {Math.round((p as any).mediaMensal)} kg</p>
-      ) : null}
+      <p><strong>{p.data}</strong></p>
+      <p>1RM estimado: {p.rm1.toFixed(2)} kg</p>
+      <p>Ref: {p.peso} kg × {p.reps} reps</p>
+      {p.tecnica && <p>Técnica: {p.tecnica}</p>}
+      {p.isPr && <p style={{ color: GOLD, fontWeight: 700 }}>★ PR</p>}
     </TooltipBox>
   );
 }
 
-function TooltipOverdrive({
-  active,
-  payload,
-}: TooltipContentProps<ValueType, NameType>) {
-  if (!active || !payload?.length) return null;
-  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as SessionPoint | undefined;
-  if (!p) return null;
-
-  return (
-    <TooltipBox>
-      <p>
-        <strong>{p.data}</strong>
-      </p>
-      <p>
-        Top Set: {Math.round(p.topSetPeso)} kg × {Math.round(p.topSetReps)} reps
-      </p>
-      {p.backoff1Peso > 0 || p.backoff1Reps > 0 ? (
-        <p>
-          Backoff 1: {Math.round(p.backoff1Peso)} kg × {Math.round(p.backoff1Reps)} reps
-        </p>
-      ) : null}
-      {p.backoff2Peso > 0 || p.backoff2Reps > 0 ? (
-        <p>
-          Backoff 2: {Math.round(p.backoff2Peso)} kg × {Math.round(p.backoff2Reps)} reps
-        </p>
-      ) : null}
-    </TooltipBox>
-  );
+// Custom dot renderer — highlights PR points
+function CustomDot(props: any) {
+  const { cx, cy, payload } = props;
+  if (!payload) return null;
+  if (payload.isPr) {
+    return (
+      <g key={`pr-dot-${payload.ts}`}>
+        <circle cx={cx} cy={cy} r={7} fill={GOLD} stroke="#fff" strokeWidth={1.5} />
+        <text x={cx} y={cy - 12} textAnchor="middle" fill={GOLD} fontSize={10}>★</text>
+      </g>
+    );
+  }
+  return <circle key={`dot-${payload.ts}`} cx={cx} cy={cy} r={3} fill={BLUE} />;
 }
 
 export const PowerliftingChart: React.FC = () => {
-  const [intervalo, setIntervalo] = useState<TimeInterval>("3M");
+  const [intervalo, setIntervalo] = useState<TimeInterval>("1A");
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
-    function updateVH() {
-      const vh = window.innerHeight * 0.01;
-      document.documentElement.style.setProperty("--vh", `${vh}px`);
-    }
-
-    updateVH();
-    window.addEventListener("resize", updateVH);
-    window.addEventListener("orientationchange", updateVH);
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    window.addEventListener("orientationchange", handler);
     return () => {
-      window.removeEventListener("resize", updateVH);
-      window.removeEventListener("orientationchange", updateVH);
+      window.removeEventListener("resize", handler);
+      window.removeEventListener("orientationchange", handler);
     };
   }, []);
 
-  const history = useMemo(() => buildExerciseHistory(carregarDados()), []);
-  const exercicios = useMemo(
-    () => Object.keys(history).sort((a, b) => a.localeCompare(b)),
-    [history]
-  );
+  const logbook = useMemo(() => carregarLogbookCompleto(), []);
+  const exercicios = useMemo(() => Object.keys(logbook).sort((a, b) => a.localeCompare(b)), [logbook]);
 
-  const sessionsAll = exercicioSelecionado ? history[exercicioSelecionado] ?? [] : [];
-  const nowTs = sessionsAll.length ? sessionsAll[sessionsAll.length - 1].ts : 0;
+  // Auto-select first exercise with data
+  useEffect(() => {
+    if (!exercicioSelecionado && exercicios.length > 0) {
+      setExercicioSelecionado(exercicios[0]);
+    }
+  }, [exercicios, exercicioSelecionado]);
+
+  const allPoints = useMemo<ChartPoint[]>(() => {
+    if (!exercicioSelecionado) return [];
+    const registros = logbook[exercicioSelecionado] ?? [];
+    return buildChartPoints(registros);
+  }, [exercicioSelecionado, logbook]);
+
+  const nowTs = allPoints.length ? allPoints[allPoints.length - 1].ts : Date.now();
   const cutoff = getCutoffTs(intervalo, nowTs);
-  const sessions = useMemo(
-    () => sessionsAll.filter((s) => s.ts >= cutoff),
-    [sessionsAll, cutoff]
+  const filteredPoints = useMemo(
+    () => allPoints.filter((p) => p.ts >= cutoff),
+    [allPoints, cutoff]
   );
 
-  const sessionsWithMonthlyAvg = useMemo(() => {
-    const monthKey = (ts: number) => {
-      const d = new Date(ts);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    };
+  // Absolute PR across all history (not just filtered period)
+  const prAbsoluto = useMemo(
+    () => allPoints.reduce((max, p) => Math.max(max, p.rm1), 0),
+    [allPoints]
+  );
 
-    const buckets = new Map<string, { sum: number; count: number }>();
-    sessions.forEach((s) => {
-      const key = monthKey(s.ts);
-      const b = buckets.get(key) ?? { sum: 0, count: 0 };
-      buckets.set(key, { sum: b.sum + s.topSetPeso, count: b.count + 1 });
-    });
+  // Stats card
+  const rm1Atual = filteredPoints.length > 0 ? filteredPoints[filteredPoints.length - 1].rm1 : null;
+  const rm1Anterior = filteredPoints.length > 1 ? filteredPoints[filteredPoints.length - 2].rm1 : null;
+  const variacao = rm1Atual !== null && rm1Anterior !== null ? rm1Atual - rm1Anterior : null;
+  const sessoes = filteredPoints.length;
+  const ultimoPrPonto = allPoints.reduce<ChartPoint | null>(
+    (best, p) => (!best || p.rm1 > best.rm1 ? p : best),
+    null
+  );
 
-    const avgByMonth = new Map<string, number>();
-    buckets.forEach((b, key) => {
-      avgByMonth.set(key, b.count ? b.sum / b.count : 0);
-    });
+  // Empty state
+  if (exercicios.length === 0) {
+    return (
+      <Container>
+        <Header>
+          <Title>Gráfico Powerlifter</Title>
+        </Header>
+        <Content>
+          <p data-testid="sem-dados" style={{ color: "#9ca3af", textAlign: "center", marginTop: 30 }}>
+            Sem registros para listar.
+          </p>
+        </Content>
+      </Container>
+    );
+  }
 
-    return sessions.map((s) => ({
-      ...s,
-      mediaMensal: avgByMonth.get(monthKey(s.ts)) ?? 0,
-    }));
-  }, [sessions]);
+  const variacaoColor = variacao === null ? "#6b7280" : variacao > 0 ? GREEN : variacao < 0 ? RED : "#6b7280";
+  const variacaoText =
+    variacao === null ? "—" : variacao > 0 ? `+${variacao.toFixed(2)} kg` : `${variacao.toFixed(2)} kg`;
 
-  const last = sessionsAll.length ? sessionsAll[sessionsAll.length - 1] : null;
-  const diasDesdeUltimoTreino = last ? Math.max(0, Math.round((Date.now() - last.ts) / dayMs)) : null;
+  const periodoOptions = TIME_INTERVAL_OPTIONS.filter((o) => o.value !== "Tudo");
+  const chipValues = ["7d", "1M", "3M", "1A", "Tudo"] as const;
 
   return (
     <Container>
       <Header>
-        <Title>Dashboard — Força & Fadiga</Title>
-        <SelectLabel>Escolha o exercício e o período</SelectLabel>
-        <FiltersRow>
+        <Title>Gráfico Powerlifter</Title>
+        <SelectLabel>Evolução do 1RM Estimado</SelectLabel>
+
+        <FiltersRow data-testid="filtros-row">
           <NativeSelect
             variant="dark"
             value={exercicioSelecionado}
@@ -190,196 +210,173 @@ export const PowerliftingChart: React.FC = () => {
               ...exercicios.map((ex) => ({ label: ex, value: ex })),
             ]}
           />
-          <NativeSelect
-            label="Período"
-            variant="dark"
-            value={intervalo}
-            onChange={(v) => setIntervalo(v as TimeInterval)}
-            options={TIME_INTERVAL_OPTIONS.filter((o) => o.value !== "Tudo")}
-          />
-        </FiltersRow>
 
-        {last ? (
-          <div style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>
-            Último treino: <strong style={{ color: "#ffffff" }}>{last.data}</strong> — Top Set{" "}
-            <strong style={{ color: "#ffffff" }}>
-              {Math.round(last.topSetPeso)}×{Math.round(last.topSetReps)}
-            </strong>{" "}
-            {last.backoff1Peso > 0 || last.backoff1Reps > 0 ? (
-              <>
-                {" "}
-                — Backoffs:{" "}
-                <strong style={{ color: "#ffffff" }}>
-                  {Math.round(last.backoff1Peso)}×{Math.round(last.backoff1Reps)}
-                </strong>
-                {last.backoff2Peso > 0 || last.backoff2Reps > 0 ? (
-                  <>
-                    {" "}
-                    /{" "}
-                    <strong style={{ color: "#ffffff" }}>
-                      {Math.round(last.backoff2Peso)}×{Math.round(last.backoff2Reps)}
-                    </strong>
-                  </>
-                ) : null}
-              </>
-            ) : null}
-            {typeof diasDesdeUltimoTreino === "number" ? (
-              <>
-                {" "}
-                — dias desde último treino:{" "}
-                <strong style={{ color: diasDesdeUltimoTreino >= 7 ? "#FCA5A5" : "#e5e7eb" }}>
-                  {diasDesdeUltimoTreino}
-                </strong>
-              </>
-            ) : null}
-          </div>
-        ) : null}
+          {isMobile ? (
+            // Chips para mobile
+            <div data-testid="periodo-chips" style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+              {periodoOptions.map((o) => (
+                <button
+                  key={o.value}
+                  type="button"
+                  data-testid={`chip-${o.value}`}
+                  onClick={() => setIntervalo(o.value as TimeInterval)}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 20,
+                    border: "1px solid",
+                    borderColor: intervalo === o.value ? GOLD : "#6b7280",
+                    background: intervalo === o.value ? GOLD : "transparent",
+                    color: intervalo === o.value ? "#000" : "#e5e7eb",
+                    fontSize: 12,
+                    cursor: "pointer",
+                  }}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          ) : (
+            // Select para desktop
+            <NativeSelect
+              data-testid="periodo-select"
+              label="Período"
+              variant="dark"
+              value={intervalo}
+              onChange={(v) => setIntervalo(v as TimeInterval)}
+              options={periodoOptions}
+            />
+          )}
+        </FiltersRow>
       </Header>
 
       <Content>
-        {!exercicioSelecionado ? (
-          <p style={{ color: "#9ca3af", textAlign: "center", marginTop: 30 }}>
-            Selecione um exercício para visualizar os gráficos.
-          </p>
-        ) : sessions.length === 0 ? (
-          <p style={{ color: "#9ca3af", textAlign: "center", marginTop: 30 }}>
-            Sem dados nesse período.
+        {/* Stats card */}
+        <div
+          data-testid="stats-card"
+          style={{
+            display: "grid",
+            gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)",
+            gap: 1,
+            background: "rgba(255,255,255,0.08)",
+            borderRadius: 10,
+            overflow: "hidden",
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)" }}>
+            <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>1RM Atual</p>
+            <p data-testid="stats-rm1" style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "2px 0 0" }}>
+              {rm1Atual !== null ? `${rm1Atual.toFixed(2)} kg` : "—"}
+            </p>
+          </div>
+          <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)" }}>
+            <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>Variação</p>
+            <p data-testid="stats-variacao" style={{ fontSize: 18, fontWeight: 700, color: variacaoColor, margin: "2px 0 0" }}>
+              {variacaoText}
+            </p>
+          </div>
+          <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)" }}>
+            <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>Sessões</p>
+            <p data-testid="stats-sessoes" style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "2px 0 0" }}>
+              {sessoes}
+            </p>
+          </div>
+          <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)" }}>
+            <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>Último PR</p>
+            <p data-testid="stats-ultimo-pr" style={{ fontSize: 18, fontWeight: 700, color: GOLD, margin: "2px 0 0" }}>
+              {ultimoPrPonto?.data ?? "—"}
+            </p>
+          </div>
+        </div>
+
+        {/* PR reference indicator (outside SVG — testable) */}
+        {prAbsoluto > 0 && (
+          <div
+            data-testid="pr-reference-value"
+            style={{ fontSize: 11, color: GOLD, textAlign: "right", marginBottom: 4 }}
+          >
+            PR: {prAbsoluto.toFixed(2)} kg
+          </div>
+        )}
+
+        {/* PR badge — visible count of PR sessions in period */}
+        {filteredPoints.some((p) => p.isPr) && (
+          <div
+            data-testid="pr-badge"
+            style={{ fontSize: 11, color: GOLD, marginBottom: 4 }}
+          >
+            ★ {filteredPoints.filter((p) => p.isPr).length} sessão(ões) de PR neste período
+          </div>
+        )}
+
+        {filteredPoints.length === 0 ? (
+          <p data-testid="sem-dados-exercicio" style={{ color: "#9ca3af", textAlign: "center", marginTop: 20 }}>
+            Nenhum registro encontrado para o exercício selecionado no período.
           </p>
         ) : (
           <PanelsGrid>
             <Panel>
               <PanelTitle>
-                <h3>Termômetro da Evolução</h3>
-                <p>Top Set (kg) + média mensal (kg) estilo “ação”.</p>
+                <h3>1RM Estimado (Epley)</h3>
+                <p>Evolução da força máxima estimada ao longo do tempo.</p>
               </PanelTitle>
               <ChartBox>
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart
-                    data={sessionsWithMonthlyAvg}
-                    margin={{ top: 8, right: 18, left: 6, bottom: 0 }}
+                    data={filteredPoints}
+                    margin={{ top: 16, right: 24, left: 6, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" vertical={false} />
                     <XAxis
                       dataKey="ts"
                       type="number"
                       scale="time"
                       domain={["dataMin", "dataMax"]}
-                      stroke="rgba(255,255,255,0.6)"
+                      stroke="rgba(255,255,255,0.5)"
                       tickFormatter={formatarTick}
                       tick={{ fontSize: 12 }}
                       tickLine={false}
                       axisLine={false}
                     />
                     <YAxis
-                      yAxisId="kg"
-                      stroke="rgba(255,255,255,0.6)"
+                      yAxisId="rm1"
+                      stroke="rgba(255,255,255,0.5)"
                       tick={{ fontSize: 12 }}
                       tickFormatter={(v) => `${v}kg`}
                       tickLine={false}
                       axisLine={false}
-                      width={44}
-                      domain={[0, "dataMax + 5"]}
+                      width={46}
+                      domain={["auto", "dataMax + 5"]}
                     />
 
-                    <Tooltip content={(props) => <TooltipThermometer {...props} />} />
+                    {/* Linha de PR — linha horizontal pontilhada dourada (RG6) */}
+                    {prAbsoluto > 0 && (
+                      <ReferenceLine
+                        yAxisId="rm1"
+                        y={prAbsoluto}
+                        stroke={GOLD}
+                        strokeDasharray="6 3"
+                        strokeWidth={1.5}
+                        label={{
+                          value: `PR: ${prAbsoluto.toFixed(1)}`,
+                          position: "right",
+                          fill: GOLD,
+                          fontSize: 10,
+                        }}
+                      />
+                    )}
 
-                    <Legend
-                      verticalAlign="top"
-                      align="center"
-                      height={24}
-                      wrapperStyle={{ color: "rgba(255,255,255,0.75)" }}
-                    />
+                    <Tooltip content={(props) => <CustomTooltip {...props} />} />
 
                     <Line
-                      yAxisId="kg"
+                      yAxisId="rm1"
                       type="monotone"
-                      dataKey="topSetPeso"
-                      name="Top Set (kg)"
+                      dataKey="rm1"
+                      name="1RM Estimado (kg)"
                       stroke={BLUE}
                       strokeWidth={2.5}
-                      dot={{ r: 2 }}
-                      activeDot={{ r: 4 }}
-                    />
-                    <Line
-                      yAxisId="kg"
-                      type="monotone"
-                      dataKey="mediaMensal"
-                      name="Média mensal (kg)"
-                      stroke={BLUE_SOFT_1}
-                      strokeWidth={2}
-                      strokeDasharray="6 4"
-                      dot={false}
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </ChartBox>
-            </Panel>
-
-            <Panel>
-              <PanelTitle>
-                <h3>Low Volume — Reps (Top + Backoffs)</h3>
-                <p>Barras: reps feitas por série (tooltip mostra também os pesos).</p>
-              </PanelTitle>
-              <ChartBox>
-                <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={sessions} margin={{ top: 8, right: 18, left: 6, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
-                    <XAxis
-                      dataKey="ts"
-                      type="number"
-                      scale="time"
-                      domain={["dataMin", "dataMax"]}
-                      stroke="rgba(255,255,255,0.6)"
-                      tickFormatter={formatarTick}
-                      tick={{ fontSize: 12 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      yAxisId="reps"
-                      stroke="rgba(255,255,255,0.6)"
-                      tick={{ fontSize: 12 }}
-                      tickFormatter={(v) => `${v}`}
-                      tickLine={false}
-                      axisLine={false}
-                      width={40}
-                      domain={[0, "dataMax + 1"]}
-                    />
-
-                    <Tooltip content={(props) => <TooltipOverdrive {...props} />} />
-
-                    <Bar
-                      yAxisId="reps"
-                      dataKey="topSetReps"
-                      name="Top (reps)"
-                      fill={BLUE}
-                      barSize={12}
-                      maxBarSize={14}
-                      radius={[8, 8, 0, 0]}
-                    />
-                    <Bar
-                      yAxisId="reps"
-                      dataKey="backoff1Reps"
-                      name="Backoff 1 (reps)"
-                      fill={BLUE_SOFT_1}
-                      barSize={12}
-                      maxBarSize={14}
-                      radius={[8, 8, 0, 0]}
-                    />
-                    <Bar
-                      yAxisId="reps"
-                      dataKey="backoff2Reps"
-                      name="Backoff 2 (reps)"
-                      fill={BLUE_SOFT_2}
-                      barSize={12}
-                      maxBarSize={14}
-                      radius={[8, 8, 0, 0]}
-                    />
-                    <Legend
-                      verticalAlign="top"
-                      align="center"
-                      height={24}
-                      wrapperStyle={{ color: "rgba(255,255,255,0.75)" }}
+                      dot={CustomDot}
+                      activeDot={{ r: 5 }}
                     />
                   </ComposedChart>
                 </ResponsiveContainer>
