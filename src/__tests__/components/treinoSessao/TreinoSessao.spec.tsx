@@ -671,13 +671,13 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.queryByText(/Ritmo de Recorde Pessoal/i)).not.toBeInTheDocument();
     });
 
-    it("banner_pr ativo ao atingir teto de reps (reps=8, faixa 5-8) independente do historico", () => {
-      // Supino reto barra tem faixaTopSet [5, 8] — reps=8 toca o teto
+    it("banner_pr ativo ao atingir teto de reps (reps=7, faixa 5-7) independente do historico", () => {
+      // Supino reto barra tem faixaTopSet [5, 7] — reps=7 toca o teto
       renderFresh();
       selecionarSessao("Upper A");
 
       fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "8" } });
+      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
 
       expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
     });

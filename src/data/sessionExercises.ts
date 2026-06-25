@@ -7,7 +7,7 @@ export interface ExercicioSessao {
   faixaBackoff: [number, number]; // ex: [9, 15] reps
   backoffPct: number; // % de redução ex: 0.85
   seriesValidas: 2 | 3; // 2 = Top Set + Back-off | 3 = + Série Extra
-  tecnica?: "BC" | "RP" | null; // Breathing Cluster / Rest-Pause
+  tecnica?: "RP" | null;
   cue: string;
 }
 
@@ -16,7 +16,7 @@ type Preset = Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct
 
 // Multiarticulares livres (terra, supino, agacho, barra fixa, remada)
 const MULTIARTICULAR: Preset = {
-  faixaTopSet: [5, 8],
+  faixaTopSet: [5, 7],
   faixaBackoff: [8, 10],
   backoffPct: 0.85,
   seriesValidas: 2,
@@ -32,8 +32,8 @@ const MAQUINA: Preset = {
 
 // Isoladores, cabos e máquinas leves (extensora, lateral, crossover, etc.)
 const ISOLADOR: Preset = {
-  faixaTopSet: [10, 12],
-  faixaBackoff: [12, 15],
+  faixaTopSet: [8, 10],
+  faixaBackoff: [10, 12],
   backoffPct: 0.85,
   seriesValidas: 2,
 };
@@ -46,8 +46,8 @@ const PANTURRILHA: Preset = {
 };
 
 const BRACO: Preset = {
-  faixaTopSet: [10, 12],
-  faixaBackoff: [12, 15],
+  faixaTopSet: [8, 10],
+  faixaBackoff: [10, 12],
   backoffPct: 0.85,
   seriesValidas: 2,
 };

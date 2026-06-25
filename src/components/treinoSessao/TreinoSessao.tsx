@@ -49,7 +49,7 @@ interface ExerciseState {
   seriesValidas: 2 | 3;
   topSetConfirmed: boolean;
   backoffConfirmed: boolean;
-  tecnica: "BC" | "RP" | null;
+  tecnica: "RP" | null;
   clusterSeries: { kg: string; reps: string }[];
   tecnicaConfirmed: boolean;
   obs: string;
@@ -57,6 +57,7 @@ interface ExerciseState {
   topSetKgIsSuggestion: boolean;
   backoffKgIsSuggestion: boolean;
   backoffKgWasUserEdited: boolean;
+  extraKgWasUserEdited: boolean;
   prConfirmado: boolean;
 }
 
@@ -107,6 +108,7 @@ function emptyExerciseState(): ExerciseState {
     topSetKgIsSuggestion: false,
     backoffKgIsSuggestion: false,
     backoffKgWasUserEdited: false,
+    extraKgWasUserEdited: false,
     prConfirmado: false,
   };
 }
@@ -237,11 +239,11 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     }
   }, [currentEx, exerciseStates]);
 
-  // Auto-fill extra kg from backoff when extra block appears
+  // Auto-fill extra kg from backoff when extra block appears (only if user hasn't manually edited)
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
-    if (!state?.backoffConfirmed || state.extraKg !== "" || state.seriesValidas !== 3) return;
+    if (!state?.backoffConfirmed || state.extraKg !== "" || state.seriesValidas !== 3 || state.extraKgWasUserEdited) return;
     if (state.backoffKg) {
       setExerciseStates((prev) => ({
         ...prev,
@@ -770,27 +772,6 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     <Label>Técnica</Label>
                     <div style={{ display: "flex", gap: 8, marginBottom: state.tecnica ? 12 : 0 }}>
                       <CycleChip
-                        $active={state.tecnica === "BC"}
-                        onClick={() => {
-                          setTecnicaWarning(false);
-                          if (state.tecnica === "BC") {
-                            updateState(currentEx.nome, { tecnica: null, clusterSeries: [], tecnicaConfirmed: false });
-                          } else {
-                            updateState(currentEx.nome, {
-                              tecnica: "BC",
-                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
-                              topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
-                              topSetConfirmed: false, backoffConfirmed: false,
-                              topSetKgIsSuggestion: false, backoffKgIsSuggestion: false, backoffKgWasUserEdited: false,
-                              tecnicaConfirmed: false,
-                            });
-                          }
-                        }}
-                        type="button"
-                      >
-                        BC
-                      </CycleChip>
-                      <CycleChip
                         $active={state.tecnica === "RP"}
                         onClick={() => {
                           setTecnicaWarning(false);
@@ -799,7 +780,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           } else {
                             updateState(currentEx.nome, {
                               tecnica: "RP",
-                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }],
+                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
                               topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
                               topSetConfirmed: false, backoffConfirmed: false,
                               topSetKgIsSuggestion: false, backoffKgIsSuggestion: false, backoffKgWasUserEdited: false,
@@ -1124,7 +1105,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             type="number"
                             placeholder="kg"
                             value={state.extraKg}
-                            onChange={(e) => updateState(currentEx.nome, { extraKg: e.target.value })}
+                            onChange={(e) => updateState(currentEx.nome, { extraKg: e.target.value, extraKgWasUserEdited: true })}
                             $invalid={false}
                             aria-label={`Extra kg ${currentEx.nome}`}
                           />

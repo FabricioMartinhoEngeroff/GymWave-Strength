@@ -111,9 +111,9 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
   });
 
   describe("Faixas Saizen por categoria", () => {
-    it("multiarticulares livres devem ter faixaTopSet [5,8] e faixaBackoff [8,10]", () => {
+    it("multiarticulares livres devem ter faixaTopSet [5,7] e faixaBackoff [8,10]", () => {
       const multiarticulares = Object.values(SESSOES).flat().filter(
-        (ex) => ex.faixaTopSet[0] === 5 && ex.faixaTopSet[1] === 8
+        (ex) => ex.faixaTopSet[0] === 5 && ex.faixaTopSet[1] === 7
       );
       expect(multiarticulares.length).toBeGreaterThan(0);
       multiarticulares.forEach((ex) => {
@@ -131,24 +131,34 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
       });
     });
 
-    it("isoladores e cabos devem ter faixaTopSet [10,12] e faixaBackoff [12,15]", () => {
-      const isoladores = Object.values(SESSOES).flat().filter(
+    it("panturrilha deve ter faixaTopSet [10,12] e faixaBackoff [12,15]", () => {
+      const panturrilhas = Object.values(SESSOES).flat().filter(
         (ex) => ex.faixaTopSet[0] === 10 && ex.faixaTopSet[1] === 12
       );
-      expect(isoladores.length).toBeGreaterThan(0);
-      isoladores.forEach((ex) => {
+      expect(panturrilhas.length).toBeGreaterThan(0);
+      panturrilhas.forEach((ex) => {
         expect(ex.faixaBackoff).toEqual([12, 15]);
       });
     });
 
-    it("exercicios de braco devem ter faixaTopSet [10,12] (isoladores)", () => {
+    it("isoladores e cabos devem ter faixaTopSet [8,10] e faixaBackoff [10,12]", () => {
+      const isoladores = Object.values(SESSOES).flat().filter(
+        (ex) => ex.grupo !== "Panturrilha" && ex.faixaTopSet[0] === 8 && ex.faixaTopSet[1] === 10
+      );
+      expect(isoladores.length).toBeGreaterThan(0);
+      isoladores.forEach((ex) => {
+        expect(ex.faixaBackoff).toEqual([10, 12]);
+      });
+    });
+
+    it("exercicios de braco devem ter faixaTopSet [8,10] (isoladores)", () => {
       const bracos = SESSOES["Braço"].filter(
         (ex) => ex.grupo === "Braço"
       );
       expect(bracos.length).toBeGreaterThan(0);
       bracos.forEach((ex) => {
-        expect(ex.faixaTopSet).toEqual([10, 12]);
-        expect(ex.faixaBackoff).toEqual([12, 15]);
+        expect(ex.faixaTopSet).toEqual([8, 10]);
+        expect(ex.faixaBackoff).toEqual([10, 12]);
       });
     });
   });

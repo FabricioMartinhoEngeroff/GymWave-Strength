@@ -9,7 +9,7 @@ export function calcEpley(peso: number, reps: number): number {
 export function extractReferenceBlock(
   registro: RegistroExercicio
 ): { peso: number; reps: number } | null {
-  if (registro.tecnica === "BC" || registro.tecnica === "RP") {
+  if (registro.tecnica === "RP") {
     const bloco1 = registro.clusterSeries?.[0];
     if (!bloco1 || bloco1.kg <= 0 || bloco1.reps <= 0) return null;
     return { peso: bloco1.kg, reps: bloco1.reps };

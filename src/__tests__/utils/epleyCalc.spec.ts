@@ -45,18 +45,18 @@ describe("epleyCalc", () => {
       expect(extractReferenceBlock(r)).toEqual({ peso: 100, reps: 7 });
     });
 
-    it("modo BC retorna peso e reps do Bloco 1 (R1), demais blocos ignorados", () => {
+    it("modo RP com 4 blocos retorna apenas Bloco 1 (R1), demais ignorados", () => {
       const r: RegistroExercicio = {
         ...baseRegistro,
-        tecnica: "BC",
+        tecnica: "RP",
         clusterSeries: [
-          { kg: 100, reps: 8 },
-          { kg: 90, reps: 6 },
-          { kg: 85, reps: 5 },
-          { kg: 80, reps: 4 },
+          { kg: 100, reps: 5 },
+          { kg: 100, reps: 5 },
+          { kg: 100, reps: 5 },
+          { kg: 100, reps: 5 },
         ],
       };
-      expect(extractReferenceBlock(r)).toEqual({ peso: 100, reps: 8 });
+      expect(extractReferenceBlock(r)).toEqual({ peso: 100, reps: 5 });
     });
 
     it("modo RP retorna peso e reps do Bloco 1 (R1), demais blocos ignorados", () => {
@@ -71,10 +71,10 @@ describe("epleyCalc", () => {
       expect(extractReferenceBlock(r)).toEqual({ peso: 120, reps: 5 });
     });
 
-    it("modo BC sem Bloco 1 preenchido retorna null", () => {
+    it("modo RP sem Bloco 1 preenchido retorna null", () => {
       const r: RegistroExercicio = {
         ...baseRegistro,
-        tecnica: "BC",
+        tecnica: "RP",
         clusterSeries: [
           { kg: 0, reps: 0 },
           { kg: 90, reps: 6 },

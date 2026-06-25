@@ -169,10 +169,10 @@ describe("Storage — Persistencia no localStorage", () => {
     });
   });
 
-  describe("clusterSeries (BC/RP) — persistência no logbook", () => {
-    it("salva e recupera registro BC com 4 blocos completos", () => {
+  describe("clusterSeries (RP) — persistência no logbook", () => {
+    it("salva e recupera registro RP com 4 blocos completos", () => {
       salvarRegistro(makeRegistro({
-        tecnica: "BC",
+        tecnica: "RP",
         topSetKg: 0,
         topSetReps: 0,
         backoffKg: 0,
@@ -185,13 +185,13 @@ describe("Storage — Persistencia no localStorage", () => {
         ],
       }));
       const historico = carregarHistorico("Supino reto barra");
-      expect(historico[0].tecnica).toBe("BC");
+      expect(historico[0].tecnica).toBe("RP");
       expect(historico[0].clusterSeries).toHaveLength(4);
       expect(historico[0].clusterSeries![0]).toEqual({ kg: 80, reps: 10 });
       expect(historico[0].clusterSeries![3]).toEqual({ kg: 78, reps: 6 });
     });
 
-    it("salva e recupera registro RP com 2 blocos", () => {
+    it("salva e recupera registro RP com 4 blocos", () => {
       salvarRegistro(makeRegistro({
         tecnica: "RP",
         topSetKg: 0,
@@ -199,21 +199,23 @@ describe("Storage — Persistencia no localStorage", () => {
         backoffKg: 0,
         backoffReps: 0,
         clusterSeries: [
-          { kg: 100, reps: 8 },
+          { kg: 100, reps: 5 },
+          { kg: 100, reps: 5 },
+          { kg: 100, reps: 5 },
           { kg: 100, reps: 5 },
         ],
       }));
       const historico = carregarHistorico("Supino reto barra");
       expect(historico[0].tecnica).toBe("RP");
-      expect(historico[0].clusterSeries).toHaveLength(2);
-      expect(historico[0].clusterSeries![1]).toEqual({ kg: 100, reps: 5 });
+      expect(historico[0].clusterSeries).toHaveLength(4);
+      expect(historico[0].clusterSeries![3]).toEqual({ kg: 100, reps: 5 });
     });
 
     it("ultimoRegistro preserva clusterSeries intacto", () => {
       salvarRegistro(makeRegistro({ dataTs: 1000 })); // normal, mais antigo
       salvarRegistro(makeRegistro({
         dataTs: 2000,
-        tecnica: "BC",
+        tecnica: "RP",
         topSetKg: 0,
         topSetReps: 0,
         backoffKg: 0,
@@ -226,7 +228,7 @@ describe("Storage — Persistencia no localStorage", () => {
         ],
       }));
       const ultimo = ultimoRegistro("Supino reto barra", "UA");
-      expect(ultimo?.tecnica).toBe("BC");
+      expect(ultimo?.tecnica).toBe("RP");
       expect(ultimo?.clusterSeries).toHaveLength(4);
     });
 
@@ -237,11 +239,11 @@ describe("Storage — Persistencia no localStorage", () => {
       expect(historico[0].tecnica).toBeUndefined();
     });
 
-    it("mix: registros normais e com BC convivem no mesmo historico", () => {
+    it("mix: registros normais e com RP convivem no mesmo historico", () => {
       salvarRegistro(makeRegistro({ dataTs: 1000, topSetKg: 90 }));
       salvarRegistro(makeRegistro({
         dataTs: 2000,
-        tecnica: "BC",
+        tecnica: "RP",
         topSetKg: 0,
         topSetReps: 0,
         backoffKg: 0,
@@ -256,14 +258,14 @@ describe("Storage — Persistencia no localStorage", () => {
       const historico = carregarHistorico("Supino reto barra");
       expect(historico).toHaveLength(2);
       const normal = historico.find((r) => !r.tecnica);
-      const bc = historico.find((r) => r.tecnica === "BC");
+      const bc = historico.find((r) => r.tecnica === "RP");
       expect(normal?.topSetKg).toBe(90);
       expect(bc?.clusterSeries).toHaveLength(4);
     });
 
-    it("BC com blocos parciais salva todos os blocos inclusive os vazios", () => {
+    it("RP com blocos parciais salva todos os blocos inclusive os vazios", () => {
       salvarRegistro(makeRegistro({
-        tecnica: "BC",
+        tecnica: "RP",
         topSetKg: 0,
         topSetReps: 0,
         backoffKg: 0,

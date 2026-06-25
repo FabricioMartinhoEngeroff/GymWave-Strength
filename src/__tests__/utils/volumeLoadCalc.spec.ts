@@ -264,7 +264,7 @@ describe("VolumeLoadCalc", () => {
     });
   });
 
-  describe("calcVolumeLoad — clusterSeries BC/RP", () => {
+  describe("calcVolumeLoad — clusterSeries RP", () => {
     function makeLogbookEntry(overrides: Record<string, unknown> = {}) {
       return {
         exercicio: "Supino reto barra",
@@ -286,10 +286,10 @@ describe("VolumeLoadCalc", () => {
       };
     }
 
-    it("BC com 4 blocos: volume = soma de kg×reps de cada bloco", () => {
+    it("RP com 4 blocos: volume = soma de kg×reps de cada bloco", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [makeLogbookEntry({
-          tecnica: "BC",
+          tecnica: "RP",
           clusterSeries: [
             { kg: 80, reps: 10 },
             { kg: 80, reps: 8 },
@@ -304,26 +304,28 @@ describe("VolumeLoadCalc", () => {
       expect(peito?.volumeAtual).toBe(2454);
     });
 
-    it("RP com 2 blocos: volume = soma dos 2 blocos", () => {
+    it("RP com 4 blocos: volume = soma dos 4 blocos", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [makeLogbookEntry({
           tecnica: "RP",
           clusterSeries: [
-            { kg: 100, reps: 8 },
+            { kg: 100, reps: 5 },
+            { kg: 100, reps: 5 },
+            { kg: 100, reps: 5 },
             { kg: 100, reps: 5 },
           ],
         })],
       }));
       const result = calcVolumeLoad();
       const peito = result.find((r) => r.musculo === "Peitoral");
-      // 100*8 + 100*5 = 800 + 500 = 1300
-      expect(peito?.volumeAtual).toBe(1300);
+      // 4 × (100*5) = 2000
+      expect(peito?.volumeAtual).toBe(2000);
     });
 
     it("conta somente blocos com kg>0 e reps>0 para seriesAtual", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [makeLogbookEntry({
-          tecnica: "BC",
+          tecnica: "RP",
           clusterSeries: [
             { kg: 80, reps: 10 },
             { kg: 80, reps: 8 },
@@ -340,7 +342,7 @@ describe("VolumeLoadCalc", () => {
     it("blocos vazios nao somam ao volume", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [makeLogbookEntry({
-          tecnica: "BC",
+          tecnica: "RP",
           clusterSeries: [
             { kg: 80, reps: 10 },
             { kg: 0, reps: 0 },
@@ -357,7 +359,7 @@ describe("VolumeLoadCalc", () => {
     it("clusterSeries vazio ([]) usa topSet/backoff normalmente como fallback", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [makeLogbookEntry({
-          tecnica: "BC",
+          tecnica: "RP",
           clusterSeries: [],
           topSetKg: 100,
           topSetReps: 7,
@@ -387,11 +389,11 @@ describe("VolumeLoadCalc", () => {
       expect(peito?.seriesAtual).toBe(2);
     });
 
-    it("BC e registro normal do mesmo musculo acumulam volume na semana", () => {
+    it("RP e registro normal do mesmo musculo acumulam volume na semana", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [
           makeLogbookEntry({
-            tecnica: "BC",
+            tecnica: "RP",
             clusterSeries: [
               { kg: 80, reps: 10 },
               { kg: 80, reps: 8 },
@@ -410,7 +412,7 @@ describe("VolumeLoadCalc", () => {
       }));
       const result = calcVolumeLoad();
       const peito = result.find((r) => r.musculo === "Peitoral");
-      // BC: 2454, normal: 500 -> total 2954
+      // RP: 2454, normal: 500 -> total 2954
       expect(peito?.volumeAtual).toBe(2954);
     });
   });

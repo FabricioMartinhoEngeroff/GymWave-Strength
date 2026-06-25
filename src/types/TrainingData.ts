@@ -51,7 +51,7 @@ export interface RegistroExercicio {
   backoffFaixaMax: number;
 
   // Breathing Cluster / Rest-Pause (optional)
-  tecnica?: "BC" | "RP" | null;
+  tecnica?: "RP" | null;
   clusterSeries?: { kg: number; reps: number }[];
 
   // Series count (read from import spreadsheet, persisted per registro)

@@ -43,7 +43,7 @@ interface ChartPoint {
   rm1: number;
   peso: number;
   reps: number;
-  tecnica: "BC" | "RP" | null;
+  tecnica: "RP" | null;
   isPr: boolean;
 }
 

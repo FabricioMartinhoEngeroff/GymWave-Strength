@@ -74,7 +74,7 @@ describe("PowerliftingChart — EF_07", () => {
       expect(screen.getByTestId("stats-rm1")).toHaveTextContent("123.33 kg");
     });
 
-    it("registro modo BC usa apenas Bloco 1 (100kg x 8reps) → 1RM = 126.67", () => {
+    it("registro modo RP com 4 blocos usa apenas Bloco 1 (100kg x 8reps) → 1RM = 126.67", () => {
       setLogbook([
         makeRegistro({
           exercicio: "Agachamento livre",
@@ -82,12 +82,12 @@ describe("PowerliftingChart — EF_07", () => {
           topSetReps: 0,
           data: "01/06/2026",
           dataTs: new Date(2026, 5, 1).getTime(),
-          tecnica: "BC",
+          tecnica: "RP",
           clusterSeries: [
             { kg: 100, reps: 8 },
-            { kg: 90, reps: 6 },
-            { kg: 85, reps: 5 },
-            { kg: 80, reps: 4 },
+            { kg: 100, reps: 5 },
+            { kg: 100, reps: 5 },
+            { kg: 100, reps: 5 },
           ],
         }),
       ]);
@@ -229,7 +229,7 @@ describe("PowerliftingChart — EF_07", () => {
     });
 
     it("tooltip mobile exibe data, 1RM, peso x reps e tecnica no CustomTooltip", () => {
-      // Verifica que o componente renderiza sem erros com dados de tecnica BC
+      // Verifica que o componente renderiza sem erros com dados de tecnica RP
       setLogbook([
         makeRegistro({
           exercicio: "Supino reto barra",
@@ -237,7 +237,7 @@ describe("PowerliftingChart — EF_07", () => {
           topSetReps: 0,
           data: "01/06/2026",
           dataTs: new Date(2026, 5, 1).getTime(),
-          tecnica: "BC",
+          tecnica: "RP",
           clusterSeries: [{ kg: 100, reps: 8 }, { kg: 90, reps: 6 }],
         }),
       ]);
