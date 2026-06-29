@@ -50,7 +50,6 @@ export interface RegistroExercicio {
   backoffFaixaMin: number;
   backoffFaixaMax: number;
 
-  // Breathing Cluster / Rest-Pause (optional)
   tecnica?: "RP" | null;
   clusterSeries?: { kg: number; reps: number }[];
 

@@ -780,7 +780,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           } else {
                             updateState(currentEx.nome, {
                               tecnica: "RP",
-                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
+                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }],
                               topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
                               topSetConfirmed: false, backoffConfirmed: false,
                               topSetKgIsSuggestion: false, backoffKgIsSuggestion: false, backoffKgWasUserEdited: false,

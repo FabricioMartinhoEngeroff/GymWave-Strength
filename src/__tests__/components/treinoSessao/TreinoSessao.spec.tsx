@@ -697,4 +697,100 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.queryByText(/Ritmo de Recorde Pessoal/i)).not.toBeInTheDocument();
     });
   });
+
+  // ── Técnica Rest Pause (RP) ─────────────────────────────────────────────
+
+  describe("Tecnica Rest Pause (RP) — 2 blocos", () => {
+    it("chip RP e exibido na secao Tecnica", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.getByRole("button", { name: "RP" })).toBeInTheDocument();
+    });
+
+    it("ao ativar RP exibe exatamente 2 blocos e oculta campos Top Set e Back-off", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+
+      expect(screen.getByText("Bloco 1")).toBeInTheDocument();
+      expect(screen.getByText("Bloco 2")).toBeInTheDocument();
+      expect(screen.queryByText("Bloco 3")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Top Set kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
+    });
+
+    it("Bloco 1 e Bloco 2 tem campos de peso e reps acessiveis", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+
+      expect(screen.getByLabelText(/Bloco 1 kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 1 reps/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 2 kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 2 reps/i)).toBeInTheDocument();
+    });
+
+    it("Bloco 3 nao existe apos ativar RP", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+
+      expect(screen.queryByLabelText(/Bloco 3 kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Bloco 3 reps/i)).not.toBeInTheDocument();
+    });
+
+    it("confirmar tecnica sem dados exibe aviso de bloco obrigatorio", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByText("Confirmar Técnica"));
+
+      expect(screen.getByText(/Preencha pelo menos um bloco/i)).toBeInTheDocument();
+    });
+
+    it("ao preencher bloco 1 e confirmar exibe resumo com R1", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+
+      fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
+      fireEvent.click(screen.getByText("Confirmar Técnica"));
+
+      expect(screen.getByText(/R1: 100kg × 5reps/i)).toBeInTheDocument();
+    });
+
+    it("desativar RP clicando novamente restaura Top Set e Back-off", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      expect(screen.queryByText("Top Set")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      expect(screen.getByText("Top Set")).toBeInTheDocument();
+    });
+
+    it("salvar treino em modo RP persiste clusterSeries com 2 blocos no logbook", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+
+      fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
+      fireEvent.change(screen.getByLabelText(/Bloco 2 kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Bloco 2 reps/i), { target: { value: "5" } });
+      fireEvent.click(screen.getByText("Confirmar Técnica"));
+      fireEvent.click(screen.getByText("Próximo")); // avança sem skipar o exercício RP
+      pularParaUltimo(7); // 6 Pular clicks: idx 1 → idx 7 (last of 8)
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") ?? "{}");
+      const registro = logbook["Supino reto barra"]?.[0];
+      expect(registro?.tecnica).toBe("RP");
+      expect(registro?.clusterSeries).toHaveLength(2);
+      expect(registro?.clusterSeries[0]).toEqual({ kg: 100, reps: 5 });
+      expect(registro?.clusterSeries[1]).toEqual({ kg: 100, reps: 5 });
+    });
+  });
 });
