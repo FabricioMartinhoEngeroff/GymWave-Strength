@@ -151,14 +151,13 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
       });
     });
 
-    it("exercicios de braco devem ter faixaTopSet [8,10] (isoladores)", () => {
-      const bracos = SESSOES["Braço"].filter(
-        (ex) => ex.grupo === "Braço"
-      );
+    it("exercicios de braco devem ter faixaTopSet [8,12] (biceps/triceps) ou [10,15] (antebraco)", () => {
+      const bracos = SESSOES["Braço"].filter((ex) => ex.grupo === "Braço");
       expect(bracos.length).toBeGreaterThan(0);
       bracos.forEach((ex) => {
-        expect(ex.faixaTopSet).toEqual([8, 10]);
-        expect(ex.faixaBackoff).toEqual([10, 12]);
+        const isBraco = ex.faixaTopSet[0] === 8 && ex.faixaTopSet[1] === 12;
+        const isAntebraco = ex.faixaTopSet[0] === 10 && ex.faixaTopSet[1] === 15;
+        expect(isBraco || isAntebraco, `${ex.nome} faixaTopSet inesperada`).toBe(true);
       });
     });
   });

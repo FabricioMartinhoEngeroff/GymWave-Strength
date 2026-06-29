@@ -88,25 +88,44 @@ const COLUMN_MAP: [RegExp, string][] = [
   [/s[eé]ries/i,              "series_validas"],
 ];
 
-// Normaliza nomes da planilha v2 (descritivos) para os nomes canônicos do app
+// Normaliza nomes da planilha (descritivos) para os nomes canônicos do app
 const NOME_MAP: Record<string, string> = {
-  "Panturrilha sentado máquina":              "Panturrilha sentado",
-  "Pull-around cabo polia baixa":             "Pull-around cabo",
-  "Pulldown braço estendido inclinado":       "Pulldown inclinado",
-  "Panturrilha no leg press":                 "Panturrilha leg press",
-  "Barra fixa pegada aberta pronada":         "Barra fixa pronada",
-  "Desenvolvimento máquina pegada neutra":    "Desenvolvimento máquina",
-  "Remada peito apoiado banco inclinado":     "Remada peito apoiado",
-  "Supino halteres com amplitude":            "Supino halteres amplitude",
-  "Tríceps testa halteres deitado":           "Tríceps testa halteres",
-  "Tríceps polia barra reta pronada":         "Tríceps polia barra reta",
-  "Tríceps polia alta unilateral supinada":   "Tríceps polia unilateral",
-  "Rosca inclinada halteres 45°":             "Rosca inclinada 45°",
-  "Rosca scott mesa unilateral":              "Rosca scott unilateral",
-  "Rosca polia alta unilateral":              "Rosca polia alta",
-  "Rosca inversa barra ou halteres":          "Rosca inversa",
-  "Rolar barra na mão no cabo":               "Rolar barra cabo",
-  "Abdômen infra banco inclinado":            "Abdômen infra banco",
+  // ── Planilha v3 (nomes curtos de sessão de Braço e Upper) ─────────────────
+  // Upper A
+  "Crossover braço estendido polia alta":        "Crossover braço estendido",
+  "Pulldown braço estendido tronco inclinado":   "Pulldown inclinado",
+  "Rosca scott mesa":                            "Rosca scott",
+  "Antebraço mesa scott barra W invertida":      "Antebraço invertido",
+  // Upper B
+  "Antebraço rola barra na palma cabo":          "Antebraço rola palma",
+  // Braço (BR) — nomes curtos sem prefixo de grupo
+  "Polia barra reta pronada":                    "Tríceps polia barra reta",
+  "Testa halteres deitado":                      "Tríceps testa halteres",
+  "Polia supinada unilateral":                   "Rosca polia unilateral",
+  "Mesa scott":                                  "Rosca scott",
+  "Martelo halteres":                            "Rosca martelo",
+  "Polia alta unilateral":                       "Rosca polia alta",
+  "Mesa scott barra W invertida":                "Antebraço invertido",
+  "Rola barra na palma cabo":                    "Antebraço rola palma",
+
+  // ── Planilha v2 (nomes descritivos longos) — mantidos para compat ─────────
+  "Panturrilha sentado máquina":                 "Panturrilha sentado",
+  "Pull-around cabo polia baixa":                "Pull-around cabo",
+  "Pulldown braço estendido inclinado":          "Pulldown inclinado",
+  "Panturrilha no leg press":                    "Panturrilha leg press",
+  "Barra fixa pegada aberta pronada":            "Barra fixa pronada",
+  "Desenvolvimento máquina pegada neutra":       "Desenvolvimento máquina",
+  "Remada peito apoiado banco inclinado":        "Remada peito apoiado",
+  "Supino halteres com amplitude":               "Supino halteres amplitude",
+  "Tríceps testa halteres deitado":              "Tríceps testa halteres",
+  "Tríceps polia barra reta pronada":            "Tríceps polia barra reta",
+  "Tríceps polia alta unilateral supinada":      "Tríceps polia unilateral",
+  "Rosca inclinada halteres 45°":                "Rosca inclinada 45°",
+  "Rosca scott mesa unilateral":                 "Rosca scott unilateral",
+  "Rosca polia alta unilateral":                 "Rosca polia alta",
+  "Rosca inversa barra ou halteres":             "Rosca inversa",
+  "Rolar barra na mão no cabo":                  "Rolar barra cabo",
+  "Abdômen infra banco inclinado":               "Abdômen infra banco",
 };
 
 function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
