@@ -88,12 +88,14 @@ Exibe por exercício:
 | 03 | Bloco 3 | Peso (kg) + Repetições | — |
 | 04 | Bloco 4 | Peso (kg) + Repetições | — |
 
-**RP — Rest-Pause (2 blocos):**
+**RP — Rest-Pause (4 blocos):**
 
 | Nº | Bloco | Campos | Obrig. |
 |---|---|---|---|
 | 01 | Bloco 1 | Peso (kg) + Repetições | Ao menos 1 bloco |
 | 02 | Bloco 2 | Peso (kg) + Repetições | — |
+| 03 | Bloco 3 | Peso (kg) + Repetições | — |
+| 04 | Bloco 4 | Peso (kg) + Repetições | — |
 
 - Exibe **Total em kg·reps** calculado em tempo real: `Σ (pesoN × repsN)`.
 - **Botão "Confirmar Técnica":** exige ao menos 1 bloco com peso e repetições positivos. Se inválido, exibe aviso laranja com ⚠.

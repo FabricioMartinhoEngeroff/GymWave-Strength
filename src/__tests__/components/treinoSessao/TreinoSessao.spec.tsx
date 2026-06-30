@@ -700,26 +700,28 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
   // ── Técnica Rest Pause (RP) ─────────────────────────────────────────────
 
-  describe("Tecnica Rest Pause (RP) — 2 blocos", () => {
+  describe("Tecnica Rest Pause (RP) — 4 blocos", () => {
     it("chip RP e exibido na secao Tecnica", () => {
       renderFresh();
       selecionarSessao("Upper A");
       expect(screen.getByRole("button", { name: "RP" })).toBeInTheDocument();
     });
 
-    it("ao ativar RP exibe exatamente 2 blocos e oculta campos Top Set e Back-off", () => {
+    it("ao ativar RP exibe exatamente 4 blocos e oculta campos Top Set e Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByRole("button", { name: "RP" }));
 
       expect(screen.getByText("Bloco 1")).toBeInTheDocument();
       expect(screen.getByText("Bloco 2")).toBeInTheDocument();
-      expect(screen.queryByText("Bloco 3")).not.toBeInTheDocument();
+      expect(screen.getByText("Bloco 3")).toBeInTheDocument();
+      expect(screen.getByText("Bloco 4")).toBeInTheDocument();
+      expect(screen.queryByText("Bloco 5")).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/Top Set kg/i)).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
     });
 
-    it("Bloco 1 e Bloco 2 tem campos de peso e reps acessiveis", () => {
+    it("Blocos 1 a 4 tem campos de peso e reps acessiveis", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByRole("button", { name: "RP" }));
@@ -728,15 +730,19 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByLabelText(/Bloco 1 reps/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bloco 2 kg/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bloco 2 reps/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 3 kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 3 reps/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 4 kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Bloco 4 reps/i)).toBeInTheDocument();
     });
 
-    it("Bloco 3 nao existe apos ativar RP", () => {
+    it("Bloco 5 nao existe apos ativar RP", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByRole("button", { name: "RP" }));
 
-      expect(screen.queryByLabelText(/Bloco 3 kg/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/Bloco 3 reps/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Bloco 5 kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Bloco 5 reps/i)).not.toBeInTheDocument();
     });
 
     it("confirmar tecnica sem dados exibe aviso de bloco obrigatorio", () => {
@@ -770,7 +776,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByText("Top Set")).toBeInTheDocument();
     });
 
-    it("salvar treino em modo RP persiste clusterSeries com 2 blocos no logbook", () => {
+    it("salvar treino em modo RP persiste apenas blocos preenchidos no logbook", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByRole("button", { name: "RP" }));
