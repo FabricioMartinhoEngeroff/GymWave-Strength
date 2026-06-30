@@ -192,7 +192,6 @@ export const PowerliftingChart: React.FC = () => {
     variacao === null ? "—" : variacao > 0 ? `+${variacao.toFixed(2)} kg` : `${variacao.toFixed(2)} kg`;
 
   const periodoOptions = TIME_INTERVAL_OPTIONS.filter((o) => o.value !== "Tudo");
-  const chipValues = ["7d", "1M", "3M", "1A", "Tudo"] as const;
 
   return (
     <Container>
