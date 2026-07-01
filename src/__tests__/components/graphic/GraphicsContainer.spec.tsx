@@ -10,7 +10,12 @@ describe("GraphicsContainer — Graficos de progressao", () => {
   describe("Renderizacao", () => {
     it("exibe o titulo de progressao", () => {
       render(<GraphicsContainer />);
-      expect(screen.getByText(/progressão/i)).toBeInTheDocument();
+      expect(screen.getByRole("heading", { name: /progressão/i })).toBeInTheDocument();
+    });
+
+    it("exibe o seletor de visão (Progressão / Volume Load)", () => {
+      render(<GraphicsContainer />);
+      expect(screen.getByRole("button", { name: /volume load/i })).toBeInTheDocument();
     });
 
     it("exibe seletor de exercicio", () => {

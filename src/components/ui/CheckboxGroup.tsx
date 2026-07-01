@@ -3,10 +3,14 @@ import styled from "styled-components";
 const GroupWrapper = styled.div`
   display: flex;
   justify-content: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   gap: 10px;
   margin-top: -10px; // diminui mais o espaço vertical
   padding-top: 4px;
+
+  @media (max-width: 480px) {
+    gap: 8px;
+  }
 `;
 
 const Item = styled.label`

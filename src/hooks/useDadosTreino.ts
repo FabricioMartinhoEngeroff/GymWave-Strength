@@ -9,12 +9,24 @@ export interface RegistroGraficoRaw {
   topSet: number;
   bateuTeto?: boolean;
   progrediu?: boolean;
+  volumeLoad: number; // soma de (peso × reps) de todas as séries válidas da sessão
+  tecnica?: "RP" | null;
 }
 
 export type DadosAgrupados = Record<string, RegistroGraficoRaw[]>;
 
 function parsePesos(pesos: string[] = []): number[] {
   return pesos.map((p) => parseFloat(p) || 0).filter((n) => n > 0);
+}
+
+function calcVolumeLoadLegacy(pesos: string[] = [], reps: string[] = []): number {
+  let total = 0;
+  for (let i = 0; i < pesos.length; i++) {
+    const p = parseFloat(pesos[i]) || 0;
+    const r = parseFloat(reps[i]) || 0;
+    total += p * r;
+  }
+  return total;
 }
 
 function parseDataBR(data: string): { normalizada: string; ts: number } | null {
@@ -59,6 +71,7 @@ function montarRegistroGrafico(
     cicloId: normalizarCicloId(cicloKey),
     pesos: pesosNum,
     topSet,
+    volumeLoad: calcVolumeLoadLegacy(reg.pesos, reg.reps),
   };
 }
 
@@ -85,20 +98,45 @@ export function useDadosTreino(): DadosAgrupados {
     const logbook = JSON.parse(localStorage.getItem("logbook") || "{}") as Logbook;
     Object.entries(logbook).forEach(([exercicio, registros]) => {
       registros.forEach((reg) => {
-        if (reg.topSetKg <= 0) return;
+        const temClusterSeries = !!reg.clusterSeries && reg.clusterSeries.length > 0;
+        if (reg.topSetKg <= 0 && !temClusterSeries) return;
 
         const dataInfo = parseDataBR(reg.data);
         if (!dataInfo) return;
+
+        let volumeLoad = 0;
+        let topSet: number;
+        let pesos: number[];
+
+        if (temClusterSeries) {
+          // Modo RP: cada bloco do cluster é uma série válida; o Bloco 1
+          // (mais fresco) representa o esforço máximo da sessão.
+          const blocosValidos = reg.clusterSeries!.filter((b) => b.kg > 0 && b.reps > 0);
+          blocosValidos.forEach((b) => (volumeLoad += b.kg * b.reps));
+          topSet = blocosValidos[0]?.kg ?? 0;
+          pesos = blocosValidos.map((b) => b.kg);
+        } else {
+          volumeLoad =
+            reg.topSetKg * reg.topSetReps +
+            reg.backoffKg * reg.backoffReps +
+            (reg.seriesValidas === 3 && reg.extraKg && reg.extraReps
+              ? reg.extraKg * reg.extraReps
+              : 0);
+          topSet = reg.topSetKg;
+          pesos = [reg.topSetKg, reg.backoffKg].filter((p) => p > 0);
+        }
 
         if (!porExe[exercicio]) porExe[exercicio] = [];
         porExe[exercicio].push({
           data: dataInfo.normalizada,
           dataTs: dataInfo.ts,
           cicloId: reg.treinoId,
-          pesos: [reg.topSetKg, reg.backoffKg].filter((p) => p > 0),
-          topSet: reg.topSetKg,
+          pesos,
+          topSet,
           bateuTeto: reg.topSetBateuTeto,
           progrediu: reg.progrediu,
+          volumeLoad,
+          tecnica: reg.tecnica ?? null,
         });
       });
     });
