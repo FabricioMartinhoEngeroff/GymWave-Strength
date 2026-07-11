@@ -39,26 +39,57 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+/**
+ * Per-exercise form state held in memory during a workout session.
+ *
+ * Suggestion pattern (applied to Top Set, Back-off and Série Extra):
+ *   - On session load, every block is pre-filled with the values from the
+ *     previous workout (ultimoRegistro) — same weight AND reps.
+ *   - The *IsSuggestion / *Suggestion flags drive the blue-border visual hint.
+ *   - Each flag is cleared when the user edits the corresponding field, so
+ *     the UI distinguishes "carried from history" from "typed right now".
+ *   - The *WasUserEdited guards prevent the auto-fill useEffects from
+ *     overwriting a value the user already changed.
+ *
+ * Fallback when there is no previous record:
+ *   - Top Set fields are empty (no suggestion).
+ *   - Back-off kg is auto-calculated as topSetKg × backoffPct after Top Set
+ *     is confirmed (the existing useEffect).
+ *   - Extra kg mirrors backoffKg after Back-off is confirmed.
+ */
 interface ExerciseState {
+  // ── Input values (all strings so <input> stays controlled) ──────────────
   topSetKg: string;
   topSetReps: string;
   backoffKg: string;
   backoffReps: string;
   extraKg: string;
   extraReps: string;
+
+  // ── Confirmation & technique ─────────────────────────────────────────────
   seriesValidas: 2 | 3;
   topSetConfirmed: boolean;
   backoffConfirmed: boolean;
   tecnica: "RP" | null;
   clusterSeries: { kg: string; reps: string }[];
   tecnicaConfirmed: boolean;
+
+  // ── Meta ─────────────────────────────────────────────────────────────────
   obs: string;
   skipped: boolean;
-  topSetKgIsSuggestion: boolean;
-  backoffKgIsSuggestion: boolean;
+  prConfirmado: boolean;
+
+  // ── Suggestion flags (blue-border visual hint) ───────────────────────────
+  topSetKgIsSuggestion: boolean;    // kg pre-filled from previous workout
+  topSetRepsSuggestion: boolean;    // reps pre-filled from previous workout
+  backoffKgIsSuggestion: boolean;   // kg pre-filled from previous workout
+  backoffRepsSuggestion: boolean;   // reps pre-filled from previous workout
+  extraKgIsSuggestion: boolean;     // kg pre-filled from previous workout
+  extraRepsSuggestion: boolean;     // reps pre-filled from previous workout
+
+  // ── Edit guards (prevent auto-fill useEffects from overwriting) ──────────
   backoffKgWasUserEdited: boolean;
   extraKgWasUserEdited: boolean;
-  prConfirmado: boolean;
 }
 
 interface TreinoSessaoProps {
@@ -89,6 +120,7 @@ function getRotacaoId(sessao: SessaoTipo): string {
   return r?.id ?? "";
 }
 
+/** Returns a blank ExerciseState with all suggestion flags off. */
 function emptyExerciseState(): ExerciseState {
   return {
     topSetKg: "",
@@ -106,8 +138,12 @@ function emptyExerciseState(): ExerciseState {
     obs: "",
     skipped: false,
     topSetKgIsSuggestion: false,
+    topSetRepsSuggestion: false,
     backoffKgIsSuggestion: false,
+    backoffRepsSuggestion: false,
     backoffKgWasUserEdited: false,
+    extraKgIsSuggestion: false,
+    extraRepsSuggestion: false,
     extraKgWasUserEdited: false,
     prConfirmado: false,
   };
@@ -202,7 +238,25 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         }
         state.topSetKg = String(suggestedKg);
         state.topSetKgIsSuggestion = true;
+        state.topSetReps = String(ultimo.topSetReps);
+        state.topSetRepsSuggestion = true;
         state.seriesValidas = (ultimo.seriesValidas ?? ex.seriesValidas) as 2 | 3;
+        if (ultimo.backoffKg > 0) {
+          state.backoffKg = String(ultimo.backoffKg);
+          state.backoffKgIsSuggestion = true;
+        }
+        if (ultimo.backoffReps > 0) {
+          state.backoffReps = String(ultimo.backoffReps);
+          state.backoffRepsSuggestion = true;
+        }
+        if (ultimo.extraKg && ultimo.extraKg > 0) {
+          state.extraKg = String(ultimo.extraKg);
+          state.extraKgIsSuggestion = true;
+        }
+        if (ultimo.extraReps && ultimo.extraReps > 0) {
+          state.extraReps = String(ultimo.extraReps);
+          state.extraRepsSuggestion = true;
+        }
       }
       states[ex.nome] = state;
     });
@@ -220,7 +274,10 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setTecnicaWarning(false);
   }, [currentIdx, sessao]);
 
-  // Suggest backoff kg when top set is confirmed and backoff is still empty (and user hasn't manually edited it)
+  // Fallback: suggest backoff kg as topSetKg × backoffPct when there is no
+  // previous record (backoffKg stayed empty after session load) and the user
+  // hasn't typed anything yet.  Skipped when backoffKg is already pre-filled
+  // from the previous workout.
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
@@ -239,6 +296,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     }
   }, [currentEx, exerciseStates]);
 
+  // Fallback: mirror backoffKg into extraKg when the extra block first
+  // appears and the user hasn't typed anything yet.  Skipped when extraKg is
+  // already pre-filled from the previous workout.
   // Auto-fill extra kg from backoff when extra block appears (only if user hasn't manually edited)
   useEffect(() => {
     if (!currentEx) return;

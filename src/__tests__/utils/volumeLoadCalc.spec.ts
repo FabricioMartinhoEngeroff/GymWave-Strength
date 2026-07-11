@@ -2,11 +2,14 @@
  * VolumeLoadTest -> utils
  * Testa calcVolumeLoad e calcTotalVolumeWeek com datas fixas.
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { vi } from "vitest";
 import {
   calcVolumeLoad,
   calcTotalVolumeWeek,
+  calcStreakSemanas,
+  calcEstagnadoMusculo,
+  calcQuedaCargaMusculo,
 } from "../../utils/volumeLoadCalc";
 
 // Fixa a data em quarta-feira 10/06/2026
@@ -414,6 +417,377 @@ describe("VolumeLoadCalc", () => {
       const peito = result.find((r) => r.musculo === "Peitoral");
       // RP: 2454, normal: 500 -> total 2954
       expect(peito?.volumeAtual).toBe(2954);
+    });
+  });
+
+  // ── Helpers compartilhados pelos novos blocos ─────────────────────────────
+
+  function makeEntry(exercicio: string, dateISO: string, overrides: Record<string, unknown> = {}) {
+    const [y, m, d] = dateISO.split("-");
+    return {
+      exercicio,
+      treinoId: "UA",
+      data: `${d}/${m}/${y}`,
+      dataTs: new Date(`${dateISO}T12:00:00`).getTime(),
+      topSetKg: 100,
+      topSetReps: 7,
+      topSetFaixaMin: 5,
+      topSetFaixaMax: 9,
+      topSetBateuTeto: false,
+      backoffKg: 85,
+      backoffReps: 12,
+      backoffFaixaMin: 9,
+      backoffFaixaMax: 15,
+      seriesValidas: 2,
+      progrediu: true,
+      ...overrides,
+    };
+  }
+
+  // DATA_FIXA = 2026-06-10 (quarta)
+  // Semana atual: Mon 08/06 – Sun 14/06  | Mês atual: junho
+  // Semana anterior: Mon 01/06 – Sun 07/06 | Mês anterior: maio
+  //
+  // Datas por semana ISO para testes de streak:
+  // W24: 2026-06-10 | W23: 2026-06-03 | W22: 2026-05-27 | W21: 2026-05-20
+  // W20: 2026-05-13 | W19: 2026-05-06 | W18: 2026-04-29 | W17: 2026-04-22
+  // W16: 2026-04-15 | W15: 2026-04-08
+
+  const SEMANAS_10 = [
+    "2026-06-10", // W24
+    "2026-06-03", // W23
+    "2026-05-27", // W22
+    "2026-05-20", // W21
+    "2026-05-13", // W20
+    "2026-05-06", // W19
+    "2026-04-29", // W18
+    "2026-04-22", // W17
+    "2026-04-15", // W16
+    "2026-04-08", // W15
+  ];
+
+  function setLogbook(entries: Record<string, unknown[]>) {
+    localStorage.setItem("logbook", JSON.stringify(entries));
+  }
+
+  // ── calcVolumeLoad com granularidade mensal ──────────────────────────────
+
+  describe("calcVolumeLoad com granularidade mensal", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("registro de junho (semana anterior) conta como volumeAtual no modo mes", () => {
+      // June 3 = semana anterior, mas mesmo mês (junho) → modo mês = atual
+      setLogbook({
+        "Supino reto barra": [makeEntry("Supino reto barra", "2026-06-03")],
+      });
+      const weekResult = calcVolumeLoad("week");
+      const monthResult = calcVolumeLoad("month");
+      const peitoWeek = weekResult.find((r) => r.musculo === "Peitoral");
+      const peitoMonth = monthResult.find((r) => r.musculo === "Peitoral");
+
+      // Modo semana: jun 3 = semana anterior → volumeAnterior
+      expect(peitoWeek?.volumeAnterior).toBeGreaterThan(0);
+      expect(peitoWeek?.volumeAtual).toBe(0);
+
+      // Modo mês: jun 3 = mês atual (junho) → volumeAtual
+      expect(peitoMonth?.volumeAtual).toBeGreaterThan(0);
+      expect(peitoMonth?.volumeAnterior).toBe(0);
+    });
+
+    it("registro de maio conta como periodo anterior no modo mes", () => {
+      setLogbook({
+        "Supino reto barra": [makeEntry("Supino reto barra", "2026-05-15")],
+      });
+      const result = calcVolumeLoad("month");
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito?.volumeAnterior).toBeGreaterThan(0);
+      expect(peito?.volumeAtual).toBe(0);
+    });
+
+    it("registro de abril é ignorado no modo mes (fora dos 2 meses relevantes)", () => {
+      setLogbook({
+        "Supino reto barra": [makeEntry("Supino reto barra", "2026-04-15")],
+      });
+      const result = calcVolumeLoad("month");
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito).toBeUndefined();
+    });
+
+    it("soma volume de registros de junho e maio separadamente", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 100, topSetReps: 10 }),  // jun atual
+          makeEntry("Supino reto barra", "2026-05-15", { topSetKg: 80, topSetReps: 10 }),   // mai anterior
+        ],
+      });
+      const result = calcVolumeLoad("month");
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      // Jun: 100*10 + 85*12 = 1000 + 1020 = 2020
+      // Mai: 80*10 + 85*12 = 800 + 1020 = 1820
+      expect(peito?.volumeAtual).toBe(2020);
+      expect(peito?.volumeAnterior).toBe(1820);
+    });
+
+    it("modo semana sem argumento funciona igual ao modo 'week' explicito", () => {
+      setLogbook({
+        "Supino reto barra": [makeEntry("Supino reto barra", "2026-06-10")],
+      });
+      const defaultResult = calcVolumeLoad();
+      const weekResult = calcVolumeLoad("week");
+      const peitoDefault = defaultResult.find((r) => r.musculo === "Peitoral");
+      const peitoWeek = weekResult.find((r) => r.musculo === "Peitoral");
+      expect(peitoDefault?.volumeAtual).toBe(peitoWeek?.volumeAtual);
+    });
+  });
+
+  // ── calcStreakSemanas — contagem de semanas consecutivas ─────────────────
+
+  describe("calcStreakSemanas — contagem de semanas consecutivas", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("retorna 0 quando logbook está vazio", () => {
+      expect(calcStreakSemanas()).toBe(0);
+    });
+
+    it("retorna 1 quando há apenas 1 semana de treino (esta semana)", () => {
+      setLogbook({
+        "Supino reto barra": [makeEntry("Supino reto barra", "2026-06-10")],
+      });
+      expect(calcStreakSemanas()).toBe(1);
+    });
+
+    it("retorna 3 para 3 semanas consecutivas", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10"), // W24
+          makeEntry("Supino reto barra", "2026-06-03"), // W23
+          makeEntry("Supino reto barra", "2026-05-27"), // W22
+        ],
+      });
+      expect(calcStreakSemanas()).toBe(3);
+    });
+
+    it("para de contar quando há gap de uma semana sem treino", () => {
+      // W24, W23, W22 presentes; W21 ausente; W20, W19 presentes
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10"), // W24
+          makeEntry("Supino reto barra", "2026-06-03"), // W23
+          makeEntry("Supino reto barra", "2026-05-27"), // W22
+          // W21 (2026-05-20) ausente → streak para aqui
+          makeEntry("Supino reto barra", "2026-05-13"), // W20
+          makeEntry("Supino reto barra", "2026-05-06"), // W19
+        ],
+      });
+      expect(calcStreakSemanas()).toBe(3);
+    });
+
+    it("retorna 10 para 10 semanas consecutivas (limiar do banner de deload)", () => {
+      setLogbook({
+        "Supino reto barra": SEMANAS_10.map((d) =>
+          makeEntry("Supino reto barra", d)
+        ),
+      });
+      expect(calcStreakSemanas()).toBe(10);
+    });
+
+    it("retorna 9 para 9 semanas consecutivas (abaixo do limiar)", () => {
+      const semanas9 = SEMANAS_10.slice(0, 9); // W16–W24
+      setLogbook({
+        "Supino reto barra": semanas9.map((d) =>
+          makeEntry("Supino reto barra", d)
+        ),
+      });
+      expect(calcStreakSemanas()).toBe(9);
+    });
+
+    it("multiplos exercicios na mesma semana contam como 1 semana", () => {
+      setLogbook({
+        "Supino reto barra": [makeEntry("Supino reto barra", "2026-06-10")],
+        "Crossover braço estendido": [makeEntry("Crossover braço estendido", "2026-06-11")],
+        "Remada peito apoiado": [makeEntry("Remada peito apoiado", "2026-06-09")],
+      });
+      expect(calcStreakSemanas()).toBe(1);
+    });
+  });
+
+  // ── calcEstagnadoMusculo — badge de estagnação ──────────────────────────
+
+  describe("calcEstagnadoMusculo — badge de estagnação (RG9)", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("retorna false quando logbook está vazio", () => {
+      expect(calcEstagnadoMusculo("Peitoral")).toBe(false);
+    });
+
+    it("retorna false quando apenas 1 exercicio do grupo tem 4 sessoes estagnadas", () => {
+      // Precisa de >= 2 exercícios estagnados no grupo
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-05-20", { progrediu: false, topSetBateuTeto: false }),
+        ],
+      });
+      expect(calcEstagnadoMusculo("Peitoral")).toBe(false);
+    });
+
+    it("retorna true quando 2 exercicios do grupo têm >= 4 sessoes consecutivas sem progressão", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-05-20", { progrediu: false, topSetBateuTeto: false }),
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-05-20", { progrediu: false, topSetBateuTeto: false }),
+        ],
+      });
+      expect(calcEstagnadoMusculo("Peitoral")).toBe(true);
+    });
+
+    it("sessão com topSetBateuTeto=true não conta como estagnação", () => {
+      // O exercício bateu teto → não é estagnação, é limitação de faixa
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { progrediu: false, topSetBateuTeto: true }),
+          makeEntry("Supino reto barra", "2026-06-03", { progrediu: false, topSetBateuTeto: true }),
+          makeEntry("Supino reto barra", "2026-05-27", { progrediu: false, topSetBateuTeto: true }),
+          makeEntry("Supino reto barra", "2026-05-20", { progrediu: false, topSetBateuTeto: true }),
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { progrediu: false, topSetBateuTeto: true }),
+          makeEntry("Crossover braço estendido", "2026-06-03", { progrediu: false, topSetBateuTeto: true }),
+          makeEntry("Crossover braço estendido", "2026-05-27", { progrediu: false, topSetBateuTeto: true }),
+          makeEntry("Crossover braço estendido", "2026-05-20", { progrediu: false, topSetBateuTeto: true }),
+        ],
+      });
+      expect(calcEstagnadoMusculo("Peitoral")).toBe(false);
+    });
+
+    it("sequência de estagnação é quebrada por sessão com progrediu=true", () => {
+      // Apenas 3 sessões consecutivas estagnadas — insuficiente
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Supino reto barra", "2026-05-20", { progrediu: true,  topSetBateuTeto: false }), // quebra sequência
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-05-20", { progrediu: true,  topSetBateuTeto: false }),
+        ],
+      });
+      expect(calcEstagnadoMusculo("Peitoral")).toBe(false);
+    });
+
+    it("retorna false para musculo sem exercicios no logbook", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
+        ],
+      });
+      expect(calcEstagnadoMusculo("Costas")).toBe(false);
+    });
+  });
+
+  // ── calcQuedaCargaMusculo — badge de queda de carga ──────────────────────
+
+  describe("calcQuedaCargaMusculo — badge de queda de carga (RG10)", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    it("retorna false quando logbook está vazio", () => {
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(false);
+    });
+
+    it("retorna false quando apenas 1 exercicio do grupo tem queda de tonnage", () => {
+      // Apenas Supino cai; Crossover sobe → não atinge limiar de 2
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 90,  topSetReps: 7 }), // atual: 630
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 100, topSetReps: 7 }), // anterior: 700
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { topSetKg: 25, topSetReps: 12 }), // atual: 300
+          makeEntry("Crossover braço estendido", "2026-06-03", { topSetKg: 20, topSetReps: 12 }), // anterior: 240
+        ],
+      });
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(false);
+    });
+
+    it("retorna true quando 2 exercicios do grupo têm tonnage menor na semana atual", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 90,  topSetReps: 7 }), // atual: 630
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 100, topSetReps: 7 }), // anterior: 700
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { topSetKg: 18, topSetReps: 12 }), // atual: 216
+          makeEntry("Crossover braço estendido", "2026-06-03", { topSetKg: 25, topSetReps: 12 }), // anterior: 300
+        ],
+      });
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(true);
+    });
+
+    it("retorna false quando tonnage é igual (sem queda)", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 7 }),
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 100, topSetReps: 7 }),
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { topSetKg: 25, topSetReps: 12 }),
+          makeEntry("Crossover braço estendido", "2026-06-03", { topSetKg: 25, topSetReps: 12 }),
+        ],
+      });
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(false);
+    });
+
+    it("retorna false quando nao ha dados do periodo anterior para comparar", () => {
+      // Só tem dado desta semana — sem anterior para comparar
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 90, topSetReps: 7 }),
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { topSetKg: 18, topSetReps: 12 }),
+        ],
+      });
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(false);
+    });
+
+    it("usa a ultima sessao do periodo quando ha multiplos registros", () => {
+      // Duas entradas na semana atual para Supino: a mais recente (Jun 11) é menor
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-09", { topSetKg: 100, topSetReps: 7 }), // atual mas mais antigo
+          makeEntry("Supino reto barra", "2026-06-11", { topSetKg: 90,  topSetReps: 7 }), // atual e mais recente
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 95,  topSetReps: 7 }), // anterior: 665
+        ],
+        "Crossover braço estendido": [
+          makeEntry("Crossover braço estendido", "2026-06-10", { topSetKg: 18, topSetReps: 12 }), // atual: 216
+          makeEntry("Crossover braço estendido", "2026-06-03", { topSetKg: 25, topSetReps: 12 }), // anterior: 300
+        ],
+      });
+      // Supino mais recente = 90*7 = 630 < 95*7 = 665 → queda ✓
+      // Crossover = 216 < 300 → queda ✓
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(true);
     });
   });
 });

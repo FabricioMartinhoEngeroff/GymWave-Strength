@@ -80,6 +80,8 @@ export function carregarHistorico(exercicio: string): RegistroExercicio[] {
 
 /**
  * Gets the most recent record for a given exercise in a specific training session.
+ * Used to pre-fill all input blocks (Top Set, Back-off, Série Extra) with
+ * the previous workout's actual values as suggestions.
  */
 export function ultimoRegistro(exercicio: string, treinoId: string): RegistroExercicio | null {
   const historico = carregarHistorico(exercicio);

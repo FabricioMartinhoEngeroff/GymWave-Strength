@@ -45,7 +45,7 @@ export interface RegistroExercicio {
   topSetBateuTeto: boolean; // reps >= faixaMax -> sobe peso
 
   // Back-off
-  backoffKg: number; // topSetKg * backoffPct
+  backoffKg: number;
   backoffReps: number;
   backoffFaixaMin: number;
   backoffFaixaMax: number;

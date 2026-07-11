@@ -130,7 +130,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
     });
 
-    it("back-off sugere peso automatico (85%)", () => {
+    it("backoff kg usa calculo 85% como fallback quando nao ha historico", () => {
       renderFresh();
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
@@ -471,6 +471,112 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       const kgInput = screen.getByLabelText(/Top Set kg/i);
       expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
+    });
+  });
+
+  // ── Pré-preenchimento do histórico anterior (todos os blocos) ─────────
+
+  describe("Pre-preenchimento do historico anterior — Top Set, Back-off e Extra", () => {
+    // História com backoffKg=80 (diferente de 85% de 90kg=76 ou de 100kg=85)
+    // para provar que o valor vem do histórico e não do cálculo percentual.
+    function setupHistoricoCompleto() {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "01/01/2026",
+          dataTs: 1000,
+          topSetKg: 90,
+          topSetReps: 6,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 80,
+          backoffReps: 10,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 2,
+          progrediu: false,
+        }],
+      }));
+    }
+
+    function setupHistoricoComExtra() {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "01/01/2026",
+          dataTs: 1000,
+          topSetKg: 90,
+          topSetReps: 6,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 80,
+          backoffReps: 10,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 3,
+          extraKg: 75,
+          extraReps: 14,
+          progrediu: false,
+        }],
+      }));
+    }
+
+    it("top set reps e pre-preenchido com as reps do historico", () => {
+      setupHistoricoCompleto();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      const repsInput = screen.getByLabelText(/Top Set reps/i) as HTMLInputElement;
+      expect(repsInput.value).toBe("6");
+    });
+
+    it("backoff kg e pre-preenchido com o peso do historico, nao calculado 85%", () => {
+      setupHistoricoCompleto(); // backoffKg=80; 85% de 100kg seria 85 → diferente
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      expect(boKg.value).toBe("80");
+    });
+
+    it("backoff reps e pre-preenchido com as reps do historico", () => {
+      setupHistoricoCompleto();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      const boReps = screen.getByLabelText(/Back-off reps/i) as HTMLInputElement;
+      expect(boReps.value).toBe("10");
+    });
+
+    it("backoff pre-preenchido nao e sobrescrito pelo calculo 85% ao confirmar top set", () => {
+      setupHistoricoCompleto(); // backoffKg=80 do histórico
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7"); // 85% de 100 = 85, mas historico tem 80
+      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      expect(boKg.value).toBe("80");
+    });
+
+    it("extra kg e reps sao pre-preenchidos com os valores do historico", () => {
+      setupHistoricoComExtra();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      confirmarTopSet("100", "7");
+      confirmarBackoff("10");
+      const extraKg = screen.getByLabelText(/Extra kg/i) as HTMLInputElement;
+      const extraReps = screen.getByLabelText(/Extra reps/i) as HTMLInputElement;
+      expect(extraKg.value).toBe("75");
+      expect(extraReps.value).toBe("14");
+    });
+
+    it("top set reps nao e pre-preenchido quando nao ha historico", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      const repsInput = screen.getByLabelText(/Top Set reps/i) as HTMLInputElement;
+      expect(repsInput.value).toBe("");
     });
   });
 

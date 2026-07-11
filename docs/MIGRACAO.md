@@ -64,11 +64,12 @@ O histórico preservado continua funcionando normalmente em **todas as partes do
 
 | Funcionalidade | Como usa o histórico | Status após migração |
 |---|---|---|
-| Sugestão de peso (tela principal) | `useSugestaoDePeso` lê o topSet do C4 e aplica multiplicadores | Continua inalterado |
-| Gráficos de intensidade | `useDadosTreino` e `buildExerciseHistory` leem todas as entradas por data | Continua inalterado |
+| Pré-preenchimento (tela Registrar) | `ultimoRegistro` lê do `logbook` (chave separada, não tocada pela migração) — preenche Top Set, Back-off e Série Extra com os valores reais do último treino | **Não é afetado** pela importação de planilha |
+| Gráficos de intensidade | `useDadosTreino` e `buildExerciseHistory` leem todas as entradas de `dadosTreino` por data | Continua inalterado |
 | Relatórios | `useRelatorio` lista todas as entradas de `dadosTreino` | Continua inalterado |
-| Auto-fill no registro | `carregarUltimaSerie` lê o último peso do ciclo | Continua inalterado |
 | Volume load semanal | `volumeLoadCalc` soma pesos da semana por músculo | Continua inalterado |
+
+> **Nota:** `useSugestaoDePeso` e `carregarUltimaSerie` — referenciados em versões anteriores deste documento — pertencem ao componente `CycleCard` (legado, não renderizado no app). O pré-preenchimento ativo usa exclusivamente `ultimoRegistro` + `logbook`.
 
 ---
 
@@ -94,13 +95,15 @@ Migração concluída — X adicionado(s) · Y preservado(s)
   - Motivo: risco de perda irreversível de histórico; a importação inteligente torna desnecessário zerar o banco para "recomeçar".
 
 ### Mantido
-- Botão **"Desfazer importação"** (`BtnWarning`) que restaura o backup automático criado antes de cada importação.
+- Botão **"Desfazer importação"** (`BtnWarning`) que restaura automaticamente os backups de `dadosTreino` e `planoTreino` criados antes de cada importação.
 
 ---
 
 ## Estrutura de Dados
 
-A função `confirmarImport` opera sobre a chave `dadosTreino` do localStorage:
+A função `confirmarImport` opera sobre **duas chaves** do localStorage com comportamentos distintos:
+
+### `dadosTreino` — mesclagem aditiva (preserva histórico)
 
 ```
 dadosTreino = {
@@ -110,28 +113,52 @@ dadosTreino = {
 }
 ```
 
+Ciclos existentes são mantidos intactos; só são criados ciclos ainda não registrados.
+
+### `planoTreino` — substituição por sessão (template, não histórico)
+
+```
+planoTreino = {
+  [sessao: string]: {
+    [exercicio: string]: PlanoExercicio
+  }
+}
+```
+
+O plano é **sempre substituído** para as sessões presentes na planilha importada (`{ ...planoExistente, ...planoNovo }`). Sessões ausentes na planilha são preservadas. O `planoTreino` é um template de configuração, não contém histórico de pesos — por isso a substituição é segura.
+
 ### Pseudocódigo da mesclagem
 
 ```
-backup = dadosTreino atual
+backup dadosTreino = dadosTreino atual
+backup planoTreino = planoTreino atual
+
 adicionados = 0
 preservados = 0
 
 para cada linha da planilha:
+  // planoTreino: sempre atualiza (template)
+  planoNovo[sessao][exercicio] = { ordem, series_validas, series_C1..C4 }
+
+  // dadosTreino: mesclagem aditiva
   para cada ciclo (C1–C4) com peso válido:
     se exercicio NÃO existe no banco:
-      cria db[exercicio] = {}
-      cria db[exercicio][cicloId] = { hoje, pesos, reps vazias }
+      cria db[exercicio][cicloId] = { hoje, pesos[seriesCount], reps vazias }
       adicionados++
     senão se ciclo NÃO existe no banco:
-      cria db[exercicio][cicloId] = { hoje, pesos, reps vazias }
+      cria db[exercicio][cicloId] = { hoje, pesos[seriesCount], reps vazias }
       adicionados++
     senão:
       preservados++   // não toca na entrada existente
 
-salva db no localStorage
+salva dadosTreino no localStorage
+salva planoTreino mesclado ({ ...planoExistente, ...planoNovo })
 exibe resultado: adicionados + preservados
 ```
+
+### Desfazer importação
+
+Restaura **ambas** as chaves a partir dos backups criados antes da importação (`dadosTreino_backup` e `planoTreino_backup`).
 
 ---
 

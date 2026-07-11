@@ -1,9 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import styled from "styled-components";
 import {
   calcVolumeLoad,
   calcTotalVolumeWeek,
+  calcStreakSemanas,
+  calcEstagnadoMusculo,
+  calcQuedaCargaMusculo,
 } from "../../utils/volumeLoadCalc";
+
+type Granularity = "week" | "month";
 
 const Screen = styled.div`
   width: 100%;
@@ -37,6 +42,45 @@ const TopBarSub = styled.p`
 
 const Content = styled.div`
   padding: 12px 14px 24px;
+`;
+
+const ToggleRow = styled.div`
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+`;
+
+const ToggleChip = styled.button<{ $active: boolean }>`
+  border: none;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  background: ${(p) => (p.$active ? "#111827" : "#e5e7eb")};
+  color: ${(p) => (p.$active ? "#ffffff" : "#374151")};
+  font-weight: ${(p) => (p.$active ? 500 : 400)};
+  transition: background 0.15s;
+`;
+
+const DeloadBanner = styled.div`
+  background: #fefce8;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+`;
+
+const DeloadTitle = styled.p`
+  font-size: 13px;
+  font-weight: 500;
+  color: #92400e;
+  margin: 0 0 2px;
+`;
+
+const DeloadSub = styled.p`
+  font-size: 11px;
+  color: #92400e;
+  margin: 0;
 `;
 
 const SummaryRow = styled.div`
@@ -130,18 +174,33 @@ const VlNum = styled.span`
   flex-shrink: 0;
 `;
 
+const BadgesRow = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+`;
+
 const SeriesBadge = styled.span<{ $status: "ok" | "low" | "high" }>`
   display: inline-block;
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 4px;
-  margin-left: 6px;
   background: ${(p) =>
     p.$status === "ok" ? "#dcfce7" :
     p.$status === "low" ? "#fefce8" : "#fef2f2"};
   color: ${(p) =>
     p.$status === "ok" ? "#166534" :
     p.$status === "low" ? "#92400e" : "#991b1b"};
+`;
+
+const DiagBadge = styled.span<{ $variant: "estagnado" | "queda" }>`
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: ${(p) => p.$variant === "estagnado" ? "#fff7ed" : "#fef2f2"};
+  color: ${(p) => p.$variant === "estagnado" ? "#c2410c" : "#991b1b"};
 `;
 
 const EmptyMsg = styled.p`
@@ -170,8 +229,14 @@ function seriesLabel(series: number): string {
 }
 
 export default function VolumeLoad() {
-  const dados = useMemo(() => calcVolumeLoad(), []);
-  const totalAtual = useMemo(() => calcTotalVolumeWeek(), []);
+  const [granularity, setGranularity] = useState<Granularity>("week");
+
+  const dados = useMemo(() => calcVolumeLoad(granularity), [granularity]);
+  const totalAtual = useMemo(
+    () => dados.reduce((s, d) => s + d.volumeAtual, 0),
+    [dados]
+  );
+  const streak = useMemo(() => calcStreakSemanas(), []);
 
   const withData = dados.filter(
     (d) => d.volumeAtual > 0 || d.volumeAnterior > 0
@@ -191,13 +256,45 @@ export default function VolumeLoad() {
         )
       : 0;
 
+  const subtitle =
+    granularity === "month"
+      ? "Mês atual vs mês anterior"
+      : "Semana atual vs semana anterior";
+
+  const summaryPeriodLabel =
+    granularity === "month" ? "vs mês ant." : "vs semana ant.";
+
   return (
     <Screen>
       <TopBar>
         <TopBarTitle>Volume load por músculo</TopBarTitle>
-        <TopBarSub>Semana atual vs semana anterior</TopBarSub>
+        <TopBarSub>{subtitle}</TopBarSub>
       </TopBar>
       <Content>
+        <ToggleRow>
+          <ToggleChip
+            $active={granularity === "week"}
+            onClick={() => setGranularity("week")}
+          >
+            Esta semana
+          </ToggleChip>
+          <ToggleChip
+            $active={granularity === "month"}
+            onClick={() => setGranularity("month")}
+          >
+            Este mês
+          </ToggleChip>
+        </ToggleRow>
+
+        {streak >= 10 && (
+          <DeloadBanner>
+            <DeloadTitle>{streak} semanas de treino contínuo</DeloadTitle>
+            <DeloadSub>
+              Você pode estar acima do teto recuperável. Considere 1–2 semanas com volume reduzido.
+            </DeloadSub>
+          </DeloadBanner>
+        )}
+
         <SummaryRow>
           <SummaryCard>
             <SummaryNum>{fmt(totalAtual)}</SummaryNum>
@@ -215,7 +312,7 @@ export default function VolumeLoad() {
             >
               {totalDelta > 0 ? `+${totalDelta}%` : totalDelta === 0 ? "—" : `${totalDelta}%`}
             </SummaryNum>
-            <SummaryLabel>vs semana ant.</SummaryLabel>
+            <SummaryLabel>{summaryPeriodLabel}</SummaryLabel>
           </SummaryCard>
         </SummaryRow>
 
@@ -225,69 +322,83 @@ export default function VolumeLoad() {
           </EmptyMsg>
         )}
 
-        {withData.map((d) => (
-          <VlCard key={d.musculo}>
-            <VlHeader>
-              <div>
-                <VlMusculo>
-                  {d.musculo}
+        {withData.map((d) => {
+          const estagnado = calcEstagnadoMusculo(d.musculo);
+          const quedaCarga = calcQuedaCargaMusculo(d.musculo, granularity);
+          const badgeLabel = seriesLabel(d.seriesAtual);
+
+          return (
+            <VlCard key={d.musculo}>
+              <VlHeader>
+                <div>
+                  <VlMusculo>{d.musculo}</VlMusculo>
                   {d.seriesAtual > 0 && (
-                    <>
-                      <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 8 }}>
+                    <BadgesRow>
+                      <span style={{ fontSize: 11, color: "#6b7280" }}>
                         {d.seriesAtual} séries
                       </span>
-                      {seriesLabel(d.seriesAtual) && (
+                      {badgeLabel && (
                         <SeriesBadge $status={seriesStatus(d.seriesAtual)}>
-                          {seriesLabel(d.seriesAtual)}
+                          {badgeLabel}
                         </SeriesBadge>
                       )}
-                    </>
+                      {estagnado && (
+                        <DiagBadge $variant="estagnado">estagnado</DiagBadge>
+                      )}
+                      {quedaCarga && (
+                        <DiagBadge $variant="queda">↓ carga</DiagBadge>
+                      )}
+                    </BadgesRow>
                   )}
-                </VlMusculo>
-              </div>
-              <VlDelta
-                $positive={d.delta > 0}
-                $zero={d.delta === 0}
-              >
-                {d.delta > 0
-                  ? `+${d.delta}%`
-                  : d.delta < 0
-                  ? `${d.delta}%`
-                  : "—"}
-              </VlDelta>
-            </VlHeader>
+                </div>
+                <VlDelta
+                  $positive={d.delta > 0}
+                  $zero={d.delta === 0}
+                >
+                  {d.delta > 0
+                    ? `+${d.delta}%`
+                    : d.delta < 0
+                    ? `${d.delta}%`
+                    : "—"}
+                </VlDelta>
+              </VlHeader>
 
-            {d.volumeAnterior > 0 && (
+              {d.volumeAnterior > 0 && (
+                <VlBarWrap>
+                  <VlBarLabel>
+                    {granularity === "month" ? "Mês ant." : "Sem. ant."}
+                  </VlBarLabel>
+                  <VlBarBg>
+                    <VlBarFill
+                      $pct={Math.round((d.volumeAnterior / maxVol) * 100)}
+                      $color="#d1d5db"
+                    />
+                  </VlBarBg>
+                  <VlNum>{fmt(d.volumeAnterior)}</VlNum>
+                </VlBarWrap>
+              )}
+
               <VlBarWrap>
-                <VlBarLabel>Sem. ant.</VlBarLabel>
+                <VlBarLabel>
+                  {granularity === "month" ? "Este mês" : "Esta sem."}
+                </VlBarLabel>
                 <VlBarBg>
                   <VlBarFill
-                    $pct={Math.round((d.volumeAnterior / maxVol) * 100)}
-                    $color="#d1d5db"
+                    $pct={Math.round((d.volumeAtual / maxVol) * 100)}
+                    $color={
+                      d.delta > 0
+                        ? "#16a34a"
+                        : d.delta < 0
+                        ? "#dc2626"
+                        : "#2563eb"
+                    }
                   />
                 </VlBarBg>
-                <VlNum>{fmt(d.volumeAnterior)}</VlNum>
+                <VlNum>{fmt(d.volumeAtual)}</VlNum>
               </VlBarWrap>
-            )}
-
-            <VlBarWrap>
-              <VlBarLabel>Esta sem.</VlBarLabel>
-              <VlBarBg>
-                <VlBarFill
-                  $pct={Math.round((d.volumeAtual / maxVol) * 100)}
-                  $color={
-                    d.delta > 0
-                      ? "#16a34a"
-                      : d.delta < 0
-                      ? "#dc2626"
-                      : "#2563eb"
-                  }
-                />
-              </VlBarBg>
-              <VlNum>{fmt(d.volumeAtual)}</VlNum>
-            </VlBarWrap>
-          </VlCard>
-        ))}
+            </VlCard>
+          );
+        })}
       </Content>
     </Screen>
   );

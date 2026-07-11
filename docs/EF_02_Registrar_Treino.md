@@ -23,14 +23,15 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 - **RG3** – O registro segue o método Saizen/Heavy Duty. O fluxo padrão é **Top Set** obrigatório → **Back-off** obrigatório → **Série Extra** opcional. As técnicas **BC** e **RP** são alternativas ao Top Set/Back-off: ao ativar uma técnica, esses blocos somem e são substituídos pelos blocos da técnica.
 - **RG4** – Os campos **Top Set** e **Back-off** são obrigatórios no modo padrão. Ao usar técnica (BC/RP), o botão **"Confirmar Técnica"** cumpre o mesmo papel. Tentar avançar sem confirmar exibe aviso laranja com ⚠.
 - **RG5** – O campo **Série Extra** (exibido somente quando `seriesValidas === 3`) é opcional. Nenhuma validação é exigida para este campo.
-- **RG6** – O sistema sugere automaticamente o peso do Back-off com base no percentual do exercício (`backoffPct`). Caso o usuário apague ou edite o valor sugerido, a sugestão não é replicada novamente.
-- **RG7** – O sistema sugere o peso do Top Set com base no último registro desse exercício no mesmo treino.
+- **RG6** – Quando existe histórico do exercício, o sistema pré-preenche **peso e repetições** do Back-off com os valores reais do último treino (indicador visual azul). Quando não há histórico, o peso é calculado automaticamente como `topSetKg × backoffPct` após a confirmação do Top Set (fallback). Em ambos os casos, se o usuário editar o peso, a sugestão não é restaurada (flag `backoffKgWasUserEdited`).
+- **RG7** – O sistema pré-preenche **peso e repetições** do Top Set com base no último registro desse exercício no mesmo treino. Se o teto de reps foi atingido no último treino, o peso é incrementado automaticamente (+1 kg abaixo de 40 kg, +2 kg acima). Campos exibidos com indicador visual azul = sugestão.
 - **RG8** – Ao trocar de exercício ou de sessão, os avisos de validação (Top Set e Back-off) são resetados.
 - **RG9** – Se houver alterações não salvas ao trocar de aba, o sistema exibe confirmação `[alteracoes_nao_salvas]`.
 - **RG10** – Após salvar todos os exercícios, é exibido um resumo com: quantidade feita / total, e quantos exercícios sobem de peso no próximo ciclo.
 - **RG11** – Exercícios podem ser pulados (botão "Pular"). Exercícios pulados não geram registro.
 - **RG12** – O rascunho de cada sessão é mantido em memória. Ao voltar para uma sessão já preenchida, os dados digitados são restaurados.
 - **RG13** – Durante o preenchimento do bloco Top Set, o sistema recalcula em tempo real o 1RM estimado pela fórmula de Epley: `1RM = Peso × (1 + Reps / 30)`. Se esse valor superar o recorde histórico daquele exercício — ou se as repetições atingirem ou ultrapassarem o teto da faixa cadastrada — o Banner de Progressão assume imediatamente o estado `[banner_pr]` (verde/dourado pulsante), antes mesmo de o usuário confirmar o Top Set. Ao apagar os campos ou reduzir os valores, o banner retorna ao estado anterior.
+- **RG14** – Quando existe histórico com `seriesValidas === 3`, o sistema pré-preenche **peso e repetições** da Série Extra com os valores reais do último treino (mesmo indicador visual azul). Quando não há histórico, o peso é espelhado do campo Back-off após sua confirmação (fallback).
 
 ---
 
@@ -106,28 +107,35 @@ Exibe por exercício:
 
 | Nº | Campo | Tipo | Obrig. |
 |---|---|---|---|
-| 01 | Peso (kg) | Input numérico | Sim |
-| 02 | Repetições | Input numérico | Sim |
+| 01 | Peso (kg) | Input numérico (pré-preenchido do histórico) | Sim |
+| 02 | Repetições | Input numérico (pré-preenchido do histórico) | Sim |
+
+**Pré-preenchimento (RG7):** Ao carregar a sessão, peso e repetições são preenchidos com os valores do último treino. Campos com sugestão exibem borda e texto azul. Ao editar qualquer campo, o indicador visual de sugestão é removido.
 
 **Detecção de PR em tempo real:**
 A cada alteração nos campos peso ou repetições, o sistema recalcula o 1RM estimado (`Peso × (1 + Reps / 30)`) e compara com o recorde histórico do exercício. Se o critério da RG13 for satisfeito, o Banner de Progressão muda para o estado `[banner_pr]` imediatamente. O cálculo é disparado no evento `onChange` de ambos os campos; ao esvaziar qualquer campo o banner retorna ao estado normal.
 
 **Botão "Confirmar Top Set":**
-- Sempre habilitado (clicável).
+- Habilitado somente quando peso e repetições são positivos (desabilitado enquanto vazio).
 - Se os campos não estiverem preenchidos com valores positivos: exibe banner de aviso e destaca os campos com borda vermelha.
 - Após confirmação: exibe status ("Teto atingido", "Na faixa" ou "Abaixo da faixa") e botão "Editar Top Set". Se o estado `[banner_pr]` estava ativo ao confirmar, o status exibido é "🔥 PR Confirmado!" no lugar dos status padrão.
 
 ### 4.7 Bloco Back-off (obrigatório no modo padrão, oculto quando técnica ativa)
 
+Visível após a confirmação do Top Set.
+
 | Nº | Campo | Tipo | Obrig. |
 |---|---|---|---|
-| 01 | Peso (kg) | Input numérico (auto-sugerido) | Sim |
-| 02 | Repetições | Input numérico | Sim |
+| 01 | Peso (kg) | Input numérico (pré-preenchido do histórico ou calculado) | Sim |
+| 02 | Repetições | Input numérico (pré-preenchido do histórico) | Sim |
 
-**Regras do campo peso Back-off:**
-- Sugestão automática = `topSetKg × backoffPct` na primeira vez.
-- Se o usuário editar ou apagar o valor, a sugestão não reaparece (flag `backoffKgWasUserEdited`).
-- O campo pode ser apagado livremente.
+**Regras de sugestão (RG6):**
+- **Com histórico:** peso e repetições são pré-preenchidos com os valores reais do último treino (borda e texto azul = sugestão).
+- **Sem histórico (fallback):** após a confirmação do Top Set, o peso é calculado como `topSetKg × backoffPct` e exibido como sugestão; repetições ficam vazias.
+- Se o usuário editar o peso, a sugestão não é restaurada (flag `backoffKgWasUserEdited`).
+- Os campos podem ser apagados e redigitados livremente.
+
+**Hint "Anterior":** quando há histórico, uma linha discreta exibe `Anterior: Xkg × Nreps` acima dos campos, para referência mesmo após edição.
 
 **Botão "Confirmar Back-off":**
 - Sempre habilitado.
@@ -140,10 +148,16 @@ Visível quando `seriesValidas === 3` e Back-off confirmado.
 
 | Nº | Campo | Tipo | Obrig. |
 |---|---|---|---|
-| 01 | Peso (kg) | Input numérico | Não |
-| 02 | Repetições | Input numérico | Não |
+| 01 | Peso (kg) | Input numérico (pré-preenchido do histórico ou espelhado) | Não |
+| 02 | Repetições | Input numérico (pré-preenchido do histórico) | Não |
 
-- O peso é auto-preenchido com o valor do Back-off, mas pode ser editado ou apagado livremente.
+**Regras de sugestão (RG14):**
+- **Com histórico que tinha `seriesValidas === 3`:** peso e repetições são pré-preenchidos com os valores reais do último treino (borda e texto azul = sugestão).
+- **Sem histórico ou histórico sem extra (fallback):** após a confirmação do Back-off, o peso é espelhado do campo Back-off; repetições ficam vazias.
+- Os campos podem ser editados ou apagados livremente.
+
+**Hint "Anterior":** quando há histórico com extra, uma linha discreta exibe `Anterior: Xkg × Nreps` acima dos campos.
+
 - Não há botão de confirmar. Os valores são salvos diretamente ao salvar o treino.
 - Faixa de referência exibida abaixo: "não conta para teto".
 
