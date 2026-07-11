@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import styled from "styled-components";
 import {
   calcVolumeLoad,
-  calcTotalVolumeWeek,
   calcStreakSemanas,
   calcEstagnadoMusculo,
   calcQuedaCargaMusculo,
