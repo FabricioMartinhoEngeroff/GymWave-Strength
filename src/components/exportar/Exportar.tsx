@@ -150,12 +150,15 @@ const CICLO_COLS: { col: keyof ImportRow; cicloId: string }[] = [
 
 const COLUMN_MAP: [RegExp, string][] = [
   [/sess[aã]o/i,              "sessao"],
+  [/^treino$/i,               "sessao"],   // v4 logbook usa "Treino" em vez de "Sessão"
   [/^ord[.\s]/i,              "ordem"],   // "Ord." antes do padrão genérico
   [/ordem/i,                  "ordem"],
   [/exerc[ií]cio/i,           "exercicio"],
   [/grupo|m[uú]sculo/i,       "musculo_primario"],
   [/rep.*m[ií]n/i,            "rep_min"],
+  [/top.*m[ií]n/i,            "rep_min"],   // v4 logbook: "Top Mín"
   [/rep.*m[aá]x/i,            "rep_max"],
+  [/top.*m[aá]x/i,            "rep_max"],   // v4 logbook: "Top Máx"
   // séries por ciclo — devem vir ANTES do padrão genérico
   [/s[eé]ries.*c1|c1.*s[eé]ries/i,  "series_C1_validas"],
   [/s[eé]ries.*c2|c2.*s[eé]ries/i,  "series_C2_validas"],
@@ -163,7 +166,9 @@ const COLUMN_MAP: [RegExp, string][] = [
   [/s[eé]ries.*c4|c4.*s[eé]ries/i,  "series_C4_validas"],
   [/s[eé]ries/i,              "series_validas"],  // fallback genérico
   [/peso\s*c1/i,              "peso_C1_kg"],
+  [/top\s*set.*kg/i,          "peso_C1_kg"],   // v4 logbook: "TOP SET Kg"
   [/peso\s*c2/i,              "peso_C2_kg"],
+  [/back.*off.*kg/i,          "peso_C2_kg"],   // v4 logbook: "BACK-OFF Kg"
   [/peso\s*c3/i,              "peso_C3_kg"],
   [/peso\s*c4/i,              "peso_C4_kg"],
 ];
