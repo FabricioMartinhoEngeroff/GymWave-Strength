@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { RegistroExercicio } from "../../types/TrainingData";
+import type { RegistroExercicio, PlanoTreino } from "../../types/TrainingData";
 import { salvarRegistro } from "../../utils/storage";
 import {
   Screen,
@@ -66,6 +66,11 @@ const COLUMN_MAP: [RegExp, string][] = [
   [/exerc[ií]cio/i,           "exercicio"],
   [/grupo|m[uú]sculo/i,       "grupo"],
   [/tipo/i,                    "tipo"],
+  // v4 logbook — colunas curtas com newline: "Top\nMín", "B-off\nMín" etc.
+  [/^top\s+m[ií]n/i,          "faixa_top_min"],
+  [/^top\s+m[aá]x/i,          "faixa_top_max"],
+  [/^b[.\-]off\s+m[ií]n/i,   "faixa_backoff_min"],
+  [/^b[.\-]off\s+m[aá]x/i,   "faixa_backoff_max"],
   // Faixa — formato "Faixa Top Mín" (legado) ou "Top Set Mín reps" (v2 planilha)
   [/faixa\s*top.*m[ií]n/i,    "faixa_top_min"],
   [/faixa\s*top.*m[aá]x/i,    "faixa_top_max"],
@@ -150,7 +155,9 @@ function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
   let headerIdx = 0;
   for (let i = 0; i < Math.min(6, arrays.length); i++) {
     const row = arrays[i] as string[];
-    if (row.some((cell) => /treino|exerc[ií]cio|sess[aã]o/i.test(String(cell ?? "")))) {
+    // Usa "exercício" ou "sessão" para evitar falso-positivo em linhas descritivas
+    // que podem conter a palavra "treino" numa frase (ex.: "...ciclo deste treino.")
+    if (row.some((cell) => /exerc[ií]cio|sess[aã]o/i.test(String(cell ?? "")))) {
       headerIdx = i;
       break;
     }
@@ -296,6 +303,8 @@ export default function AdminImport() {
     if (backup) localStorage.setItem("logbook", backup);
     const backupLegacy = localStorage.getItem("dadosTreino_backup");
     if (backupLegacy) localStorage.setItem("dadosTreino", backupLegacy);
+    const backupPlano = localStorage.getItem("planoTreino_backup");
+    if (backupPlano) localStorage.setItem("planoTreino", backupPlano);
     setResult(null);
     setCanUndo(false);
   }
@@ -303,15 +312,29 @@ export default function AdminImport() {
   function confirmarImport() {
     localStorage.setItem("logbook_backup", localStorage.getItem("logbook") || "{}");
     localStorage.setItem("dadosTreino_backup", localStorage.getItem("dadosTreino") || "{}");
+    localStorage.setItem("planoTreino_backup", localStorage.getItem("planoTreino") || "{}");
 
     const porTreino: Record<string, number> = {};
     let total = 0;
     const today = getTodayBR();
     const todayTs = Date.now();
 
-    // Also maintain legacy dadosTreino for backward compatibility
     const legacyDb = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+    const planoNovo: PlanoTreino = {};
 
+    // Primeira passagem: salva plano para TODOS os exercícios (template de ordem e séries)
+    rows.forEach((row) => {
+      const sessao = row.treino || row.treino_id || "Sem sessão";
+      const seriesCount = Math.max(1, Math.min(3, row.series_validas ?? 2)) as 2 | 3;
+      if (!planoNovo[sessao]) planoNovo[sessao] = {};
+      planoNovo[sessao][row.exercicio] = {
+        ordem: row.ordem,
+        series_validas: seriesCount,
+      };
+    });
+
+    // Segunda passagem: salva registros apenas para exercícios com peso
     rows.forEach((row) => {
       const topKg = parsePeso(row.top_set_kg);
       if (!topKg) return;
@@ -357,6 +380,7 @@ export default function AdminImport() {
     });
 
     localStorage.setItem("dadosTreino", JSON.stringify(legacyDb));
+    localStorage.setItem("planoTreino", JSON.stringify({ ...planoExistente, ...planoNovo }));
     setResult({ total, porTreino });
     setCanUndo(true);
     setRows([]);

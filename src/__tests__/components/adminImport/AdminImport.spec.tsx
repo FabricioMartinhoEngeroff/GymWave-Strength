@@ -54,9 +54,15 @@ vi.mock("xlsx", () => ({
   utils: {
     sheet_to_json: vi.fn((_ws: unknown, opts?: { header?: number }) => {
       if (opts?.header === 1) {
+        // Simula estrutura v4: 3 linhas de título/info antes do cabeçalho real
+        // A linha 2 contém "treino" numa frase (falso-positivo antigo)
         return [
-          ["treino_id", "treino", "ordem", "exercicio", "grupo", "tipo", "faixa_top_min", "faixa_top_max", "faixa_backoff_min", "faixa_backoff_max", "top_set_kg", "backoff_kg", "series_validas"],
-          ...MOCK_ROWS.map((r) => [r.treino_id, r.treino, r.ordem, r.exercicio, r.grupo, r.tipo, r.faixa_top_min, r.faixa_top_max, r.faixa_backoff_min, r.faixa_backoff_max, r.top_set_kg, r.backoff_kg, r.series_validas]),
+          ["GymWave — Logbook · Back-off livre"],
+          ["Verde = 3 válidas · Branco = 2 válidas"],
+          ["Bateu teto do Top Set → sobe peso no próximo ciclo deste treino."],
+          // Cabeçalho real com "Exercício" (row 3)
+          ["treino_id", "Treino", "Ord.", "Exercício", "Grupo", "Tipo", "Séries\nVálidas", "Top\nMín", "Top\nMáx", "B-off\nMín", "B-off\nMáx", "TOP SET\nKg", "BACK-OFF\nKg"],
+          ...MOCK_ROWS.map((r) => [r.treino_id, r.treino, r.ordem, r.exercicio, r.grupo, r.tipo, r.series_validas, r.faixa_top_min, r.faixa_top_max, r.faixa_backoff_min, r.faixa_backoff_max, r.top_set_kg, r.backoff_kg]),
         ];
       }
       return MOCK_ROWS;
@@ -265,6 +271,47 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     });
   });
 
+  // ── planoTreino ──────────────────────────────────────────────────────────────
+
+  describe("Plano de treino (planoTreino)", () => {
+    async function loadAndConfirm() {
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByText("Confirmar importação"));
+    }
+
+    it("salva planoTreino no localStorage após confirmar", async () => {
+      await loadAndConfirm();
+      expect(localStorage.getItem("planoTreino")).not.toBeNull();
+    });
+
+    it("planoTreino contém ordem correta por sessão", async () => {
+      await loadAndConfirm();
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Upper A"]["Supino reto barra"].ordem).toBe(1);
+      expect(plano["Lower A"]["Terra sumô"].ordem).toBe(1);
+    });
+
+    it("planoTreino contém series_validas correto por sessão", async () => {
+      await loadAndConfirm();
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Upper A"]["Supino reto barra"].series_validas).toBe(3);
+      expect(plano["Lower A"]["Terra sumô"].series_validas).toBe(2);
+    });
+
+    it("salva backup de planoTreino antes de importar", async () => {
+      localStorage.setItem("planoTreino", JSON.stringify({ "Upper A": {} }));
+      await loadAndConfirm();
+      expect(localStorage.getItem("planoTreino_backup")).not.toBeNull();
+    });
+  });
+
   describe("Desfazer importacao", () => {
     async function importarDados() {
       mockFileReader("mock csv content");
@@ -293,11 +340,14 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     it("restaura dados do backup ao clicar em desfazer", async () => {
       localStorage.setItem("logbook", JSON.stringify({ "Agachamento livre": [] }));
       localStorage.setItem("dadosTreino", JSON.stringify({ "Agachamento livre": {} }));
+      localStorage.setItem("planoTreino", JSON.stringify({ "Upper A": { "Agachamento livre": { ordem: 1, series_validas: 2 } } }));
       await importarDados();
       vi.spyOn(window, "confirm").mockReturnValue(true);
       fireEvent.click(screen.getByText(/desfazer importação/i));
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
       expect(logbook).toHaveProperty("Agachamento livre");
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Upper A"]["Agachamento livre"]).toBeDefined();
     });
   });
 
