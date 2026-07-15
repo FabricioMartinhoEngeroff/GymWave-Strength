@@ -186,6 +186,10 @@ const TREINO_ID_MAP: Record<string, string> = {
   "Braço": "BR",
 };
 
+const SESSION_ORDER: Record<string, number> = {
+  UA: 0, UB: 1, LA: 2, LB: 3, BR: 4,
+};
+
 function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
   return raw
     .map((r) => {
@@ -217,7 +221,9 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
     })
     .filter((r) => r.exercicio !== "")
     .sort((a, b) => {
-      if (a.treino_id !== b.treino_id) return a.treino_id.localeCompare(b.treino_id);
+      const sa = SESSION_ORDER[a.treino_id] ?? 99;
+      const sb = SESSION_ORDER[b.treino_id] ?? 99;
+      if (sa !== sb) return sa - sb;
       return a.ordem - b.ordem;
     });
 }

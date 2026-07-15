@@ -149,6 +149,78 @@ function emptyExerciseState(): ExerciseState {
   };
 }
 
+// ─── Draft persistence ───────────────────────────────────────────────────────
+
+const DRAFT_KEY = "rascunho_treino";
+
+interface DraftPayload {
+  states: Record<string, ExerciseState>;
+  currentIdx: number;
+}
+
+type DraftStore = Partial<Record<SessaoTipo, DraftPayload>>;
+
+function loadDraftStore(): DraftStore {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return {};
+    return parsed as DraftStore;
+  } catch {
+    return {};
+  }
+}
+
+function saveDraftStore(store: DraftStore) {
+  localStorage.setItem(DRAFT_KEY, JSON.stringify(store));
+}
+
+function saveDraft(sessao: SessaoTipo, states: Record<string, ExerciseState>, idx: number) {
+  const store = loadDraftStore();
+  store[sessao] = { states, currentIdx: idx };
+  saveDraftStore(store);
+}
+
+function clearDraft(sessao: SessaoTipo) {
+  const store = loadDraftStore();
+  delete store[sessao];
+  if (Object.keys(store).length === 0) {
+    localStorage.removeItem(DRAFT_KEY);
+  } else {
+    saveDraftStore(store);
+  }
+}
+
+function sanitizeExerciseState(raw: Partial<ExerciseState>): ExerciseState {
+  const base = emptyExerciseState();
+  return {
+    ...base,
+    ...raw,
+    topSetKg: raw.topSetKg ?? base.topSetKg,
+    topSetReps: raw.topSetReps ?? base.topSetReps,
+    backoffKg: raw.backoffKg ?? base.backoffKg,
+    backoffReps: raw.backoffReps ?? base.backoffReps,
+    extraKg: raw.extraKg ?? base.extraKg,
+    extraReps: raw.extraReps ?? base.extraReps,
+    obs: raw.obs ?? base.obs,
+    clusterSeries: Array.isArray(raw.clusterSeries) ? raw.clusterSeries : base.clusterSeries,
+    seriesValidas: (raw.seriesValidas === 3 ? 3 : 2) as 2 | 3,
+  };
+}
+
+function loadDraft(sessao: SessaoTipo): DraftPayload | null {
+  const store = loadDraftStore();
+  const payload = store[sessao];
+  if (!payload || typeof payload !== "object") return null;
+  if (!payload.states || typeof payload.states !== "object") return null;
+  const sanitized: Record<string, ExerciseState> = {};
+  for (const [key, val] of Object.entries(payload.states)) {
+    sanitized[key] = sanitizeExerciseState(val as Partial<ExerciseState>);
+  }
+  return { states: sanitized, currentIdx: payload.currentIdx ?? 0 };
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {}) {
@@ -166,10 +238,34 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   // Refs to avoid stale closures in effects
   const exerciseStatesRef = useRef(exerciseStates);
   exerciseStatesRef.current = exerciseStates;
+  const currentIdxRef = useRef(currentIdx);
+  currentIdxRef.current = currentIdx;
 
   // Draft storage (in-memory only, per session type)
   const rascunhosRef = useRef<Partial<Record<SessaoTipo, Record<string, ExerciseState>>>>({});
   const prevSessaoRef = useRef<SessaoTipo | null>(null);
+
+  const sessaoRef = useRef(sessao);
+  sessaoRef.current = sessao;
+
+  // Track which session the current exerciseStates belong to
+  const statesSessaoRef = useRef<SessaoTipo | null>(null);
+
+  // Persist draft to localStorage whenever exerciseStates or currentIdx change
+  useEffect(() => {
+    if (!sessao || resumo) return;
+    // Only persist when states belong to the current session
+    if (statesSessaoRef.current !== sessao) return;
+    const hasData = Object.values(exerciseStates).some(
+      (s) =>
+        s.topSetKg !== "" || s.topSetReps !== "" || s.topSetConfirmed ||
+        s.backoffConfirmed || s.skipped || s.obs !== "" ||
+        s.clusterSeries.some((b) => b.kg !== "" || b.reps !== "")
+    );
+    if (hasData) {
+      saveDraft(sessao, exerciseStates, currentIdx);
+    }
+  }, [exerciseStates, currentIdx, sessao, resumo]);
 
   const exercicios = useMemo(() => {
     if (!sessao) return [] as ExercicioSessao[];
@@ -222,20 +318,34 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   useEffect(() => {
     if (!sessao) return;
 
-    // Save draft of previous session before switching
+    // Save draft of previous session before switching (memory + localStorage)
     if (prevSessaoRef.current !== null && prevSessaoRef.current !== sessao) {
       rascunhosRef.current[prevSessaoRef.current] = exerciseStatesRef.current;
+      saveDraft(prevSessaoRef.current, exerciseStatesRef.current, currentIdxRef.current);
     }
     prevSessaoRef.current = sessao;
 
-    // Restore draft if switching back
-    const draft = rascunhosRef.current[sessao];
-    if (draft) {
-      setExerciseStates(draft);
+    // Restore from in-memory draft (same app session, switching tabs)
+    const memDraft = rascunhosRef.current[sessao];
+    if (memDraft) {
+      setExerciseStates(memDraft);
       setCurrentIdx(0);
       setMostrarRevisao(false);
       setResumo(null);
       setSalvo(false);
+      statesSessaoRef.current = sessao;
+      return;
+    }
+
+    // Restore from localStorage draft (app was closed/reopened)
+    const lsDraft = loadDraft(sessao);
+    if (lsDraft) {
+      setExerciseStates(lsDraft.states);
+      setCurrentIdx(lsDraft.currentIdx);
+      setMostrarRevisao(false);
+      setResumo(null);
+      setSalvo(false);
+      statesSessaoRef.current = sessao;
       return;
     }
 
@@ -282,6 +392,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setMostrarRevisao(false);
     setResumo(null);
     setSalvo(false);
+    statesSessaoRef.current = sessao;
   }, [sessao, exercicios]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset validation warnings when navigating between exercises or sessions
@@ -517,8 +628,11 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
     salvarDados(dadosDb);
 
-    // Clear draft after saving
-    if (sessao) delete rascunhosRef.current[sessao];
+    // Clear draft after saving (memory + localStorage)
+    if (sessao) {
+      delete rascunhosRef.current[sessao];
+      clearDraft(sessao);
+    }
 
     setMostrarRevisao(false);
     setResumo({ feitos, total: exercicios.length, subirPeso });

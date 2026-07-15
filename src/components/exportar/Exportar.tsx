@@ -257,6 +257,10 @@ function parseSeries(val: unknown): number | undefined {
   return isNaN(n) ? undefined : Math.max(1, Math.min(3, n));
 }
 
+const SESSION_ORDER: Record<string, number> = {
+  "Upper A": 0, "Upper B": 1, "Lower A": 2, "Lower B": 3, "Braço": 4,
+};
+
 function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
   return raw
     .map((r) => {
@@ -280,7 +284,9 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
     };})
     .filter((r) => r.exercicio !== "")
     .sort((a, b) => {
-      if (a.sessao !== b.sessao) return a.sessao.localeCompare(b.sessao);
+      const sa = SESSION_ORDER[a.sessao] ?? 99;
+      const sb = SESSION_ORDER[b.sessao] ?? 99;
+      if (sa !== sb) return sa - sb;
       return a.ordem - b.ordem;
     });
 }

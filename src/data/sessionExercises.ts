@@ -83,7 +83,7 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Elevação lateral cabo",     grupo: "Ombro",    ...ISOLADOR, seriesValidas: 3,             cue: "12 séries deltóide total" },
     { nome: "Desenvolvimento máquina",   grupo: "Ombro",    ...MAQUINA,                                cue: "sem subir trapézio" },
     { nome: "Remada peito apoiado",      grupo: "Costas",   ...MULTIARTICULAR, seriesValidas: 3,       cue: "espessura, cotovelo baixo" },
-    { nome: "Supino halteres amplitude", grupo: "Peitoral", ...MULTIARTICULAR,                         cue: "-10% carga, técnico" },
+    { nome: "Supino reto barra",         grupo: "Peitoral", ...MAQUINA,                                cue: "técnica e volume peito" },
     { nome: "Pull-around cabo",          grupo: "Costas",   ...ISOLADOR,                              cue: "v-taper, quadril" },
     { nome: "Rosca Bayesian",            grupo: "Braço",    ...BRACO,                                  cue: "porção longa, cotovelo atrás" },
     { nome: "Tríceps polia barra reta",  grupo: "Braço",    ...BRACO,                                  cue: "cotovelos baixos fixos, medial" },
