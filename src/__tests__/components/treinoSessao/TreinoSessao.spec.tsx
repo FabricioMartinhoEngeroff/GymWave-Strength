@@ -30,7 +30,7 @@ function confirmarBackoff(reps = "12") {
 }
 
 // Navigate to last exercise of Upper A (10 exercises) via Pular
-function pularParaUltimo(total = 10) {
+function pularParaUltimo(total = 11) {
   for (let i = 0; i < total - 1; i++) {
     fireEvent.click(screen.getByText("Pular"));
   }
@@ -100,7 +100,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("exibe contador de exercicio 1/N", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByText("1 / 10")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
     });
   });
 
@@ -219,14 +219,14 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       pularParaUltimo();
 
-      // Antebraço invertido (10º) sem histórico, seriesValidas=3
+      // Abdômen cabo ajoelhado (11º) sem histórico, seriesValidas=2
       confirmarTopSet("50", "12");
       confirmarBackoff("18");
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
-      expect(logbook["Antebraço invertido"][0].seriesValidas).toBe(3);
+      expect(logbook["Abdômen cabo ajoelhado"][0].seriesValidas).toBe(2);
     });
   });
 
@@ -246,9 +246,9 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("botao Pular avanca para proximo exercicio", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByText("1 / 10")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
       fireEvent.click(screen.getByText("Pular"));
-      expect(screen.getByText("2 / 10")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
     });
 
     it("setas de navegacao funcionam", () => {
@@ -256,10 +256,10 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       const nextBtn = screen.getByLabelText(/próximo exercício/i);
       fireEvent.click(nextBtn);
-      expect(screen.getByText("2 / 10")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
       const prevBtn = screen.getByLabelText(/exercício anterior/i);
       fireEvent.click(prevBtn);
-      expect(screen.getByText("1 / 10")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
     });
   });
 
@@ -277,11 +277,11 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
-      expect(logbook["Antebraço invertido"]).toBeDefined();
-      expect(logbook["Antebraço invertido"][0].topSetKg).toBe(50);
+      expect(logbook["Abdômen cabo ajoelhado"]).toBeDefined();
+      expect(logbook["Abdômen cabo ajoelhado"][0].topSetKg).toBe(50);
 
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-      expect(db["Antebraço invertido"]).toBeDefined();
+      expect(db["Abdômen cabo ajoelhado"]).toBeDefined();
     });
 
     it("apos salvar exibe toast e resumo", () => {
@@ -319,11 +319,11 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       // Avanca para o segundo exercício
       fireEvent.click(screen.getByLabelText(/próximo exercício/i));
-      expect(screen.getByText("2 / 10")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
 
       // Volta ao primeiro
       fireEvent.click(screen.getByLabelText(/exercício anterior/i));
-      expect(screen.getByText("1 / 10")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
 
       const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("100");
@@ -619,7 +619,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       confirmarBackoff("12");
       // Use the navigation arrow to advance without overwriting the confirmed state
       fireEvent.click(screen.getByLabelText(/próximo exercício/i));
-      pularParaUltimo(9); // 8 more skips from idx=1 to reach idx=9
+      pularParaUltimo(10); // 9 more skips from idx=1 to reach idx=10
       fireEvent.click(screen.getByText("Ver Resumo"));
 
       expect(screen.getByText(/100kg/)).toBeInTheDocument();
@@ -629,7 +629,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByText("Pular")); // pula exercicio 1
-      pularParaUltimo(9); // pula restantes até o último
+      pularParaUltimo(10); // pula restantes até o último
       fireEvent.click(screen.getByText("Ver Resumo"));
 
       expect(screen.getAllByText("Pulado").length).toBeGreaterThan(0);
@@ -646,7 +646,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(editarBtns[0]);
 
       // Volta para a tela do exercício 1
-      expect(screen.getByText("1 / 10")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
       expect(screen.queryByText("Confirmar e Salvar Treino")).not.toBeInTheDocument();
     });
 
@@ -657,7 +657,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Voltar ao exercício"));
 
-      expect(screen.getByText("10 / 10")).toBeInTheDocument();
+      expect(screen.getByText("11 / 11")).toBeInTheDocument();
       expect(screen.queryByText("Confirmar e Salvar Treino")).not.toBeInTheDocument();
     });
 
@@ -893,7 +893,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.change(screen.getByLabelText(/Bloco 2 reps/i), { target: { value: "5" } });
       fireEvent.click(screen.getByText("Confirmar Técnica"));
       fireEvent.click(screen.getByText("Próximo")); // avança sem skipar o exercício RP
-      pularParaUltimo(9); // 8 Pular clicks: idx 1 → idx 9 (last of 10)
+      pularParaUltimo(10); // 9 Pular clicks: idx 1 → idx 10 (last of 11)
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 

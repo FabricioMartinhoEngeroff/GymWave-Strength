@@ -173,6 +173,45 @@ const COLUMN_MAP: [RegExp, string][] = [
   [/peso\s*c4/i,              "peso_C4_kg"],
 ];
 
+// ─── Name mapping (planilha → app canonical) ─────────────────────────────────
+
+const NOME_MAP: Record<string, string> = {
+  // ── Planilha v3 (nomes curtos de sessão de Braço e Upper) ─────────────────
+  "Crossover braço estendido polia alta":        "Crossover braço estendido",
+  "Pulldown braço estendido tronco inclinado":   "Pulldown inclinado",
+  "Rosca scott mesa":                            "Rosca scott",
+  "Antebraço mesa scott barra W invertida":      "Antebraço invertido",
+  "Antebraço rola barra na palma cabo":          "Antebraço rola palma",
+  "Polia barra reta pronada":                    "Tríceps polia barra reta",
+  "Testa halteres deitado":                      "Tríceps testa halteres",
+  "Polia supinada unilateral":                   "Rosca polia unilateral",
+  "Mesa scott":                                  "Rosca scott",
+  "Martelo halteres":                            "Rosca martelo",
+  "Polia alta unilateral":                       "Rosca polia alta",
+  "Mesa scott barra W invertida":                "Antebraço invertido",
+  "Rola barra na palma cabo":                    "Antebraço rola palma",
+  // ── Planilha v4 ──────────────────────────────────────────────────────────
+  "Remada peito apoiado halteres (livre)":       "Remada peito apoiado",
+  // ── Planilha v2 (nomes descritivos longos) ──────────────────────────────
+  "Panturrilha sentado máquina":                 "Panturrilha sentado",
+  "Pull-around cabo polia baixa":                "Pull-around cabo",
+  "Pulldown braço estendido inclinado":          "Pulldown inclinado",
+  "Panturrilha no leg press":                    "Panturrilha leg press",
+  "Barra fixa pegada aberta pronada":            "Barra fixa pronada",
+  "Desenvolvimento máquina pegada neutra":       "Desenvolvimento máquina",
+  "Remada peito apoiado banco inclinado":        "Remada peito apoiado",
+  "Supino halteres com amplitude":               "Supino halteres amplitude",
+  "Tríceps testa halteres deitado":              "Tríceps testa halteres",
+  "Tríceps polia barra reta pronada":            "Tríceps polia barra reta",
+  "Tríceps polia alta unilateral supinada":      "Tríceps polia unilateral",
+  "Rosca inclinada halteres 45°":                "Rosca inclinada 45°",
+  "Rosca scott mesa unilateral":                 "Rosca scott unilateral",
+  "Rosca polia alta unilateral":                 "Rosca polia alta",
+  "Rosca inversa barra ou halteres":             "Rosca inversa",
+  "Rolar barra na mão no cabo":                  "Rolar barra cabo",
+  "Abdômen infra banco inclinado":               "Abdômen infra banco",
+};
+
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
 function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
@@ -220,10 +259,12 @@ function parseSeries(val: unknown): number | undefined {
 
 function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
   return raw
-    .map((r) => ({
+    .map((r) => {
+      const nomeRaw = String(r.exercicio ?? "").trim();
+      return {
       sessao: String(r.sessao ?? ""),
       ordem: Number(r.ordem ?? 0),
-      exercicio: String(r.exercicio ?? "").trim(),
+      exercicio: NOME_MAP[nomeRaw] ?? nomeRaw,
       musculo_primario: String(r.musculo_primario ?? ""),
       series_validas: parseSeries(r.series_validas) ?? 3,
       series_C1_validas: parseSeries(r.series_C1_validas),
@@ -236,8 +277,12 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
       peso_C2_kg: r.peso_C2_kg as string | number | undefined,
       peso_C3_kg: r.peso_C3_kg as string | number | undefined,
       peso_C4_kg: r.peso_C4_kg as string | number | undefined,
-    }))
-    .filter((r) => r.exercicio !== "");
+    };})
+    .filter((r) => r.exercicio !== "")
+    .sort((a, b) => {
+      if (a.sessao !== b.sessao) return a.sessao.localeCompare(b.sessao);
+      return a.ordem - b.ordem;
+    });
 }
 
 function parsePeso(val: unknown): string | null {

@@ -75,6 +75,7 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Rosca scott",               grupo: "Braço",    ...BRACO,                                  cue: "porção curta, qualidade" },
     { nome: "Francês corda",             grupo: "Braço",    ...BRACO,                                  cue: "cabeça longa, amplitude máxima" },
     { nome: "Antebraço invertido",       grupo: "Braço",    ...ANTEBRACO, seriesValidas: 3,            cue: "pegada pronada, extensores" },
+    { nome: "Abdômen cabo ajoelhado",   grupo: "Core",     ...ISOLADOR,                              cue: "flexão de tronco, controle" },
   ],
   "Upper B": [
     { nome: "Barra fixa pronada",        grupo: "Costas",   ...MULTIARTICULAR,                         cue: "PR work, peito à barra" },
@@ -87,6 +88,7 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Rosca Bayesian",            grupo: "Braço",    ...BRACO,                                  cue: "porção longa, cotovelo atrás" },
     { nome: "Tríceps polia barra reta",  grupo: "Braço",    ...BRACO,                                  cue: "cotovelos baixos fixos, medial" },
     { nome: "Antebraço rola palma",      grupo: "Braço",    ...ANTEBRACO, seriesValidas: 3,            cue: "flexores, preensão" },
+    { nome: "Abdômen cabo ajoelhado",   grupo: "Core",     ...ISOLADOR,                              cue: "flexão de tronco, controle" },
   ],
   "Lower A": [
     { nome: "Terra sumô",                grupo: "Posterior/Glúteo", ...MULTIARTICULAR,                 cue: "PR work, 4 min descanso" },

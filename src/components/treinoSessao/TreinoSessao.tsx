@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { ROTACAO } from "../../data/cycles";
 import { SESSOES, SESSOES_LABELS, type SessaoTipo, type ExercicioSessao } from "../../data/sessionExercises";
-import type { RegistroExercicio } from "../../types/TrainingData";
+import type { PlanoTreino, RegistroExercicio } from "../../types/TrainingData";
 import {
   salvarRegistro,
   ultimoRegistro,
@@ -171,7 +171,24 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   const rascunhosRef = useRef<Partial<Record<SessaoTipo, Record<string, ExerciseState>>>>({});
   const prevSessaoRef = useRef<SessaoTipo | null>(null);
 
-  const exercicios: ExercicioSessao[] = sessao ? SESSOES[sessao] : [];
+  const exercicios = useMemo(() => {
+    if (!sessao) return [] as ExercicioSessao[];
+    const base = [...SESSOES[sessao]];
+    const plano: PlanoTreino = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+    const sp = plano[sessao];
+    if (!sp) return base;
+    const updated = base.map((ex) => {
+      const p = sp[ex.nome];
+      if (!p) return ex;
+      return { ...ex, seriesValidas: (p.series_validas === 3 ? 3 : 2) as 2 | 3 };
+    });
+    updated.sort((a, b) => {
+      const ao = sp[a.nome]?.ordem ?? Infinity;
+      const bo = sp[b.nome]?.ordem ?? Infinity;
+      return ao - bo;
+    });
+    return updated;
+  }, [sessao]);
   const currentEx = exercicios[currentIdx] ?? null;
   const treinoId = sessao ? getRotacaoId(sessao) : "";
 
@@ -224,7 +241,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
     // Load from history
     const states: Record<string, ExerciseState> = {};
-    const exs = SESSOES[sessao];
+    const exs = exercicios;
     const tId = getRotacaoId(sessao);
     exs.forEach((ex) => {
       const state = emptyExerciseState();
@@ -265,7 +282,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setMostrarRevisao(false);
     setResumo(null);
     setSalvo(false);
-  }, [sessao]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [sessao, exercicios]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset validation warnings when navigating between exercises or sessions
   useEffect(() => {

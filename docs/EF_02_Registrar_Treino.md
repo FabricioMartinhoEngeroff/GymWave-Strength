@@ -18,7 +18,8 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 
 ## 3. Regras Gerais
 
-- **RG1** – A tela exibe exercícios agrupados por sessão de treino (UA, UB, LA, LB, BR), definidos via planilha importada.
+- **RG1** – A tela exibe exercícios agrupados por sessão de treino (UA, UB, LA, LB, BR), definidos em `SESSOES` (hardcoded) com override do `planoTreino` (localStorage) quando disponível.
+- **RG1.1** – Se `planoTreino` existir no localStorage para a sessão selecionada, o sistema aplica dois overrides: (a) **`seriesValidas`** de cada exercício é substituído pelo valor do plano (2 ou 3); (b) **a ordem dos exercícios** é reorganizada conforme o campo `ordem` do plano, permitindo que a importação de planilha altere a sequência sem editar código.
 - **RG2** – O usuário deve selecionar a sessão do dia antes de registrar qualquer exercício.
 - **RG3** – O registro segue o método Saizen/Heavy Duty. O fluxo padrão é **Top Set** obrigatório → **Back-off** obrigatório → **Série Extra** opcional. As técnicas **BC** e **RP** são alternativas ao Top Set/Back-off: ao ativar uma técnica, esses blocos somem e são substituídos pelos blocos da técnica.
 - **RG4** – Os campos **Top Set** e **Back-off** são obrigatórios no modo padrão. Ao usar técnica (BC/RP), o botão **"Confirmar Técnica"** cumpre o mesmo papel. Tentar avançar sem confirmar exibe aviso laranja com ⚠.

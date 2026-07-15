@@ -113,6 +113,9 @@ const NOME_MAP: Record<string, string> = {
   "Mesa scott barra W invertida":                "Antebraço invertido",
   "Rola barra na palma cabo":                    "Antebraço rola palma",
 
+  // ── Planilha v4 — novos nomes ──────────────────────────────────────────────
+  "Remada peito apoiado halteres (livre)":       "Remada peito apoiado",
+
   // ── Planilha v2 (nomes descritivos longos) — mantidos para compat ─────────
   "Panturrilha sentado máquina":                 "Panturrilha sentado",
   "Pull-around cabo polia baixa":                "Pull-around cabo",
@@ -212,7 +215,11 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
         cue: String(r.cue ?? ""),
       };
     })
-    .filter((r) => r.exercicio !== "");
+    .filter((r) => r.exercicio !== "")
+    .sort((a, b) => {
+      if (a.treino_id !== b.treino_id) return a.treino_id.localeCompare(b.treino_id);
+      return a.ordem - b.ordem;
+    });
 }
 
 function parsePeso(val: unknown): number | null {
