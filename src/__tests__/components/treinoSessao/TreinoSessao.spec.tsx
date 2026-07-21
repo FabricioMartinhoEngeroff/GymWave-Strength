@@ -158,7 +158,44 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
   // ── Série Extra ─────────────────────────────────────────────────────────
 
   describe("Série Extra (seriesValidas)", () => {
-    function setupLogbookComSeriesValidas3() {
+    // seriesValidas é uma propriedade do plano de treino (plano padrão ou
+    // planoTreino importado da planilha), não do histórico — o histórico
+    // registra apenas o que foi feito na última sessão, e não deve
+    // sobrescrever a meta de séries válidas definida pelo plano atual.
+    function setupPlanoComSeriesValidas3() {
+      localStorage.setItem("planoTreino", JSON.stringify({
+        "Upper A": {
+          "Supino reto barra": { ordem: 1, series_validas: 3 },
+        },
+      }));
+    }
+
+    it("exibe badge '3 válidas' quando seriesValidas=3 vem do planoTreino (import)", () => {
+      setupPlanoComSeriesValidas3();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      expect(screen.getByText("3 válidas")).toBeInTheDocument();
+    });
+
+    it("exibe badge '2 válidas' quando nao ha historico (padrao)", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.getByText("2 válidas")).toBeInTheDocument();
+    });
+
+    it("exibe bloco Extra apos confirmar backoff quando seriesValidas=3", () => {
+      setupPlanoComSeriesValidas3();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      confirmarTopSet();
+      confirmarBackoff();
+      expect(screen.getByText(/série extra/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Extra kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Extra reps/i)).toBeInTheDocument();
+    });
+
+    it("badge respeita o plano mesmo quando o historico tem seriesValidas diferente", () => {
+      setupPlanoComSeriesValidas3();
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [{
           exercicio: "Supino reto barra",
@@ -174,34 +211,13 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
           backoffReps: 12,
           backoffFaixaMin: 9,
           backoffFaixaMax: 15,
-          seriesValidas: 3,
+          seriesValidas: 2, // sessão anterior tinha só 2 válidas — plano já foi atualizado para 3
           progrediu: false,
         }],
       }));
-    }
-
-    it("exibe badge '3 válidas' quando seriesValidas=3 vem do historico", () => {
-      setupLogbookComSeriesValidas3();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       expect(screen.getByText("3 válidas")).toBeInTheDocument();
-    });
-
-    it("exibe badge '2 válidas' quando nao ha historico (padrao)", () => {
-      renderFresh();
-      selecionarSessao("Upper A");
-      expect(screen.getByText("2 válidas")).toBeInTheDocument();
-    });
-
-    it("exibe bloco Extra apos confirmar backoff quando seriesValidas=3", () => {
-      setupLogbookComSeriesValidas3();
-      render(<TreinoSessao />);
-      selecionarSessao("Upper A");
-      confirmarTopSet();
-      confirmarBackoff();
-      expect(screen.getByText(/série extra/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Extra kg/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Extra reps/i)).toBeInTheDocument();
     });
 
     it("nao exibe bloco Extra quando seriesValidas=2 (padrao)", () => {
@@ -213,8 +229,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     });
 
     it("salva seriesValidas e extra no logbook ao salvar treino", () => {
-      setupLogbookComSeriesValidas3();
-      render(<TreinoSessao />);
+      renderFresh();
       selecionarSessao("Upper A");
 
       pularParaUltimo();
@@ -561,6 +576,13 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     });
 
     it("extra kg e reps sao pre-preenchidos com os valores do historico", () => {
+      // extraKg/extraReps só aparecem com seriesValidas=3, que agora vem do
+      // plano — não do histórico (ver describe "Série Extra" acima).
+      localStorage.setItem("planoTreino", JSON.stringify({
+        "Upper A": {
+          "Supino reto barra": { ordem: 1, series_validas: 3 },
+        },
+      }));
       setupHistoricoComExtra();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");

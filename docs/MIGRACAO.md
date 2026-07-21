@@ -64,11 +64,13 @@ O histórico preservado continua funcionando normalmente em **todas as partes do
 
 | Funcionalidade | Como usa o histórico | Status após migração |
 |---|---|---|
-| Pré-preenchimento (tela Registrar) | `ultimoRegistro` lê do `logbook` (chave separada, não tocada pela migração) — preenche Top Set, Back-off e Série Extra com os valores reais do último treino | **Não é afetado** pela importação de planilha |
-| Ordem e séries (tela Registrar) | `TreinoSessao` lê `planoTreino` para reordenar exercícios por `ordem` e sobrescrever `seriesValidas` — refletindo o plano importado da planilha | **Atualizado** após importação |
+| Pré-preenchimento de peso/reps (tela Registrar) | `ultimoRegistro` lê do `logbook` (chave separada, não tocada pela migração) — preenche peso e reps de Top Set, Back-off e Série Extra com os valores reais do último treino | **Não é afetado** pela importação de planilha |
+| Ordem e séries válidas (tela Registrar) | `TreinoSessao` lê `planoTreino` para reordenar exercícios por `ordem` e sobrescrever `seriesValidas` — refletindo o plano importado da planilha | **Atualizado** após importação |
 | Gráficos de intensidade | `useDadosTreino` e `buildExerciseHistory` leem todas as entradas de `dadosTreino` por data | Continua inalterado |
 | Relatórios | `useRelatorio` lista todas as entradas de `dadosTreino` | Continua inalterado |
 | Volume load semanal | `volumeLoadCalc` soma pesos da semana por músculo | Continua inalterado |
+
+> **Séries válidas: plano manda, histórico não.** `seriesValidas` (badge "2/3 válidas" e visibilidade do bloco Série Extra) vem **exclusivamente** do `planoTreino` — nunca do `logbook`. Isso significa que, se você reimportar a planilha subindo um exercício de 2 para 3 séries válidas, a tela Registrar já reflete 3 válidas no próximo treino, mesmo que o `logbook` ainda tenha registros antigos daquele exercício salvos com `seriesValidas: 2`. O `seriesValidas` gravado dentro de cada registro do `logbook` é só um retrato histórico do que foi feito naquela sessão — não é lido de volta para decidir o comportamento da tela.
 
 > **Nota:** `useSugestaoDePeso` e `carregarUltimaSerie` — referenciados em versões anteriores deste documento — pertencem ao componente `CycleCard` (legado, não renderizado no app). O pré-preenchimento ativo usa exclusivamente `ultimoRegistro` + `logbook`.
 
@@ -128,7 +130,7 @@ planoTreino = {
 
 O plano é **sempre substituído** para as sessões presentes na planilha importada (`{ ...planoExistente, ...planoNovo }`). Sessões ausentes na planilha são preservadas. O `planoTreino` é um template de configuração, não contém histórico de pesos — por isso a substituição é segura.
 
-**Consumo pelo TreinoSessao:** Ao selecionar uma sessão, o componente lê `planoTreino` do localStorage e aplica dois overrides sobre a lista estática `SESSOES`: (1) reordena os exercícios conforme o campo `ordem` do plano; (2) sobrescreve `seriesValidas` de cada exercício. Exercícios sem entrada no plano mantêm a posição e os valores originais do `SESSOES`.
+**Consumo pelo TreinoSessao:** Ao selecionar uma sessão, o componente lê `planoTreino` do localStorage e aplica dois overrides sobre a lista estática `SESSOES`: (1) reordena os exercícios conforme o campo `ordem` do plano; (2) sobrescreve `seriesValidas` de cada exercício. Exercícios sem entrada no plano mantêm a posição e os valores originais do `SESSOES`. Esse `seriesValidas` (plano ou padrão `SESSOES`) é definitivo — ao carregar o histórico do `ultimoRegistro` para sugerir peso/reps, o sistema **não** sobrescreve `seriesValidas` com o valor salvo no registro histórico.
 
 ### Pseudocódigo da mesclagem
 

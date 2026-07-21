@@ -218,7 +218,7 @@ function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
   if (raw.length === 0) return raw;
   const keyMap: Record<string, string> = {};
   Object.keys(raw[0]).forEach((key) => {
-    const flat = key.replace(/\n/g, " ").trim();
+    const flat = key.replace(/[\r\n]+/g, " ").trim();
     for (const [pattern, target] of COLUMN_MAP) {
       if (pattern.test(flat)) { keyMap[key] = target; break; }
     }

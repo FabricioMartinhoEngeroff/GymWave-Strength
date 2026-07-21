@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import * as XLSX from "xlsx";
 import Exportar from "../../../components/exportar/Exportar";
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
@@ -280,6 +281,41 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       await waitFor(() => {
         expect(screen.getByText("Pré-visualização (2 linhas)")).toBeInTheDocument();
       });
+    });
+
+    it("mapeia Top Mín/Máx e TOP SET/BACK-OFF Kg mesmo com quebras \\r\\n reais do Excel nos cabeçalhos (logbook v4)", async () => {
+      // Cabeçalhos de células com texto quebrado no Excel chegam como "Top\r\nMín"
+      // (CR+LF), não só "\n". O mapColumns precisa normalizar os dois.
+      vi.mocked(XLSX.utils.sheet_to_json).mockImplementationOnce(() => [
+        [
+          "ID", "Treino", "Ord.", "Exercício", "Grupo\r\nMuscular", "Tipo",
+          "Séries\r\nVálidas", "Top\r\nMín", "Top\r\nMáx", "B-off\r\nMín", "B-off\r\nMáx",
+          "TOP SET\r\nKg", "BACK-OFF\r\nKg", "Cue / foco", "Obs",
+        ],
+        [
+          "UB", "Upper B", 1, "Remada peito apoiado halteres (livre)", "Costas", "composto",
+          3, 8, 10, 10, 12, 45, 38, "cue", "obs",
+        ],
+      ]);
+      mockFileReader(new ArrayBuffer(0));
+      render(<Exportar />);
+      openImportSection();
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: {
+          files: [
+            makeFile(
+              "logbook_v4.xlsx",
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            ),
+          ],
+        },
+      });
+      await waitFor(() => {
+        expect(screen.getByText("Pré-visualização (1 linhas)")).toBeInTheDocument();
+      });
+      expect(screen.getByText("8–10")).toBeInTheDocument();
+      expect(screen.getByText("45 kg")).toBeInTheDocument();
+      expect(screen.getByText("38 kg")).toBeInTheDocument();
     });
   });
 

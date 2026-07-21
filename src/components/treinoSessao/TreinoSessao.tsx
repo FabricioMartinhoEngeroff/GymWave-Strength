@@ -367,7 +367,6 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         state.topSetKgIsSuggestion = true;
         state.topSetReps = String(ultimo.topSetReps);
         state.topSetRepsSuggestion = true;
-        state.seriesValidas = (ultimo.seriesValidas ?? ex.seriesValidas) as 2 | 3;
         if (ultimo.backoffKg > 0) {
           state.backoffKg = String(ultimo.backoffKg);
           state.backoffKgIsSuggestion = true;

@@ -20,6 +20,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 
 - **RG1** – A tela exibe exercícios agrupados por sessão de treino (UA, UB, LA, LB, BR), definidos em `SESSOES` (hardcoded) com override do `planoTreino` (localStorage) quando disponível.
 - **RG1.1** – Se `planoTreino` existir no localStorage para a sessão selecionada, o sistema aplica dois overrides: (a) **`seriesValidas`** de cada exercício é substituído pelo valor do plano (2 ou 3); (b) **a ordem dos exercícios** é reorganizada conforme o campo `ordem` do plano, permitindo que a importação de planilha altere a sequência sem editar código.
+- **RG1.2** – O plano (padrão do `SESSOES` ou `planoTreino` importado, RG1.1) é a **única fonte de verdade** para `seriesValidas` — o histórico de treinos anteriores (`logbook`/`ultimoRegistro`) nunca sobrescreve esse valor. Se o último registro salvo daquele exercício tiver um `seriesValidas` diferente do plano atual (ex.: um treino feito antes de a planilha ser atualizada de 2 para 3 séries válidas), o sistema ignora o valor do histórico e usa sempre o do plano para decidir se o badge mostra "2 válidas"/"3 válidas" e se o bloco Série Extra aparece. O histórico é usado apenas para sugerir peso e repetições (RG6, RG7, RG14) — nunca para redefinir a contagem de séries válidas.
 - **RG2** – O usuário deve selecionar a sessão do dia antes de registrar qualquer exercício.
 - **RG3** – O registro segue o método Saizen/Heavy Duty. O fluxo padrão é **Top Set** obrigatório → **Back-off** obrigatório → **Série Extra** opcional. As técnicas **BC** e **RP** são alternativas ao Top Set/Back-off: ao ativar uma técnica, esses blocos somem e são substituídos pelos blocos da técnica.
 - **RG4** – Os campos **Top Set** e **Back-off** são obrigatórios no modo padrão. Ao usar técnica (BC/RP), o botão **"Confirmar Técnica"** cumpre o mesmo papel. Tentar avançar sem confirmar exibe aviso laranja com ⚠.
@@ -32,7 +33,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 - **RG11** – Exercícios podem ser pulados (botão "Pular"). Exercícios pulados não geram registro.
 - **RG12** – O rascunho de cada sessão é persistido no `localStorage` (chave `rascunho_treino`). A cada interação relevante (confirmar Top Set, confirmar Back-off, confirmar Técnica, avançar/voltar exercício, editar peso/reps) o estado completo da sessão em andamento é gravado. Ao reabrir o app ou retornar à tela Registrar, se existir rascunho para a sessão selecionada, os dados são restaurados automaticamente — mesmo que o app tenha sido fechado ou o cache limpo pelo sistema. O rascunho é removido somente após o salvamento definitivo do treino ("Confirmar e Salvar Treino").
 - **RG13** – Durante o preenchimento do bloco Top Set, o sistema recalcula em tempo real o 1RM estimado pela fórmula de Epley: `1RM = Peso × (1 + Reps / 30)`. Se esse valor superar o recorde histórico daquele exercício — ou se as repetições atingirem ou ultrapassarem o teto da faixa cadastrada — o Banner de Progressão assume imediatamente o estado `[banner_pr]` (verde/dourado pulsante), antes mesmo de o usuário confirmar o Top Set. Ao apagar os campos ou reduzir os valores, o banner retorna ao estado anterior.
-- **RG14** – Quando existe histórico com `seriesValidas === 3`, o sistema pré-preenche **peso e repetições** da Série Extra com os valores reais do último treino (mesmo indicador visual azul). Quando não há histórico, o peso é espelhado do campo Back-off após sua confirmação (fallback).
+- **RG14** – Quando o bloco Série Extra está visível (RG1.2) e o histórico do exercício tem peso de série extra preenchido (`extraKg > 0`), o sistema pré-preenche **peso e repetições** da Série Extra com os valores reais do último treino (mesmo indicador visual azul). Quando não há histórico ou o histórico não tem extra registrado, o peso é espelhado do campo Back-off após sua confirmação (fallback). Esse pré-preenchimento é só sugestão de valor — não decide se o bloco aparece (isso é definido exclusivamente pelo plano, RG1.2).
 
 ---
 
@@ -153,8 +154,9 @@ Visível quando `seriesValidas === 3` e Back-off confirmado.
 | 02 | Repetições | Input numérico (pré-preenchido do histórico) | Não |
 
 **Regras de sugestão (RG14):**
-- **Com histórico que tinha `seriesValidas === 3`:** peso e repetições são pré-preenchidos com os valores reais do último treino (borda e texto azul = sugestão).
+- **Com histórico com extra preenchido:** peso e repetições são pré-preenchidos com os valores reais do último treino (borda e texto azul = sugestão).
 - **Sem histórico ou histórico sem extra (fallback):** após a confirmação do Back-off, o peso é espelhado do campo Back-off; repetições ficam vazias.
+- A visibilidade do bloco em si depende só do plano (RG1.2), não do histórico — ver nota abaixo.
 - Os campos podem ser editados ou apagados livremente.
 
 **Hint "Anterior":** quando há histórico com extra, uma linha discreta exibe `Anterior: Xkg × Nreps` acima dos campos.

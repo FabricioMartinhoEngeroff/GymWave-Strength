@@ -494,15 +494,18 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 14 | Top Set com reps no teto (9 reps, faixa 5–9) | Badge verde `Teto atingido` exibido |
 | 15 | Top Set abaixo da faixa (3 reps, faixa 5–9) | Badge vermelho `Abaixo da faixa` exibido |
 
-**Série Extra (seriesValidas) (5)**
+**Série Extra (seriesValidas) (6)**
+
+`seriesValidas` vem sempre do plano (`planoTreino` ou padrão `SESSOES`) — nunca do histórico/`logbook`. Ver EF_02 RG1.2 e MIGRACAO.md.
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 16 | Logbook com `seriesValidas=3` | Badge `3 válidas` exibido |
+| 16 | `planoTreino` com `series_validas=3` | Badge `3 válidas` exibido |
 | 17 | Sem historico (padrao) | Badge `2 válidas` exibido |
-| 18 | `seriesValidas=3` + Top Set + Back-off confirmados | Bloco `Série Extra` aparece |
+| 18 | `planoTreino` com `series_validas=3` + Top Set + Back-off confirmados | Bloco `Série Extra` aparece |
 | 19 | `seriesValidas=2` (padrao) | Bloco `Série Extra` nao aparece |
 | 20 | Salvar com `seriesValidas=2` | `seriesValidas=2` persistido no logbook |
+| 20b | `planoTreino` com `series_validas=3` + logbook com `seriesValidas=2` (treino anterior) | Badge `3 válidas` exibido — plano prevalece sobre historico |
 
 **Banners de progressão (1)**
 
@@ -715,11 +718,12 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 19 | Apos carregar | Botao Confirmar habilitado |
 | 20 | Cabecalhos de ciclo | `C1 kg, C2 kg, C3 kg, C4 kg` exibidos |
 
-**Upload XLSX (1)**
+**Upload XLSX (2)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
 | 21 | Carregar XLSX | Preview com contagem de linhas exibido |
+| 21b | Cabeçalhos com quebra `\r\n` real do Excel (logbook v4 — `Top\r\nMín`, `TOP SET\r\nKg`, etc.) | Reps min/max e pesos C1/C2 mapeados corretamente na pré-visualização |
 
 **Confirmação de importação (8)**
 
