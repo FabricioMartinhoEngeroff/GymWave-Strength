@@ -282,9 +282,9 @@ export const InputBox = styled.input<InputBoxProps>`
   flex: 1;
   background: #f5f6fa;
   border: 0.5px solid ${(p) => (p.$invalid ? "#ef4444" : p.$isSuggestion ? "#93c5fd" : "rgba(0,0,0,0.08)")};
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 13px;
+  border-radius: 10px;
+  padding: 13px 12px;
+  font-size: 16px;
   color: ${(p) => (p.$isSuggestion ? "#2563eb" : "#111827")};
   min-width: 0;
   box-sizing: border-box;
@@ -300,13 +300,13 @@ export const InputBox = styled.input<InputBoxProps>`
 `;
 
 export const InputSm = styled.input<InputBoxProps>`
-  width: 52px;
+  width: 62px;
   flex-shrink: 0;
   background: #f5f6fa;
   border: 0.5px solid ${(p) => (p.$invalid ? "#ef4444" : p.$isSuggestion ? "#93c5fd" : "rgba(0,0,0,0.08)")};
-  border-radius: 8px;
-  padding: 8px 6px;
-  font-size: 13px;
+  border-radius: 10px;
+  padding: 13px 8px;
+  font-size: 16px;
   color: ${(p) => (p.$isSuggestion ? "#2563eb" : "#111827")};
   text-align: center;
   box-sizing: border-box;

@@ -38,6 +38,7 @@ import {
   SaveBtn,
   ToastBanner,
 } from "./TreinoSessao.styles";
+import { ExerciseGif } from "./ExerciseGif";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -920,59 +921,77 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         {sessao && exercicios.length > 0 && !resumo && !mostrarRevisao && (
           <>
             {/* Navigation with progress dots */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-              <button
-                type="button"
-                onClick={prevExercise}
-                disabled={currentIdx === 0}
-                style={{
-                  background: "none", border: "none", fontSize: 20,
-                  cursor: currentIdx === 0 ? "default" : "pointer",
-                  color: currentIdx === 0 ? "#d1d5db" : "#2563eb", padding: "4px 12px",
-                }}
-                aria-label="Exercício anterior"
-              >
-                ‹
-              </button>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 12, color: "#6b7280" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              {/* Anterior / contador / Próximo */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, width: "100%" }}>
+                <button
+                  type="button"
+                  onClick={prevExercise}
+                  disabled={currentIdx === 0}
+                  style={{
+                    flex: 1,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    padding: "8px 0",
+                    borderRadius: 10,
+                    border: "1.5px solid",
+                    borderColor: currentIdx === 0 ? "#e5e7eb" : "#2563eb",
+                    background: currentIdx === 0 ? "#f9fafb" : "#eff6ff",
+                    color: currentIdx === 0 ? "#d1d5db" : "#2563eb",
+                    fontSize: 13, fontWeight: 600,
+                    cursor: currentIdx === 0 ? "default" : "pointer",
+                  }}
+                  aria-label="Exercício anterior"
+                >
+                  ‹ Anterior
+                </button>
+
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", whiteSpace: "nowrap" }}>
                   {currentIdx + 1} / {exercicios.length}
                 </span>
-                <div style={{ display: "flex", gap: 5 }}>
-                  {exercicios.map((ex, idx) => (
-                    <div
-                      key={ex.nome}
-                      onClick={() => setCurrentIdx(idx)}
-                      title={`${ex.nome}${isExerciseDone(ex.nome) ? " ✓" : ""}`}
-                      style={{
-                        width: 8, height: 8, borderRadius: "50%", cursor: "pointer",
-                        background: idx === currentIdx
-                          ? "#2563eb"
-                          : isExerciseDone(ex.nome)
-                          ? "#16a34a"
-                          : "#d1d5db",
-                        boxSizing: "border-box",
-                        border: idx === currentIdx ? "1.5px solid #1d4ed8" : "1.5px solid transparent",
-                        transition: "background 0.15s",
-                        flexShrink: 0,
-                      }}
-                    />
-                  ))}
-                </div>
+
+                <button
+                  type="button"
+                  onClick={nextExercise}
+                  disabled={currentIdx === exercicios.length - 1}
+                  style={{
+                    flex: 1,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                    padding: "8px 0",
+                    borderRadius: 10,
+                    border: "1.5px solid",
+                    borderColor: currentIdx === exercicios.length - 1 ? "#e5e7eb" : "#2563eb",
+                    background: currentIdx === exercicios.length - 1 ? "#f9fafb" : "#eff6ff",
+                    color: currentIdx === exercicios.length - 1 ? "#d1d5db" : "#2563eb",
+                    fontSize: 13, fontWeight: 600,
+                    cursor: currentIdx === exercicios.length - 1 ? "default" : "pointer",
+                  }}
+                  aria-label="Próximo exercício"
+                >
+                  Próximo ›
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={nextExercise}
-                disabled={currentIdx === exercicios.length - 1}
-                style={{
-                  background: "none", border: "none", fontSize: 20,
-                  cursor: currentIdx === exercicios.length - 1 ? "default" : "pointer",
-                  color: currentIdx === exercicios.length - 1 ? "#d1d5db" : "#2563eb", padding: "4px 12px",
-                }}
-                aria-label="Próximo exercício"
-              >
-                ›
-              </button>
+
+              {/* Progress dots */}
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", justifyContent: "center", maxWidth: 280 }}>
+                {exercicios.map((ex, idx) => (
+                  <div
+                    key={ex.nome}
+                    onClick={() => setCurrentIdx(idx)}
+                    title={`${ex.nome}${isExerciseDone(ex.nome) ? " ✓" : ""}`}
+                    style={{
+                      width: 10, height: 10, borderRadius: "50%", cursor: "pointer",
+                      background: idx === currentIdx
+                        ? "#2563eb"
+                        : isExerciseDone(ex.nome)
+                        ? "#16a34a"
+                        : "#d1d5db",
+                      border: idx === currentIdx ? "2px solid #1d4ed8" : "2px solid transparent",
+                      transition: "background 0.15s",
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Current exercise card */}
@@ -1023,6 +1042,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </span>
                     </div>
                   </ExHeader>
+
+                  <ExerciseGif exerciseName={currentEx.nome} />
 
                   {renderProgressBanner(currentEx, prAtivo)}
 
