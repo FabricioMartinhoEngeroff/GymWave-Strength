@@ -371,16 +371,20 @@ export const SaveBtn = styled.button<{ $disabled?: boolean }>`
 
 /* ── Toast / success banner ─────────────────────────────────── */
 
-export const ToastBanner = styled.div`
-  background: #dcfce7;
-  border: 0.5px solid #86efac;
+interface ToastBannerProps {
+  $variant?: "success" | "error";
+}
+
+export const ToastBanner = styled.div<ToastBannerProps>`
+  background: ${(p) => (p.$variant === "error" ? "#fef2f2" : "#dcfce7")};
+  border: 0.5px solid ${(p) => (p.$variant === "error" ? "#fecaca" : "#86efac")};
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 13px;
-  color: #166534;
+  color: ${(p) => (p.$variant === "error" ? "#991b1b" : "#166534")};
   text-align: center;
   margin-bottom: 10px;
-  font-weight: 500;
+  font-weight: 600;
 `;
 
 /* ── Date input ──────────────────────────────────────────────── */

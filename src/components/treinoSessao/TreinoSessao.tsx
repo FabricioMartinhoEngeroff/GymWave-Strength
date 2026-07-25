@@ -9,6 +9,8 @@ import {
   carregarHistorico,
   salvarDados,
   carregarDados,
+  existeTreinoNaData,
+  removerTreinoNaData,
 } from "../../utils/storage";
 import { calcEpley, extractReferenceBlock } from "../../utils/epleyCalc";
 import {
@@ -229,6 +231,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   const [currentIdx, setCurrentIdx] = useState(0);
   const [exerciseStates, setExerciseStates] = useState<Record<string, ExerciseState>>({});
   const [salvo, setSalvo] = useState(false);
+  const [salvarErro, setSalvarErro] = useState<string | null>(null);
+  const [confirmarSubstituir, setConfirmarSubstituir] = useState(false);
   const [resumo, setResumo] = useState<{ feitos: number; total: number; subirPeso: number } | null>(null);
   const [mostrarRevisao, setMostrarRevisao] = useState(false);
   const [topSetWarning, setTopSetWarning] = useState(false);
@@ -333,6 +337,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       setMostrarRevisao(false);
       setResumo(null);
       setSalvo(false);
+      setSalvarErro(null);
+      setConfirmarSubstituir(false);
       statesSessaoRef.current = sessao;
       return;
     }
@@ -345,6 +351,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       setMostrarRevisao(false);
       setResumo(null);
       setSalvo(false);
+      setSalvarErro(null);
+      setConfirmarSubstituir(false);
       statesSessaoRef.current = sessao;
       return;
     }
@@ -391,6 +399,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setMostrarRevisao(false);
     setResumo(null);
     setSalvo(false);
+    setSalvarErro(null);
+    setConfirmarSubstituir(false);
     statesSessaoRef.current = sessao;
   }, [sessao, exercicios]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -547,96 +557,114 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     return "faixa";
   }
 
-  function handleSalvarTreino() {
+  function handleSalvarTreino(forcarSubstituicao = false) {
     if (!sessao) return;
-    const ts = parseDateBRToTs(data);
-    let feitos = 0;
-    let subirPeso = 0;
 
-    const dadosDb = carregarDados();
-
-    exercicios.forEach((ex) => {
-      const state = exerciseStates[ex.nome];
-      if (!state || state.skipped) return;
-
-      const isTecnicaMode = state.tecnica !== null && state.tecnicaConfirmed;
-      if (!isTecnicaMode && !state.topSetConfirmed) return;
-
-      const topKg = parseFloat(state.topSetKg) || 0;
-      const topReps = parseInt(state.topSetReps) || 0;
-      const boKg = parseFloat(state.backoffKg) || 0;
-      const boReps = parseInt(state.backoffReps) || 0;
-      if (!isTecnicaMode && topKg <= 0) return;
-
-      const extraKg = state.seriesValidas === 3 ? (parseFloat(state.extraKg) || 0) : 0;
-      const extraReps = state.seriesValidas === 3 ? (parseInt(state.extraReps) || 0) : 0;
-
-      const clusterData = isTecnicaMode
-        ? state.clusterSeries
-            .map((b) => ({ kg: parseFloat(b.kg) || 0, reps: parseInt(b.reps) || 0 }))
-            .filter((b) => b.kg > 0 && b.reps > 0)
-        : undefined;
-
-      const ultimo = ultimoRegistro(ex.nome, treinoId);
-      const bateuTeto = !isTecnicaMode && topReps >= ex.faixaTopSet[1];
-      if (bateuTeto) subirPeso++;
-
-      const registro: RegistroExercicio = {
-        exercicio: ex.nome,
-        treinoId,
-        data,
-        dataTs: ts,
-        topSetKg: topKg,
-        topSetReps: topReps,
-        topSetFaixaMin: ex.faixaTopSet[0],
-        topSetFaixaMax: ex.faixaTopSet[1],
-        topSetBateuTeto: bateuTeto,
-        backoffKg: boKg,
-        backoffReps: boReps,
-        backoffFaixaMin: ex.faixaBackoff[0],
-        backoffFaixaMax: ex.faixaBackoff[1],
-        seriesValidas: state.seriesValidas,
-        extraKg: extraKg > 0 ? extraKg : undefined,
-        extraReps: extraReps > 0 ? extraReps : undefined,
-        tecnica: state.tecnica,
-        clusterSeries: clusterData,
-        pesoAnterior: ultimo?.topSetKg,
-        repsAnterior: ultimo?.topSetReps,
-        progrediu: ultimo ? topKg > ultimo.topSetKg : false,
-        obs: state.obs.trim() || undefined,
-      };
-
-      salvarRegistro(registro);
-      feitos++;
-
-      const legacyPesos = isTecnicaMode
-        ? clusterData!.map((b) => String(b.kg))
-        : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
-      const legacyReps = isTecnicaMode
-        ? clusterData!.map((b) => String(b.reps))
-        : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
-      if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
-      dadosDb[ex.nome][treinoId] = {
-        data,
-        pesos: legacyPesos,
-        reps: legacyReps,
-        obs: state.obs.trim(),
-        exercicio: ex.nome,
-      };
-    });
-
-    salvarDados(dadosDb);
-
-    // Clear draft after saving (memory + localStorage)
-    if (sessao) {
-      delete rascunhosRef.current[sessao];
-      clearDraft(sessao);
+    if (!forcarSubstituicao && existeTreinoNaData(treinoId, data)) {
+      setConfirmarSubstituir(true);
+      return;
     }
 
-    setMostrarRevisao(false);
-    setResumo({ feitos, total: exercicios.length, subirPeso });
-    setSalvo(true);
-    setTimeout(() => setSalvo(false), 5000);
+    try {
+      if (forcarSubstituicao) {
+        removerTreinoNaData(treinoId, data);
+      }
+
+      const ts = parseDateBRToTs(data);
+      let feitos = 0;
+      let subirPeso = 0;
+
+      const dadosDb = carregarDados();
+
+      exercicios.forEach((ex) => {
+        const state = exerciseStates[ex.nome];
+        if (!state || state.skipped) return;
+
+        const isTecnicaMode = state.tecnica !== null && state.tecnicaConfirmed;
+        if (!isTecnicaMode && !state.topSetConfirmed) return;
+
+        const topKg = parseFloat(state.topSetKg) || 0;
+        const topReps = parseInt(state.topSetReps) || 0;
+        const boKg = parseFloat(state.backoffKg) || 0;
+        const boReps = parseInt(state.backoffReps) || 0;
+        if (!isTecnicaMode && topKg <= 0) return;
+
+        const extraKg = state.seriesValidas === 3 ? (parseFloat(state.extraKg) || 0) : 0;
+        const extraReps = state.seriesValidas === 3 ? (parseInt(state.extraReps) || 0) : 0;
+
+        const clusterData = isTecnicaMode
+          ? state.clusterSeries
+              .map((b) => ({ kg: parseFloat(b.kg) || 0, reps: parseInt(b.reps) || 0 }))
+              .filter((b) => b.kg > 0 && b.reps > 0)
+          : undefined;
+
+        const ultimo = ultimoRegistro(ex.nome, treinoId);
+        const bateuTeto = !isTecnicaMode && topReps >= ex.faixaTopSet[1];
+        if (bateuTeto) subirPeso++;
+
+        const registro: RegistroExercicio = {
+          exercicio: ex.nome,
+          treinoId,
+          data,
+          dataTs: ts,
+          topSetKg: topKg,
+          topSetReps: topReps,
+          topSetFaixaMin: ex.faixaTopSet[0],
+          topSetFaixaMax: ex.faixaTopSet[1],
+          topSetBateuTeto: bateuTeto,
+          backoffKg: boKg,
+          backoffReps: boReps,
+          backoffFaixaMin: ex.faixaBackoff[0],
+          backoffFaixaMax: ex.faixaBackoff[1],
+          seriesValidas: state.seriesValidas,
+          extraKg: extraKg > 0 ? extraKg : undefined,
+          extraReps: extraReps > 0 ? extraReps : undefined,
+          tecnica: state.tecnica,
+          clusterSeries: clusterData,
+          pesoAnterior: ultimo?.topSetKg,
+          repsAnterior: ultimo?.topSetReps,
+          progrediu: ultimo ? topKg > ultimo.topSetKg : false,
+          obs: state.obs.trim() || undefined,
+        };
+
+        salvarRegistro(registro);
+        feitos++;
+
+        const legacyPesos = isTecnicaMode
+          ? clusterData!.map((b) => String(b.kg))
+          : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
+        const legacyReps = isTecnicaMode
+          ? clusterData!.map((b) => String(b.reps))
+          : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
+        if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
+        dadosDb[ex.nome][treinoId] = {
+          data,
+          pesos: legacyPesos,
+          reps: legacyReps,
+          obs: state.obs.trim(),
+          exercicio: ex.nome,
+        };
+      });
+
+      salvarDados(dadosDb);
+
+      // Clear draft after saving (memory + localStorage)
+      if (sessao) {
+        delete rascunhosRef.current[sessao];
+        clearDraft(sessao);
+      }
+
+      setConfirmarSubstituir(false);
+      setSalvarErro(null);
+      setMostrarRevisao(false);
+      setResumo({ feitos, total: exercicios.length, subirPeso });
+      setSalvo(true);
+      setTimeout(() => setSalvo(false), 5000);
+    } catch (err) {
+      console.error("Erro ao salvar treino:", err);
+      setSalvarErro("Não foi possível salvar o treino. Tente novamente.");
+      setTimeout(() => setSalvarErro(null), 8000);
+    }
   }
 
   // ── Render helpers ────────────────────────────────────────────────────────
@@ -719,6 +747,38 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   }
 
   function renderRevisao() {
+    if (confirmarSubstituir) {
+      return (
+        <Card>
+          <Label>Atenção</Label>
+          <div style={{
+            background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
+            padding: "10px 12px", fontSize: 13, color: "#c2410c", marginBottom: 12, lineHeight: 1.5,
+          }}>
+            ⚠ Já existe um treino de <strong>{treinoId}</strong> salvo em <strong>{data}</strong>. Salvar novamente vai substituir o registro desse dia — não será criado um treino duplicado.
+          </div>
+          <SaveBtn
+            $disabled={false}
+            disabled={false}
+            onClick={() => handleSalvarTreino(true)}
+            type="button"
+          >
+            Substituir registro do dia
+          </SaveBtn>
+          <button
+            type="button"
+            onClick={() => setConfirmarSubstituir(false)}
+            style={{
+              width: "100%", padding: 10, marginTop: 8, border: "1px solid #d1d5db",
+              borderRadius: 8, background: "#fff", color: "#6b7280", fontSize: 13, cursor: "pointer",
+            }}
+          >
+            Cancelar
+          </button>
+        </Card>
+      );
+    }
+
     return (
       <Card>
         <Label>Revisar antes de salvar</Label>
@@ -774,7 +834,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         <SaveBtn
           $disabled={false}
           disabled={false}
-          onClick={handleSalvarTreino}
+          onClick={() => handleSalvarTreino()}
           type="button"
           style={{ marginTop: 12 }}
         >
@@ -782,7 +842,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         </SaveBtn>
         <button
           type="button"
-          onClick={() => setMostrarRevisao(false)}
+          onClick={() => { setMostrarRevisao(false); setConfirmarSubstituir(false); }}
           style={{
             width: "100%", padding: 10, marginTop: 8, border: "1px solid #d1d5db",
             borderRadius: 8, background: "#fff", color: "#6b7280", fontSize: 13, cursor: "pointer",
@@ -810,7 +870,16 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       </TopBar>
 
       <Content>
-        {salvo && <ToastBanner>Treino salvo com sucesso!</ToastBanner>}
+        {salvo && (
+          <ToastBanner $variant="success" role="status">
+            ✅ Treino finalizado! Registro salvo com sucesso.
+          </ToastBanner>
+        )}
+        {salvarErro && (
+          <ToastBanner $variant="error" role="alert">
+            ❌ {salvarErro}
+          </ToastBanner>
+        )}
 
         {/* Session selector */}
         <Card>

@@ -79,6 +79,33 @@ export function carregarHistorico(exercicio: string): RegistroExercicio[] {
 }
 
 /**
+ * Checks whether a workout for the given session (treinoId) was already
+ * saved on the given date, across any exercise in the logbook.
+ * Used to warn the user before creating a duplicate same-day record.
+ */
+export function existeTreinoNaData(treinoId: string, data: string): boolean {
+  const logbook = carregarLogbook();
+  return Object.values(logbook).some((registros) =>
+    registros.some((r) => r.treinoId === treinoId && r.data === data)
+  );
+}
+
+/**
+ * Removes every record for the given session (treinoId) saved on the given
+ * date, across all exercises. Used to replace a same-day record instead of
+ * duplicating it when the user explicitly confirms an overwrite.
+ */
+export function removerTreinoNaData(treinoId: string, data: string): void {
+  const logbook = carregarLogbook();
+  for (const exercicio in logbook) {
+    logbook[exercicio] = logbook[exercicio].filter(
+      (r) => !(r.treinoId === treinoId && r.data === data)
+    );
+  }
+  salvarLogbook(logbook);
+}
+
+/**
  * Gets the most recent record for a given exercise in a specific training session.
  * Used to pre-fill all input blocks (Top Set, Back-off, Série Extra) with
  * the previous workout's actual values as suggestions.

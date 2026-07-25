@@ -309,7 +309,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      expect(screen.getByText(/treino salvo/i)).toBeInTheDocument();
+      expect(screen.getByText(/treino finalizado/i)).toBeInTheDocument();
       expect(screen.getByText(/resumo do treino/i)).toBeInTheDocument();
     });
   });
@@ -692,7 +692,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      expect(screen.getByText(/treino salvo/i)).toBeInTheDocument();
+      expect(screen.getByText(/treino finalizado/i)).toBeInTheDocument();
       expect(screen.getByText(/resumo do treino/i)).toBeInTheDocument();
     });
   });
