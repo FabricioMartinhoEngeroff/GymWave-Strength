@@ -1,8 +1,4 @@
-/**
- * HooksTest → hooks/useDadosTreino
- * Testa o hook que transforma dadosTreino do localStorage
- * para o formato de gráfico (DadosAgrupados).
- */
+
 import { describe, it, expect } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { useDadosTreino } from "../../hooks/useDadosTreino";

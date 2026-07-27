@@ -1,4 +1,3 @@
-// ── Legacy types (kept for backward compatibility with dadosTreino) ──────────
 
 export interface RegistroTreino {
   data: string;
@@ -64,6 +63,7 @@ export interface RegistroExercicio {
   pesoAnterior?: number;
   repsAnterior?: number;
   progrediu: boolean; // true if topSetKg > pesoAnterior
+  isDeload?: boolean;
 
   obs?: string;
 }

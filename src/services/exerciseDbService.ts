@@ -43,7 +43,6 @@ function headers() {
 }
 
 // In-memory cache — survives navigation within the session, cleared on page reload.
-// Stores object URLs (blob://...) for images fetched as binary.
 const gifCache = new Map<string, string>();
 
 export async function fetchExerciseGif(portugueseName: string): Promise<string | null> {
@@ -52,7 +51,6 @@ export async function fetchExerciseGif(portugueseName: string): Promise<string |
   const searchTerm = NAME_MAP[portugueseName];
   if (!searchTerm || !RAPIDAPI_KEY) return null;
 
-  // Step 1 — search by name to get the exercise ID
   const searchRes = await fetch(
     `${BASE_URL}/exercises/name/${encodeURIComponent(searchTerm)}?limit=1&offset=0`,
     { headers: headers() }
@@ -66,33 +64,9 @@ export async function fetchExerciseGif(portugueseName: string): Promise<string |
     ? searchData.data
     : [];
 
-  const exerciseId = exercises[0]?.id as string | undefined;
-  if (!exerciseId) return null;
-
-  // Step 2 — fetch image by exercise ID (getExerciseImage endpoint)
-  const imageRes = await fetch(
-    `${BASE_URL}/image?exerciseId=${exerciseId}&resolution=180`,
-    { headers: headers() }
-  );
-  if (!imageRes.ok) return null;
-
-  let gifUrl: string | null = null;
-  const contentType = imageRes.headers.get("content-type") ?? "";
-
-  if (contentType.startsWith("image/")) {
-    // Endpoint returns the binary image directly — wrap in object URL
-    const blob = await imageRes.blob();
-    gifUrl = URL.createObjectURL(blob);
-  } else {
-    // Endpoint returns JSON with a URL field
-    const imageData = await imageRes.json();
-    gifUrl =
-      (imageData?.url as string) ||
-      (imageData?.gifUrl as string) ||
-      (imageData?.image as string) ||
-      null;
-  }
-
+  // The ExerciseDB API returns gifUrl directly in the search result — a stable
+  // https:// CDN URL that works on all platforms (no blob URL needed).
+  const gifUrl = (exercises[0]?.gifUrl as string) || null;
   if (gifUrl) gifCache.set(portugueseName, gifUrl);
   return gifUrl;
 }

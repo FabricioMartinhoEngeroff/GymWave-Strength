@@ -28,9 +28,11 @@ Qualquer usuário autenticado com dados registrados possui acesso.
   Esse valor é calculado para cada sessão e plotado no gráfico de linha.
 - **RG5** – **Extração da carga de referência por técnica:**
   - **Modo padrão (Top Set / Back-off):** o cálculo do 1RM usa exclusivamente os dados do bloco **Top Set**. O Back-off é ignorado.
-  - **Modo BC (Breathing Cluster) ou RP (Rest-Pause):** o cálculo usa exclusivamente os dados do **Bloco 1 (R1)**, que representa o esforço máximo antes da primeira micro-pausa. Os demais blocos são ignorados para fins desse gráfico.
+  - **Modo BC (Breathing Cluster) ou Rest Pause:** o cálculo usa exclusivamente os dados do **Bloco 1 (R1)**, que representa o esforço máximo antes da primeira micro-pausa. Os demais blocos são ignorados para fins desse gráfico.
+  - **Modo Deload (`isDeload: true`):** o cálculo usa o `topSetKg` e `topSetReps` normalmente. O `backoffKg: 0` não afeta o 1RM calculado. O ponto é renderizado com estilo visual diferente (RG8).
 - **RG6** – **Linha de PR (Recorde Absoluto):** Uma linha horizontal pontilhada dourada é sobreposta ao gráfico, posicionada no valor do maior 1RM estimado já registrado para o exercício selecionado. O objetivo visual é fazer a linha contínua do treino atual subir até cruzar essa linha.
 - **RG7** – **Badge de Conquista (PR confirmado):** Todo ponto do gráfico que representa uma sessão em que o 1RM calculado igualou ou superou o PR histórico vigente naquele momento recebe um marcador visual diferenciado (estrela ou cor brilhante). Esses pontos indicam as sessões que efetivamente quebraram o recorde.
+- **RG8** – **Indicador visual de Deload:** Sessões com `isDeload: true` são renderizadas como um **círculo vermelho vazado** no gráfico — preenchimento `rgba(220,38,38,0.15)` (vermelho translúcido), borda vermelha sólida (`#dc2626`, espessura 1.5 px), raio 5 px. Esse marcador diferencia visualmente as sessões de volume reduzido dos pontos normais (invisíveis por padrão) e dos pontos de PR (anel dourado/estrela). O tooltip de uma sessão Deload exibe a linha **"⬇ Deload (1 série)"** em vermelho, além dos dados normais.
 
 ---
 
@@ -69,7 +71,7 @@ Exibido entre os filtros e o gráfico. No mobile: grid 2×2. No desktop: linha h
 - **Pontos:** Invisíveis por padrão nos pontos normais. Aparecem ao tocar/hover. Pontos de PR (RG7) são sempre visíveis com marcador diferenciado (círculo maior + anel de brilho ou ícone de estrela).
 - **Linha de PR:** Linha horizontal pontilhada dourada sobrepassando o gráfico no valor do recorde absoluto (RG6). Label flutuante à direita: `PR: 142 kg`.
 - **Animação de entrada:** A linha se desenha da esquerda para a direita ao montar o componente (300–400 ms, ease-out). O preenchimento de área segue a linha.
-- **Tooltip mobile (toque):** Toque em qualquer ponto da área do gráfico localiza o ponto mais próximo e exibe um card flutuante acima dele com: data, 1RM, peso × reps do bloco de referência e tag de técnica (se BC ou RP). Dispensado ao tocar fora.
+- **Tooltip mobile (toque):** Toque em qualquer ponto da área do gráfico localiza o ponto mais próximo e exibe um card flutuante acima dele com: data, 1RM, peso × reps do bloco de referência, tag de técnica (se BC ou Rest Pause) e linha **"⬇ Deload (1 série)"** em vermelho (se Deload). Dispensado ao tocar fora.
 - **Tooltip desktop (hover):** Card flutuante no cursor com os mesmos dados do mobile.
 
 ---
@@ -95,7 +97,7 @@ Exibido entre os filtros e o gráfico. No mobile: grid 2×2. No desktop: linha h
 │   [  Gráfico área linha  ]  │  ← altura ~240 px, full-width
 │                             │
 ├─────────────────────────────┤
-│  ● Linha 1RM  ⋯ Linha PR   │  ← legenda compacta
+│  ● Linha 1RM  ⋯ Linha PR  ○ Deload  │  ← legenda compacta
 └─────────────────────────────┘
 ```
 
@@ -114,7 +116,7 @@ Exibido entre os filtros e o gráfico. No mobile: grid 2×2. No desktop: linha h
 │        [  Gráfico área linha — altura ~320 px  ]   │
 │                                                    │
 ├────────────────────────────────────────────────────┤
-│  ● Linha 1RM Estimado  ⋯ Linha PR (recorde)  ★ PR  │
+│  ● Linha 1RM Estimado  ⋯ Linha PR (recorde)  ★ PR  ○ Deload  │
 └────────────────────────────────────────────────────┘
 ```
 
@@ -127,7 +129,8 @@ Exibido entre os filtros e o gráfico. No mobile: grid 2×2. No desktop: linha h
 | Linha contínua + área | Evolução do 1RM estimado por sessão |
 | Linha pontilhada dourada | Recorde absoluto do exercício (PR histórico) |
 | Ponto com anel / estrela | Sessão em que o PR foi quebrado |
-| Tag de técnica no tooltip | Indica BC ou RP quando o Bloco 1 foi usado como referência |
+| Círculo vermelho vazado | Sessão registrada em modo Deload (`isDeload: true`) — volume reduzido (1 série válida) |
+| Tag de técnica no tooltip | Indica BC ou Rest Pause quando o Bloco 1 foi usado como referência; indica Deload quando `isDeload: true` |
 
 ---
 

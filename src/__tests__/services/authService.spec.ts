@@ -1,7 +1,4 @@
-/**
- * ServicesTest → services/authService
- * Testa as funções de login e registro com mock de localStorage.
- */
+
 import { describe, it, expect, beforeEach } from "vitest";
 import { login, register } from "../../services/authService";
 

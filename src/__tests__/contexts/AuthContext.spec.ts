@@ -1,7 +1,4 @@
-/**
- * ContextTest → contexts/AuthContext + useAuth
- * Testa a criação do contexto de autenticação e o hook useAuth.
- */
+
 import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { AuthContext } from "../../contexts/AuthContext";

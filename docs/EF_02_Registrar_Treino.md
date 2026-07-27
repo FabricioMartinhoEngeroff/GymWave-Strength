@@ -22,8 +22,8 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 - **RG1.1** – Se `planoTreino` existir no localStorage para a sessão selecionada, o sistema aplica dois overrides: (a) **`seriesValidas`** de cada exercício é substituído pelo valor do plano (2 ou 3); (b) **a ordem dos exercícios** é reorganizada conforme o campo `ordem` do plano, permitindo que a importação de planilha altere a sequência sem editar código.
 - **RG1.2** – O plano (padrão do `SESSOES` ou `planoTreino` importado, RG1.1) é a **única fonte de verdade** para `seriesValidas` — o histórico de treinos anteriores (`logbook`/`ultimoRegistro`) nunca sobrescreve esse valor. Se o último registro salvo daquele exercício tiver um `seriesValidas` diferente do plano atual (ex.: um treino feito antes de a planilha ser atualizada de 2 para 3 séries válidas), o sistema ignora o valor do histórico e usa sempre o do plano para decidir se o badge mostra "2 válidas"/"3 válidas" e se o bloco Série Extra aparece. O histórico é usado apenas para sugerir peso e repetições (RG6, RG7, RG14) — nunca para redefinir a contagem de séries válidas.
 - **RG2** – O usuário deve selecionar a sessão do dia antes de registrar qualquer exercício.
-- **RG3** – O registro segue o método Saizen/Heavy Duty. O fluxo padrão é **Top Set** obrigatório → **Back-off** obrigatório → **Série Extra** opcional. As técnicas **BC** e **RP** são alternativas ao Top Set/Back-off: ao ativar uma técnica, esses blocos somem e são substituídos pelos blocos da técnica.
-- **RG4** – Os campos **Top Set** e **Back-off** são obrigatórios no modo padrão. Ao usar técnica (BC/RP), o botão **"Confirmar Técnica"** cumpre o mesmo papel. Tentar avançar sem confirmar exibe aviso laranja com ⚠.
+- **RG3** – O registro segue o método Saizen/Heavy Duty. O fluxo padrão é **Top Set** obrigatório → **Back-off** obrigatório → **Série Extra** opcional. As técnicas **BC** (Breathing Cluster) e **Rest Pause**, e o modo **Deload**, são alternativas ao fluxo padrão: ao ativar qualquer um deles, os blocos Back-off e/ou Técnica são reorganizados conforme descrito nas RGs correspondentes. BC, Rest Pause e Deload são mutuamente exclusivos.
+- **RG4** – Os campos **Top Set** e **Back-off** são obrigatórios no modo padrão. Ao usar técnica (BC/Rest Pause), o botão **"Confirmar Técnica"** cumpre o mesmo papel. No modo **Deload**, apenas o **Top Set** é obrigatório — o Back-off é suprimido. Tentar avançar sem confirmar exibe aviso laranja com ⚠.
 - **RG5** – O campo **Série Extra** (exibido somente quando `seriesValidas === 3`) é opcional. Nenhuma validação é exigida para este campo.
 - **RG6** – Quando existe histórico do exercício, o sistema pré-preenche **peso e repetições** do Back-off com os valores reais do último treino (indicador visual azul). Quando não há histórico, o peso é calculado automaticamente como `topSetKg × backoffPct` após a confirmação do Top Set (fallback). Em ambos os casos, se o usuário editar o peso, a sugestão não é restaurada (flag `backoffKgWasUserEdited`).
 - **RG7** – O sistema pré-preenche **peso e repetições** do Top Set com base no último registro desse exercício no mesmo treino. Se o teto de reps foi atingido no último treino, o peso é incrementado automaticamente (+1 kg abaixo de 40 kg, +2 kg acima). Campos exibidos com indicador visual azul = sugestão.
@@ -34,6 +34,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 - **RG12** – O rascunho de cada sessão é persistido no `localStorage` (chave `rascunho_treino`). A cada interação relevante (confirmar Top Set, confirmar Back-off, confirmar Técnica, avançar/voltar exercício, editar peso/reps) o estado completo da sessão em andamento é gravado. Ao reabrir o app ou retornar à tela Registrar, se existir rascunho para a sessão selecionada, os dados são restaurados automaticamente — mesmo que o app tenha sido fechado ou o cache limpo pelo sistema. O rascunho é removido somente após o salvamento definitivo do treino ("Confirmar e Salvar Treino").
 - **RG13** – Durante o preenchimento do bloco Top Set, o sistema recalcula em tempo real o 1RM estimado pela fórmula de Epley: `1RM = Peso × (1 + Reps / 30)`. Se esse valor superar o recorde histórico daquele exercício — ou se as repetições atingirem ou ultrapassarem o teto da faixa cadastrada — o Banner de Progressão assume imediatamente o estado `[banner_pr]` (verde/dourado pulsante), antes mesmo de o usuário confirmar o Top Set. Ao apagar os campos ou reduzir os valores, o banner retorna ao estado anterior.
 - **RG14** – Quando o bloco Série Extra está visível (RG1.2) e o histórico do exercício tem peso de série extra preenchido (`extraKg > 0`), o sistema pré-preenche **peso e repetições** da Série Extra com os valores reais do último treino (mesmo indicador visual azul). Quando não há histórico ou o histórico não tem extra registrado, o peso é espelhado do campo Back-off após sua confirmação (fallback). Esse pré-preenchimento é só sugestão de valor — não decide se o bloco aparece (isso é definido exclusivamente pelo plano, RG1.2).
+- **RG15** – **Modo Deload:** ao ativar o chip Deload, o atleta registra **apenas 1 série válida (Top Set)** naquele exercício. O bloco Back-off e o bloco Série Extra são ocultados. O campo Top Set é pré-preenchido com o **mesmo peso do último treino** (sem incremento automático). Ao desativar, o Back-off volta e é restaurado com os valores do último treino (indicador visual azul). O registro salvo inclui `isDeload: true`, `backoffKg: 0`. O Gráfico Powerlifter exibe sessões Deload com um círculo vermelho vazado e tooltip "⬇ Deload (1 série)". Deload é mutuamente exclusivo com BC e Rest Pause.
 
 ---
 
@@ -75,23 +76,14 @@ Exibe por exercício:
 | Badge séries | "2 válidas" ou "3 válidas" |
 | Banner de progressão | Informa se deve subir peso, manter ou primeiro registro. Durante o preenchimento do Top Set assume o estado `[banner_pr]` quando o PR histórico é superado ou o teto de reps é atingido em tempo real (ver RG13) |
 
-### 4.5 Bloco Técnica (chips BC / RP — sempre visíveis, topo do card)
+### 4.5 Chips de modo avançado (BC / Rest Pause / Deload — sempre visíveis, topo do card)
 
-- Chips **BC** (Breathing Cluster) e **RP** (Rest-Pause) aparecem acima do Top Set, sempre visíveis.
-- **Ao ativar BC ou RP:** os blocos Top Set, Back-off e Série Extra somem. Os blocos da técnica ocupam o lugar deles.
-- **Ao desativar (clicar no chip ativo):** os blocos Top Set e Back-off voltam com campos **limpos** (valores anteriores não são restaurados).
-- Alternar entre BC e RP reinicializa os blocos da técnica.
+Chips **BC**, **Rest Pause** e **Deload** aparecem acima do Top Set, sempre visíveis. São mutuamente exclusivos: ativar um desativa os demais.
 
 **BC — Breathing Cluster (4 blocos):**
 
-| Nº | Bloco | Campos | Obrig. |
-|---|---|---|---|
-| 01 | Bloco 1 | Peso (kg) + Repetições | Ao menos 1 bloco |
-| 02 | Bloco 2 | Peso (kg) + Repetições | — |
-| 03 | Bloco 3 | Peso (kg) + Repetições | — |
-| 04 | Bloco 4 | Peso (kg) + Repetições | — |
-
-**RP — Rest-Pause (4 blocos):**
+- Ao ativar: os blocos Top Set, Back-off e Série Extra somem; exibe 4 blocos da técnica.
+- Ao desativar: os blocos Top Set e Back-off voltam com campos restaurados do último treino (indicador azul) ou limpos se não houver histórico.
 
 | Nº | Bloco | Campos | Obrig. |
 |---|---|---|---|
@@ -100,10 +92,32 @@ Exibe por exercício:
 | 03 | Bloco 3 | Peso (kg) + Repetições | — |
 | 04 | Bloco 4 | Peso (kg) + Repetições | — |
 
+**Rest Pause (4 blocos):**
+
+- Ao ativar: os blocos Top Set, Back-off e Série Extra somem; exibe 4 blocos da técnica.
+- Ao desativar: mesma restauração descrita no BC.
+
+| Nº | Bloco | Campos | Obrig. |
+|---|---|---|---|
+| 01 | Bloco 1 | Peso (kg) + Repetições | Ao menos 1 bloco |
+| 02 | Bloco 2 | Peso (kg) + Repetições | — |
+| 03 | Bloco 3 | Peso (kg) + Repetições | — |
+| 04 | Bloco 4 | Peso (kg) + Repetições | — |
+
+Para BC e Rest Pause:
 - Exibe **Total em kg·reps** calculado em tempo real: `Σ (pesoN × repsN)`.
 - **Botão "Confirmar Técnica":** exige ao menos 1 bloco com peso e repetições positivos. Se inválido, exibe aviso laranja com ⚠.
 - Após confirmação: exibe resumo dos blocos preenchidos (R1: Xkg × Nreps…) e botão "Editar Técnica".
 - Volume registrado = soma dos blocos; contagem de séries = número de blocos preenchidos.
+
+**Deload (1 série válida):**
+
+- Ao ativar: o bloco Back-off e o bloco Série Extra somem; o Top Set permanece visível.
+- O campo Top Set é pré-preenchido com o peso do último treino (sem incremento automático de RG7).
+- Exibe informativo: *"Deload — apenas 1 série válida (Top Set), mesmo peso do último treino"*.
+- Ao desativar: o bloco Back-off volta com campos restaurados do último treino (indicador azul) ou limpos se não houver histórico.
+- Não há bloco de técnica nem botão "Confirmar Técnica" — o fluxo de confirmação é o mesmo do Top Set padrão.
+- Salvo no logbook com `isDeload: true` e `backoffKg: 0`.
 
 ### 4.6 Bloco Top Set (obrigatório no modo padrão, oculto quando técnica ativa)
 
@@ -174,13 +188,13 @@ Visível quando `seriesValidas === 3` e Back-off confirmado.
 | Botão | Ação | Regras |
 |---|---|---|
 | **Pular** | Marca exercício como pulado e avança | — |
-| **Próximo** | Avança para o próximo exercício | Modo padrão: valida Top Set e Back-off. Modo técnica: valida Técnica confirmada. |
+| **Próximo** | Avança para o próximo exercício | Modo padrão: valida Top Set e Back-off. Modo técnica (BC/Rest Pause): valida Técnica confirmada. Modo Deload: valida apenas Top Set confirmado. |
 | **Ver Resumo** | Abre tela de revisão pré-salvamento | Mesma validação do Próximo para o exercício atual. |
 
 ### 4.11 Tela de Revisão (Pré-save)
 
 - Lista todos os exercícios com status (✓ concluído / ○ não preenchido / "Pulado").
-- Exibe dados resumidos: modo padrão → `Top: Xkg × Nreps · Back-off: Xkg × Nreps · Extra: Xkg × Nreps`; modo técnica → `BC: R1: Xkg × Nreps · R2: Xkg × Nreps …`.
+- Exibe dados resumidos: modo padrão → `Top: Xkg × Nreps · Back-off: Xkg × Nreps · Extra: Xkg × Nreps`; modo técnica → `BC: R1: Xkg × Nreps · R2: Xkg × Nreps …`; modo Deload → exibe `Top: Xkg × Nreps` seguido da etiqueta **"· Deload"** em vermelho.
 - Ao clicar em um exercício, retorna para edição.
 - Botão **"Confirmar e Salvar Treino"**: salva todos os exercícios concluídos no localStorage (`logbook` e `dadosTreino`).
 - Botão **"Voltar ao exercício"**: fecha a revisão sem salvar.

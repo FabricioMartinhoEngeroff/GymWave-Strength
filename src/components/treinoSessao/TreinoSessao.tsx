@@ -81,6 +81,7 @@ interface ExerciseState {
   obs: string;
   skipped: boolean;
   prConfirmado: boolean;
+  isDeload: boolean;
 
   // ── Suggestion flags (blue-border visual hint) ───────────────────────────
   topSetKgIsSuggestion: boolean;    // kg pre-filled from previous workout
@@ -149,6 +150,7 @@ function emptyExerciseState(): ExerciseState {
     extraRepsSuggestion: false,
     extraKgWasUserEdited: false,
     prConfirmado: false,
+    isDeload: false,
   };
 }
 
@@ -419,7 +421,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
-    if (!state?.topSetConfirmed || state.backoffKg || state.backoffKgWasUserEdited) return;
+    if (!state?.topSetConfirmed || state.isDeload || state.backoffKg || state.backoffKgWasUserEdited) return;
     const topKg = parseFloat(state.topSetKg);
     if (!isNaN(topKg) && topKg > 0) {
       const suggested = Math.round(topKg * currentEx.backoffPct);
@@ -528,6 +530,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     if (!state) return false;
     if (state.skipped) return true;
     if (state.tecnica) return state.tecnicaConfirmed;
+    if (state.isDeload) return state.topSetConfirmed;
     return state.topSetConfirmed && state.backoffConfirmed;
   }
 
@@ -625,6 +628,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
           pesoAnterior: ultimo?.topSetKg,
           repsAnterior: ultimo?.topSetReps,
           progrediu: ultimo ? topKg > ultimo.topSetKg : false,
+          isDeload: state.isDeload,
           obs: state.obs.trim() || undefined,
         };
 
@@ -813,6 +817,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     Top: {state.topSetKg}kg × {state.topSetReps}reps
                     {state.backoffConfirmed && ` · Back-off: ${state.backoffKg}kg × ${state.backoffReps}reps`}
                     {state.seriesValidas === 3 && state.extraKg && ` · Extra: ${state.extraKg}kg × ${state.extraReps}reps`}
+                    {state?.isDeload && <span style={{ color: "#dc2626" }}> · Deload</span>}
                   </p>
                 )}
                 {!state?.skipped && state?.tecnicaConfirmed && state?.tecnica && (
@@ -1050,16 +1055,54 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                   {/* Técnica — chips sempre visíveis, substitui Top Set/Back-off quando ativo */}
                   <Card style={{ background: "#fafafa" }}>
                     <Label>Técnica</Label>
-                    <div style={{ display: "flex", gap: 8, marginBottom: state.tecnica ? 12 : 0 }}>
+                    <div style={{ display: "flex", gap: 8, marginBottom: (state.tecnica || state.isDeload) ? 12 : 0 }}>
                       <CycleChip
                         $active={state.tecnica === "RP"}
                         onClick={() => {
                           setTecnicaWarning(false);
                           if (state.tecnica === "RP") {
-                            updateState(currentEx.nome, { tecnica: null, clusterSeries: [], tecnicaConfirmed: false });
+                            // Restore last workout values when disabling Rest Pause
+                            const ultimo = ultimoRegistro(currentEx.nome, treinoId);
+                            const restored: Partial<ExerciseState> = {
+                              tecnica: null,
+                              clusterSeries: [],
+                              tecnicaConfirmed: false,
+                              topSetConfirmed: false,
+                              backoffConfirmed: false,
+                              topSetKg: "",
+                              topSetReps: "",
+                              backoffKg: "",
+                              backoffReps: "",
+                              topSetKgIsSuggestion: false,
+                              topSetRepsSuggestion: false,
+                              backoffKgIsSuggestion: false,
+                              backoffRepsSuggestion: false,
+                              backoffKgWasUserEdited: false,
+                            };
+                            if (ultimo) {
+                              let suggestedKg = ultimo.topSetKg;
+                              if (ultimo.topSetBateuTeto) {
+                                const increment = ultimo.topSetKg >= 40 ? 2 : 1;
+                                suggestedKg = ultimo.topSetKg + increment;
+                              }
+                              restored.topSetKg = String(suggestedKg);
+                              restored.topSetKgIsSuggestion = true;
+                              restored.topSetReps = String(ultimo.topSetReps);
+                              restored.topSetRepsSuggestion = true;
+                              if (ultimo.backoffKg > 0) {
+                                restored.backoffKg = String(ultimo.backoffKg);
+                                restored.backoffKgIsSuggestion = true;
+                              }
+                              if (ultimo.backoffReps > 0) {
+                                restored.backoffReps = String(ultimo.backoffReps);
+                                restored.backoffRepsSuggestion = true;
+                              }
+                            }
+                            updateState(currentEx.nome, restored);
                           } else {
                             updateState(currentEx.nome, {
                               tecnica: "RP",
+                              isDeload: false,
                               clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
                               topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
                               topSetConfirmed: false, backoffConfirmed: false,
@@ -1070,9 +1113,59 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         }}
                         type="button"
                       >
-                        RP
+                        Rest Pause
+                      </CycleChip>
+                      <CycleChip
+                        $active={state.isDeload}
+                        onClick={() => {
+                          if (state.isDeload) {
+                            // Disable deload — restore back-off from last workout
+                            const ultimo = ultimoRegistro(currentEx.nome, treinoId);
+                            const restored: Partial<ExerciseState> = {
+                              isDeload: false,
+                              backoffConfirmed: false,
+                              backoffKg: "",
+                              backoffReps: "",
+                              backoffKgIsSuggestion: false,
+                              backoffRepsSuggestion: false,
+                              backoffKgWasUserEdited: false,
+                            };
+                            if (ultimo && ultimo.backoffKg > 0) {
+                              restored.backoffKg = String(ultimo.backoffKg);
+                              restored.backoffKgIsSuggestion = true;
+                            }
+                            if (ultimo && ultimo.backoffReps > 0) {
+                              restored.backoffReps = String(ultimo.backoffReps);
+                              restored.backoffRepsSuggestion = true;
+                            }
+                            updateState(currentEx.nome, restored);
+                          } else {
+                            // Enable deload — disable RP if active, clear back-off
+                            updateState(currentEx.nome, {
+                              isDeload: true,
+                              tecnica: null,
+                              clusterSeries: [],
+                              tecnicaConfirmed: false,
+                              backoffKg: "",
+                              backoffReps: "",
+                              backoffConfirmed: false,
+                              backoffKgIsSuggestion: false,
+                              backoffRepsSuggestion: false,
+                              backoffKgWasUserEdited: false,
+                            });
+                          }
+                        }}
+                        type="button"
+                      >
+                        Deload
                       </CycleChip>
                     </div>
+
+                    {state.isDeload && (
+                      <p style={{ fontSize: 12, color: "#dc2626", margin: "0 0 8px", fontWeight: 500 }}>
+                        Deload — apenas 1 série válida (Top Set), mesmo peso do último treino
+                      </p>
+                    )}
 
                     {state.tecnica && !state.tecnicaConfirmed && (
                       <>
@@ -1293,8 +1386,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     )}
                   </Card>
 
-                  {/* BACK-OFF block (after top set confirmed) */}
-                  {state.topSetConfirmed && (
+                  {/* BACK-OFF block (after top set confirmed, hidden in deload mode) */}
+                  {state.topSetConfirmed && !state.isDeload && (
                     <Card style={{ background: "#fafafa" }}>
                       <Label>Back-off ({Math.round(currentEx.backoffPct * 100)}%)</Label>
                       <SeriesGrid>
@@ -1442,7 +1535,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             if (!state.tecnicaConfirmed) { setTecnicaWarning(true); return; }
                           } else {
                             if (!state.topSetConfirmed) { setTopSetWarning(true); return; }
-                            if (!state.backoffConfirmed) { setBackoffWarning(true); return; }
+                            if (!state.isDeload && !state.backoffConfirmed) { setBackoffWarning(true); return; }
                           }
                           nextExercise();
                         }}

@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { fetchAuthenticatedUser } from "../../services/userService";
 
-// handleApiError faz alert + throw — mockamos para evitar side effects
 vi.mock("../../utils/handleApiError", () => ({
   handleApiError: vi.fn((err) => { throw err; }),
 }));

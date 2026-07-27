@@ -826,19 +826,19 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     });
   });
 
-  // ── Técnica Rest Pause (RP) ─────────────────────────────────────────────
+  // ── Técnica Rest Pause ──────────────────────────────────────────────────
 
-  describe("Tecnica Rest Pause (RP) — 4 blocos", () => {
-    it("chip RP e exibido na secao Tecnica", () => {
+  describe("Tecnica Rest Pause — 4 blocos", () => {
+    it("chip Rest Pause e exibido na secao Tecnica", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByRole("button", { name: "RP" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Rest Pause" })).toBeInTheDocument();
     });
 
-    it("ao ativar RP exibe exatamente 4 blocos e oculta campos Top Set e Back-off", () => {
+    it("ao ativar Rest Pause exibe exatamente 4 blocos e oculta campos Top Set e Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
 
       expect(screen.getByText("Bloco 1")).toBeInTheDocument();
       expect(screen.getByText("Bloco 2")).toBeInTheDocument();
@@ -852,7 +852,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("Blocos 1 a 4 tem campos de peso e reps acessiveis", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
 
       expect(screen.getByLabelText(/Bloco 1 kg/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bloco 1 reps/i)).toBeInTheDocument();
@@ -864,10 +864,10 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByLabelText(/Bloco 4 reps/i)).toBeInTheDocument();
     });
 
-    it("Bloco 5 nao existe apos ativar RP", () => {
+    it("Bloco 5 nao existe apos ativar Rest Pause", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
 
       expect(screen.queryByLabelText(/Bloco 5 kg/i)).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/Bloco 5 reps/i)).not.toBeInTheDocument();
@@ -876,7 +876,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("confirmar tecnica sem dados exibe aviso de bloco obrigatorio", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
       fireEvent.click(screen.getByText("Confirmar Técnica"));
 
       expect(screen.getByText(/Preencha pelo menos um bloco/i)).toBeInTheDocument();
@@ -885,7 +885,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("ao preencher bloco 1 e confirmar exibe resumo com R1", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
 
       fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "100" } });
       fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
@@ -894,28 +894,28 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByText(/R1: 100kg × 5reps/i)).toBeInTheDocument();
     });
 
-    it("desativar RP clicando novamente restaura Top Set e Back-off", () => {
+    it("desativar Rest Pause clicando novamente restaura Top Set e Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
       expect(screen.queryByText("Top Set")).not.toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
       expect(screen.getByText("Top Set")).toBeInTheDocument();
     });
 
-    it("salvar treino em modo RP persiste apenas blocos preenchidos no logbook", () => {
+    it("salvar treino em modo Rest Pause persiste apenas blocos preenchidos no logbook", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
 
       fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "100" } });
       fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
       fireEvent.change(screen.getByLabelText(/Bloco 2 kg/i), { target: { value: "100" } });
       fireEvent.change(screen.getByLabelText(/Bloco 2 reps/i), { target: { value: "5" } });
       fireEvent.click(screen.getByText("Confirmar Técnica"));
-      fireEvent.click(screen.getByText("Próximo")); // avança sem skipar o exercício RP
-      pularParaUltimo(10); // 9 Pular clicks: idx 1 → idx 10 (last of 11)
+      fireEvent.click(screen.getByText("Próximo"));
+      pularParaUltimo(10);
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
@@ -925,6 +925,294 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(registro?.clusterSeries).toHaveLength(2);
       expect(registro?.clusterSeries[0]).toEqual({ kg: 100, reps: 5 });
       expect(registro?.clusterSeries[1]).toEqual({ kg: 100, reps: 5 });
+    });
+  });
+
+  // ── Técnica Deload — 1 série válida ─────────────────────────────────────
+
+  describe("Tecnica Deload — 1 serie valida", () => {
+    function ativarDeload() {
+      fireEvent.click(screen.getByRole("button", { name: "Deload" }));
+    }
+
+    function setupHistoricoNormal() {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "01/01/2026",
+          dataTs: 1000,
+          topSetKg: 100,
+          topSetReps: 7,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 82,
+          backoffReps: 11,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 2,
+          progrediu: false,
+        }],
+      }));
+    }
+
+    // ── Renderizacao ──────────────────────────────────────────────────────
+
+    it("chip Deload e exibido na secao Tecnica", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.getByRole("button", { name: "Deload" })).toBeInTheDocument();
+    });
+
+    it("Rest Pause e Deload sao dois chips distintos na secao Tecnica", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.getByRole("button", { name: "Rest Pause" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Deload" })).toBeInTheDocument();
+    });
+
+    it("aviso de Deload nao e exibido quando Deload esta inativo", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      expect(screen.queryByText(/apenas 1 série válida/i)).not.toBeInTheDocument();
+    });
+
+    // ── Ativação ──────────────────────────────────────────────────────────
+
+    it("ao ativar Deload exibe aviso de 1 serie valida", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      expect(screen.getByText(/Deload.*apenas 1 série válida/i)).toBeInTheDocument();
+    });
+
+    it("ao ativar Deload, bloco Back-off nao aparece nem apos confirmar Top Set", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      expect(screen.queryByText("Confirmar Back-off")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
+    });
+
+    it("ao ativar Deload, campos Top Set digitados nao sao limpos", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "90" } });
+      ativarDeload();
+      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      expect(kgInput.value).toBe("90");
+    });
+
+    it("ao ativar Deload, sugestao do historico e mantida no Top Set", () => {
+      setupHistoricoNormal();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      const kgBefore = (screen.getByLabelText(/Top Set kg/i) as HTMLInputElement).value;
+      ativarDeload();
+      const kgAfter = (screen.getByLabelText(/Top Set kg/i) as HTMLInputElement).value;
+      expect(kgAfter).toBe(kgBefore);
+    });
+
+    it("ativar Deload quando Rest Pause ativo: blocos RP somem e Top Set volta", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      expect(screen.getByText("Bloco 1")).toBeInTheDocument();
+
+      ativarDeload();
+      expect(screen.queryByText("Bloco 1")).not.toBeInTheDocument();
+      expect(screen.getByText("Top Set")).toBeInTheDocument();
+      expect(screen.queryByText(/apenas 1 série válida/i)).toBeInTheDocument();
+    });
+
+    it("ativar Deload quando Rest Pause ativo nao deixa aviso de RP e Deload simultaneos", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      ativarDeload();
+      // Blocos RP nao devem existir
+      expect(screen.queryByText("Bloco 1")).not.toBeInTheDocument();
+      // Aviso deload deve existir
+      expect(screen.getByText(/apenas 1 série válida/i)).toBeInTheDocument();
+    });
+
+    it("auto-fill de backoff nao ocorre apos confirmar Top Set em modo Deload", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      // Bloco Back-off nao deve aparecer
+      expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
+    });
+
+    // ── Desativação ───────────────────────────────────────────────────────
+
+    it("clicar Deload novamente o desativa e some o aviso", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      ativarDeload(); // desativa
+      expect(screen.queryByText(/apenas 1 série válida/i)).not.toBeInTheDocument();
+    });
+
+    it("ao desativar Deload sem historico, back-off e auto-preenchido com 85% do Top Set confirmado", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      ativarDeload(); // desativa
+      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      expect(boKg.value).toBe("85");
+    });
+
+    it("ao desativar Deload com historico, backoffKg do ultimo treino e restaurado", () => {
+      setupHistoricoNormal(); // backoffKg = 82
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      ativarDeload();
+      ativarDeload(); // desativa
+      confirmarTopSet("100", "7");
+      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      expect(boKg.value).toBe("82");
+    });
+
+    it("ao desativar Deload com historico, backoffReps do ultimo treino e restaurado", () => {
+      setupHistoricoNormal(); // backoffReps = 11
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      ativarDeload();
+      ativarDeload(); // desativa
+      confirmarTopSet("100", "7");
+      const boReps = screen.getByLabelText(/Back-off reps/i) as HTMLInputElement;
+      expect(boReps.value).toBe("11");
+    });
+
+    it("ativar Rest Pause quando Deload ativo: aviso Deload some e blocos RP aparecem", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      expect(screen.getByText(/apenas 1 série válida/i)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      expect(screen.queryByText(/apenas 1 série válida/i)).not.toBeInTheDocument();
+      expect(screen.getByText("Bloco 1")).toBeInTheDocument();
+    });
+
+    // ── Exercício concluído ───────────────────────────────────────────────
+
+    it("apos confirmar Top Set em Deload, exercicio exibe indicador de concluido", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      expect(screen.getByText("✓")).toBeInTheDocument();
+    });
+
+    it("botao Proximo funciona apos Top Set confirmado em Deload, sem exigir Back-off", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      fireEvent.click(screen.getByText("Próximo"));
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
+    });
+
+    it("ponto de progresso do exercicio atual reflete estado done apos confirmar Top Set em Deload", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      // Indicador ✓ no nome do exercicio confirma que esta marcado como done
+      expect(screen.getByText("✓")).toBeInTheDocument();
+      // Ao navegar para o proximo, o dot do exercicio 1 muda (nao e mais o azul ativo)
+      // — verificado pelo titulo do dot que passa a incluir " ✓"
+      fireEvent.click(screen.getByLabelText(/próximo exercício/i));
+      const dot1 = document.querySelector("[title='Supino reto barra ✓']");
+      expect(dot1).toBeTruthy();
+    });
+
+    // ── Salvamento ────────────────────────────────────────────────────────
+
+    it("ao salvar em modo Deload, registro tem isDeload=true no logbook", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      ativarDeload();
+      confirmarTopSet("50", "12");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const registro = logbook["Abdômen cabo ajoelhado"]?.[0];
+      expect(registro?.isDeload).toBe(true);
+    });
+
+    it("ao salvar em modo Deload, backoffKg e backoffReps sao zero no logbook", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      ativarDeload();
+      confirmarTopSet("50", "12");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const registro = logbook["Abdômen cabo ajoelhado"]?.[0];
+      expect(registro?.backoffKg).toBe(0);
+      expect(registro?.backoffReps).toBe(0);
+    });
+
+    it("ao salvar em modo Deload, topSetKg e topSetReps sao salvos corretamente", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      ativarDeload();
+      confirmarTopSet("60", "8");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const registro = logbook["Abdômen cabo ajoelhado"]?.[0];
+      expect(registro?.topSetKg).toBe(60);
+      expect(registro?.topSetReps).toBe(8);
+    });
+
+    it("salvar em modo Deload nao salva isDeload=false em outros exercicios pulados", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+
+      // Primeiro exercicio com Deload
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      fireEvent.click(screen.getByText("Próximo"));
+
+      // Ultimo exercicio normal (sem deload)
+      pularParaUltimo(10);
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      // Supino (com deload) deve ter isDeload=true
+      expect(logbook["Supino reto barra"]?.[0]?.isDeload).toBe(true);
+      // Abdomen (sem deload) deve ter isDeload=false
+      expect(logbook["Abdômen cabo ajoelhado"]?.[0]?.isDeload).toBe(false);
+    });
+
+    // ── Tela de revisão ───────────────────────────────────────────────────
+
+    it("tela de revisao exibe label 'Deload' para exercicio em modo deload", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      ativarDeload();
+      confirmarTopSet("100", "7");
+      fireEvent.click(screen.getByLabelText(/próximo exercício/i));
+      pularParaUltimo(10);
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      expect(screen.getByText(/Deload/)).toBeInTheDocument();
     });
   });
 });

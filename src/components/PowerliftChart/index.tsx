@@ -45,6 +45,7 @@ interface ChartPoint {
   reps: number;
   tecnica: "RP" | null;
   isPr: boolean;
+  isDeload: boolean;
 }
 
 function buildChartPoints(registros: RegistroExercicio[]): ChartPoint[] {
@@ -60,6 +61,7 @@ function buildChartPoints(registros: RegistroExercicio[]): ChartPoint[] {
         reps: ref.reps,
         tecnica: r.tecnica ?? null,
         isPr: false,
+        isDeload: r.isDeload ?? false,
       };
     })
     .filter((p): p is ChartPoint => p !== null)
@@ -84,11 +86,9 @@ function formatarTick(ts: number): string {
   return `${dia}/${mes}`;
 }
 
-interface TooltipPayload extends ChartPoint {}
-
 function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameType>) {
   if (!active || !payload?.length) return null;
-  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as TooltipPayload | undefined;
+  const p = (payload[0] as Payload<ValueType, NameType>)?.payload as ChartPoint | undefined;
   if (!p) return null;
 
   return (
@@ -98,20 +98,27 @@ function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameT
       <p>Ref: {p.peso} kg × {p.reps} reps</p>
       {p.tecnica && <p>Técnica: {p.tecnica}</p>}
       {p.isPr && <p style={{ color: GOLD, fontWeight: 700 }}>★ PR</p>}
+      {p.isDeload && <p style={{ color: RED, fontWeight: 600 }}>⬇ Deload (1 série)</p>}
     </TooltipBox>
   );
 }
 
 // Custom dot renderer — highlights PR points
-function CustomDot(props: any) {
-  const { cx, cy, payload } = props;
-  if (!payload) return null;
+interface CustomDotProps { cx?: number; cy?: number; payload?: ChartPoint }
+function CustomDot({ cx, cy, payload }: CustomDotProps) {
+  if (!payload || cx === undefined || cy === undefined) return null;
   if (payload.isPr) {
     return (
       <g key={`pr-dot-${payload.ts}`}>
         <circle cx={cx} cy={cy} r={7} fill={GOLD} stroke="#fff" strokeWidth={1.5} />
         <text x={cx} y={cy - 12} textAnchor="middle" fill={GOLD} fontSize={10}>★</text>
       </g>
+    );
+  }
+  if (payload.isDeload) {
+    return (
+      <circle key={`deload-dot-${payload.ts}`} cx={cx} cy={cy} r={5}
+        fill="rgba(220,38,38,0.15)" stroke={RED} strokeWidth={1.5} />
     );
   }
   return <circle key={`dot-${payload.ts}`} cx={cx} cy={cy} r={3} fill={BLUE} />;
@@ -148,7 +155,10 @@ export const PowerliftingChart: React.FC = () => {
     return buildChartPoints(registros);
   }, [exercicioSelecionado, logbook]);
 
-  const nowTs = allPoints.length ? allPoints[allPoints.length - 1].ts : Date.now();
+  const nowTs = useMemo(
+    () => (allPoints.length ? allPoints[allPoints.length - 1].ts : 0),
+    [allPoints]
+  );
   const cutoff = getCutoffTs(intervalo, nowTs);
   const filteredPoints = useMemo(
     () => allPoints.filter((p) => p.ts >= cutoff),

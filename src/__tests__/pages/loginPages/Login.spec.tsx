@@ -1,7 +1,4 @@
-/**
- * PagesTest → pages/loginPages/Login
- * Testa o componente de login: renderização e interação com formulário.
- */
+
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Login } from "../../../pages/loginPages/Login";

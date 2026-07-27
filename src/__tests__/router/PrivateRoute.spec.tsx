@@ -1,8 +1,4 @@
-/**
- * RouterTest → router/PrivateRoute
- * Testa o componente de rota privada:
- * renderiza children quando autenticado, redireciona quando não.
- */
+
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";

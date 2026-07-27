@@ -1,4 +1,4 @@
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/vitest";
 
 // Limpa o localStorage entre todos os testes
 beforeEach(() => {

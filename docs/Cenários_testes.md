@@ -1,6 +1,6 @@
 # GymWave Strength — Documentacao de Testes
 
-**Total: 453 testes | 37 arquivos de teste**
+**Total: 481 testes | 37 arquivos de teste**
 **Framework: Vitest + React Testing Library**
 
 ---
@@ -462,7 +462,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ## 9. COMPONENTES DE FEATURE
 
-### 9.1 TreinoSessao (53 testes)
+### 9.1 TreinoSessao (73 testes)
 
 **Renderização inicial (3)**
 
@@ -584,6 +584,31 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 51 | Top Set 80kg / 5reps, PR historico 1RM=130 → 1RM atual=93.33 | Banner permanece no estado normal (abaixo do PR) |
 | 52 | Faixa 6–8reps, digitar reps=8 (teto) independente do peso historico | Banner `[banner_pr]` ativo ao atingir o teto da faixa |
 | 53 | Apagar campo de peso apos banner_pr estar ativo | Banner retorna ao estado normal imediatamente |
+
+**Tecnica Deload — 1 serie valida (20)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 54 | Chip `Deload` renderizado | Botao `Deload` visivel no card |
+| 55 | Ativar Deload com historico (100kg) | Aviso de deload visivel; Top Set pré-preenchido com 100kg |
+| 56 | Ativar Deload | Bloco Back-off oculto |
+| 57 | Ativar Deload | Top Set preservado conforme historico |
+| 58 | Desativar Deload com historico (backoff 85kg) | Bloco Back-off restaurado com valor do historico (85kg) |
+| 59 | Desativar Deload sem historico | Bloco Back-off restaurado limpo |
+| 60 | Deload mutua exclusividade — ativar RP após Deload | Chip RP ativo; chip Deload inativo |
+| 61 | Deload mutua exclusividade — ativar Deload após RP | Chip Deload ativo; chip RP inativo |
+| 62 | Exercicio feito em Deload — `isExerciseDone` | Ponto verde/titulo com `✓` apos confirmar Top Set |
+| 63 | Botao `Proximo` em Deload sem Top Set confirmado | Aviso exibido; nao avanca |
+| 64 | Botao `Proximo` em Deload com Top Set confirmado | Avanca normalmente |
+| 65 | Salvar treino com Deload | `isDeload: true` no registro do logbook |
+| 66 | Salvar treino com Deload | `backoffKg: 0` no registro |
+| 67 | Salvar treino com Deload | `topSetKg` correto no registro |
+| 68 | Revisao pre-save com exercicio Deload | Etiqueta `· Deload` em vermelho visivel |
+| 69 | Ativar Deload e confirmar Top Set | Titulo do exercicio exibe `✓` |
+| 70 | Deload com `Proximo` validacao | Back-off NAO e exigido |
+| 71 | Ativar Deload restaura pesos do historico no Top Set | Campo Top Set kg = peso do ultimo registro |
+| 72 | Desativar Deload restaura Back-off com sugestao azul | `data-suggestion="true"` nos campos de Back-off restaurados |
+| 73 | Salvar com Deload — `seriesValidas=1` | Apenas Top Set no registro; backoff zerado |
 
 ---
 
@@ -814,7 +839,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.11 PowerliftingChart (14 testes)
+### 9.11 PowerliftingChart (22 testes)
 
 **Dados e cálculo (4)**
 
@@ -850,6 +875,19 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 13 | Filtro de periodo — selecionar chip `1m` | Grafico e card de stats atualizam para os ultimos 30 dias |
 | 14 | Tooltip mobile — tocar na area do grafico | Card flutuante exibe data + 1RM + peso × reps + tecnica do ponto mais proximo |
 
+**Deload — destaque no grafico (8)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 15 | Registro com `isDeload=true` (100kg × 7reps, backoff=0) | 1RM = 123.33 (backoff 0 nao zera o 1RM) |
+| 16 | Registro Deload no historico | Contabilizado em `Sessoes` do card de stats |
+| 17 | Registro Deload com mesmo peso que sessao anterior | Sem badge de PR (nao superou o recorde) |
+| 18 | Registro Deload com peso menor que sessao anterior | `Variacao` exibe valor negativo |
+| 19 | PR absoluto existente — sessao Deload nao o supera | Linha de PR mantida no valor anterior |
+| 20 | Apenas registros com `isDeload=true` | 1RM correto exibido no card de stats |
+| 21 | Mix normal + RP + Deload | Tres sessoes contabilizadas no card |
+| 22 | Registro sem campo `isDeload` (undefined) | Tratado como nao-deload; sem marcador vermelho |
+
 ---
 
 ## Resumo por Area
@@ -864,5 +902,5 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | Pages | 1 | 9 |
 | Router | 1 | 4 |
 | Componentes UI | 5 | 32 |
-| Componentes Feature | 11 | 179 |
-| **Total** | **37** | **453** |
+| Componentes Feature | 11 | 207 |
+| **Total** | **37** | **481** |

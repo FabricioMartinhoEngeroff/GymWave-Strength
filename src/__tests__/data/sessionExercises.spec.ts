@@ -1,8 +1,4 @@
-/**
- * SessionExercisesTest -> data
- * Valida cobertura e consistencia das sessoes de treino Saizen.
- * Cada exercicio deve ter faixas de reps, backoffPct e cue.
- */
+
 import { describe, it, expect } from "vitest";
 import { SESSOES, SESSOES_LABELS } from "../../data/sessionExercises";
 

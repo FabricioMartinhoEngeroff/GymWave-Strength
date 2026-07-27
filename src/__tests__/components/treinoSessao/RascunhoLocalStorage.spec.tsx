@@ -193,7 +193,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
     it("restaura estado RP confirmado ao reabrir", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "RP" }));
+      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
       fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "80" } });
       fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
       fireEvent.click(screen.getByText("Confirmar Técnica"));

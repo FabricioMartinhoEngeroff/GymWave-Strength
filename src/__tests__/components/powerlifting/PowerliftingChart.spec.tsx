@@ -2,7 +2,7 @@
  * PowerliftingChart — EF_07
  * Testa calculo de 1RM Epley, linha de PR, card de estatisticas e layout responsivo.
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { PowerliftingChart } from "../../../components/PowerliftChart";
 import type { RegistroExercicio } from "../../../types/TrainingData";
@@ -244,6 +244,120 @@ describe("PowerliftingChart — EF_07", () => {
       render(<PowerliftingChart />);
       // Grafico renderiza sem erros e stats exibem o 1RM do Bloco 1
       expect(screen.getByTestId("stats-rm1")).toHaveTextContent("126.67 kg");
+    });
+  });
+
+  // ── Deload — destaque vermelho no gráfico ────────────────────────────────
+
+  describe("Deload — destaque no grafico", () => {
+    it("registro com isDeload=true exibe 1RM correto usando topSetKg (nao zerado pelo backoff=0)", () => {
+      // Deload records have backoffKg=0 — extractReferenceBlock must still use topSetKg
+      setLogbook([
+        makeRegistro({
+          exercicio: "Supino reto barra",
+          topSetKg: 90,
+          topSetReps: 7,
+          data: "01/06/2026",
+          dataTs: new Date(2026, 5, 1).getTime(),
+          backoffKg: 0,
+          backoffReps: 0,
+          isDeload: true,
+        }),
+      ]);
+      render(<PowerliftingChart />);
+      // calcEpley(90, 7) = 90 * (1 + 7/30) = 111.00
+      expect(screen.getByTestId("stats-rm1")).toHaveTextContent("111.00 kg");
+    });
+
+    it("registro deload aparece na contagem de sessoes do periodo", () => {
+      setLogbook([
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "01/05/2026", dataTs: new Date(2026, 4, 1).getTime() }),
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "15/05/2026", dataTs: new Date(2026, 4, 15).getTime(), isDeload: true }),
+      ]);
+      render(<PowerliftingChart />);
+      expect(screen.getByTestId("stats-sessoes")).toHaveTextContent("2");
+    });
+
+    it("sessao deload com mesmo peso nao conta como PR (1RM igual ao anterior)", () => {
+      setLogbook([
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "01/05/2026", dataTs: new Date(2026, 4, 1).getTime() }),
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "15/05/2026", dataTs: new Date(2026, 4, 15).getTime(), isDeload: true }),
+      ]);
+      render(<PowerliftingChart />);
+      // Segundo registro tem 1RM identico ao primeiro → nao quebra PR
+      expect(screen.queryByTestId("pr-badge")).not.toBeInTheDocument();
+    });
+
+    it("sessao deload com peso menor exibe variacao negativa no stats-variacao", () => {
+      setLogbook([
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "01/05/2026", dataTs: new Date(2026, 4, 1).getTime() }),
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 80, topSetReps: 7, data: "15/05/2026", dataTs: new Date(2026, 4, 15).getTime(), isDeload: true }),
+      ]);
+      render(<PowerliftingChart />);
+      // calcEpley(80,7) = 98.67 < calcEpley(100,7) = 123.33 → negativo
+      expect(screen.getByTestId("stats-variacao").textContent).toMatch(/^-/);
+    });
+
+    it("PR absoluto mantido quando sessao deload vem apos o PR historico", () => {
+      setLogbook([
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "01/05/2026", dataTs: new Date(2026, 4, 1).getTime() }),
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 80, topSetReps: 7, data: "15/05/2026", dataTs: new Date(2026, 4, 15).getTime(), isDeload: true }),
+      ]);
+      render(<PowerliftingChart />);
+      // PR absoluto ainda reflete o maximo historico (100kg x 7reps = 123.33)
+      expect(screen.getByTestId("pr-reference-value")).toHaveTextContent("PR: 123.33 kg");
+    });
+
+    it("somente registros deload: grafico renderiza sem erros e exibe 1RM correto", () => {
+      setLogbook([
+        makeRegistro({
+          exercicio: "Supino reto barra",
+          topSetKg: 95,
+          topSetReps: 6,
+          data: "01/06/2026",
+          dataTs: new Date(2026, 5, 1).getTime(),
+          backoffKg: 0,
+          backoffReps: 0,
+          isDeload: true,
+        }),
+      ]);
+      render(<PowerliftingChart />);
+      // calcEpley(95, 6) = 95 * (1 + 6/30) = 95 * 1.2 = 114.00
+      expect(screen.getByTestId("stats-rm1")).toHaveTextContent("114.00 kg");
+    });
+
+    it("mistura de registros normal, RP e deload renderiza sem erros e conta todas as sessoes", () => {
+      setLogbook([
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 7, data: "01/04/2026", dataTs: new Date(2026, 3, 1).getTime() }),
+        makeRegistro({
+          exercicio: "Supino reto barra",
+          topSetKg: 0,
+          topSetReps: 0,
+          data: "15/04/2026",
+          dataTs: new Date(2026, 3, 15).getTime(),
+          tecnica: "RP",
+          clusterSeries: [{ kg: 100, reps: 6 }, { kg: 100, reps: 4 }],
+        }),
+        makeRegistro({ exercicio: "Supino reto barra", topSetKg: 85, topSetReps: 7, data: "01/05/2026", dataTs: new Date(2026, 4, 1).getTime(), isDeload: true }),
+      ]);
+      render(<PowerliftingChart />);
+      expect(screen.getByTestId("stats-sessoes")).toHaveTextContent("3");
+    });
+
+    it("registro deload com isDeload ausente (undefined) e tratado como nao-deload", () => {
+      // Registros antigos sem o campo isDeload devem funcionar normalmente
+      setLogbook([
+        makeRegistro({
+          exercicio: "Supino reto barra",
+          topSetKg: 100,
+          topSetReps: 7,
+          data: "01/06/2026",
+          dataTs: new Date(2026, 5, 1).getTime(),
+          // isDeload ausente (campo opcional)
+        }),
+      ]);
+      render(<PowerliftingChart />);
+      expect(screen.getByTestId("stats-rm1")).toHaveTextContent("123.33 kg");
     });
   });
 });

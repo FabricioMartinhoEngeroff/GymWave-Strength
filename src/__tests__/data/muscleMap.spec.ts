@@ -1,7 +1,4 @@
-/**
- * MuscleMapTest -> data
- * Garante cobertura total do mapeamento exercicio -> musculo.
- */
+
 import { describe, it, expect } from "vitest";
 import { MUSCLE_MAP } from "../../data/muscleMap";
 import { SESSOES } from "../../data/sessionExercises";

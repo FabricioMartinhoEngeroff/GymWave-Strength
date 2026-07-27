@@ -1,6 +1,4 @@
-/**
- * Mensagens de validação reutilizáveis no sistema
- */
+
 const validationErrors = {
     required: "Este campo é obrigatório.",
     invalidEmail: "Email deve ser válido.",
