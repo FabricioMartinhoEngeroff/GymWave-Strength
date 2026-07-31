@@ -116,6 +116,20 @@ const NOME_MAP: Record<string, string> = {
   // ── Planilha v4 — novos nomes ──────────────────────────────────────────────
   "Remada peito apoiado halteres (livre)":       "Remada peito apoiado",
 
+  // ── Planilha v5 — novos nomes e renomeações ────────────────────────────────
+  "Puxada triângulo (cima p/ baixo)":            "Puxada triângulo",
+  "Remada peito apoiado banco inclinado":        "Remada peito apoiado",
+  "Supino halteres com amplitude":               "Supino halteres amplitude",
+  "Tríceps testa halteres deitado":              "Tríceps testa halteres",
+  "Tríceps polia barra reta pronada":            "Tríceps polia barra reta",
+  "Tríceps polia alta unilateral supinada":      "Tríceps polia unilateral",
+  "Rosca inclinada halteres banco 45°":          "Rosca inclinada 45°",
+  "Rosca scott mesa unilateral":                 "Rosca scott unilateral",
+  "Rosca polia alta unilateral":                 "Rosca polia alta",
+  "Rosca inversa barra ou halteres":             "Rosca inversa",
+  "Rolar barra na mão no cabo":                  "Rolar barra cabo",
+  "Abdômen infra banco inclinado 45°":           "Abdômen infra banco",
+
   // ── Planilha v2 (nomes descritivos longos) — mantidos para compat ─────────
   "Panturrilha sentado máquina":                 "Panturrilha sentado",
   "Pull-around cabo polia baixa":                "Pull-around cabo",

@@ -39,21 +39,22 @@ export const MUSCLE_MAP: Record<string, string> = {
   // Tríceps
   "Tríceps polia barra reta":         "Braço",
   "Tríceps testa halteres":           "Braço",
+  "Tríceps polia unilateral":         "Braço",
   "Francês corda":                    "Braço",
+  "Pulley barra reta pronada":        "Braço",
+  "Pulley corda":                     "Braço",
   // Bíceps
   "Rosca Bayesian":                   "Braço",
   "Rosca scott":                      "Braço",
-  "Rosca polia unilateral":           "Braço",
   "Rosca martelo":                    "Braço",
+  "Martelo corda":                    "Braço",
+  "Rosca inclinada 45°":              "Braço",
+  "Rosca scott unilateral":           "Braço",
   "Rosca polia alta":                 "Braço",
+  "Rosca inversa":                    "Braço",
   // Antebraço
   "Antebraço invertido":              "Braço",
   "Antebraço rola palma":             "Braço",
-  // Legacy — mantidos para compatibilidade com dados históricos
-  "Tríceps polia unilateral":         "Braço",
-  "Rosca inclinada 45°":              "Braço",
-  "Rosca scott unilateral":           "Braço",
-  "Rosca inversa":                    "Braço",
   "Rolar barra cabo":                 "Braço",
 
   // ── Core ──────────────────────────────────────────────────────────────────

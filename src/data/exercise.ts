@@ -1,4 +1,4 @@
-/** All exercise names used across sessions. */
+/** All exercise names used across sessions (v5). */
 export const EXERCICIOS = [
   // ── Peitoral ──────────────────────────────────────────────────────────────
   "Supino reto barra",
@@ -34,14 +34,26 @@ export const EXERCICIOS = [
   "Panturrilha sentado",
   "Panturrilha leg press",
 
-  // ── Braço ─────────────────────────────────────────────────────────────────
+  // ── Braço — Tríceps ───────────────────────────────────────────────────────
   "Tríceps testa halteres",
   "Tríceps polia barra reta",
   "Tríceps polia unilateral",
+  "Francês corda",
+  "Pulley barra reta pronada",
+  "Pulley corda",
+
+  // ── Braço — Bíceps ────────────────────────────────────────────────────────
+  "Rosca scott",
+  "Rosca Bayesian",
+  "Rosca martelo",
+  "Martelo corda",
   "Rosca inclinada 45°",
   "Rosca scott unilateral",
   "Rosca polia alta",
   "Rosca inversa",
+
+  // ── Braço — Antebraço ─────────────────────────────────────────────────────
+  "Antebraço rola palma",
   "Rolar barra cabo",
 
   // ── Core ──────────────────────────────────────────────────────────────────
