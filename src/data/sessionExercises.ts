@@ -1,4 +1,4 @@
-export type SessaoTipo = "Upper A" | "Upper B" | "Lower A" | "Lower B" | "Braço";
+export type SessaoTipo = "Upper A" | "Upper B" | "Lower A" | "Lower B";
 
 export interface ExercicioSessao {
   nome: string;
@@ -75,23 +75,12 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Supino reto barra",             grupo: "Peitoral", ...ISOLADOR,                   cue: "Carga mais baixa — técnico, não PR. Melhora técnica e volume do peito" },
     { nome: "Barra fixa pronada",            grupo: "Costas",   ...COMPOSTO, seriesValidas: 3, cue: "3 séries pendurado ~1 min. Use straps. Progressão de carga leve — alongamento máximo do lat" },
     { nome: "Rosca Bayesian",                grupo: "Braço",    ...ISOLADOR,                   cue: "Braço atrás do corpo, porção longa em alongamento máximo. Controla a descida" },
-    { nome: "Polia barra reta pronada",      grupo: "Braço",    ...ISOLADOR,                   cue: "PRIMEIRO — mais carga. PR work aqui. Cotovelos baixos e fixos. Medial em foco" },
+    { nome: "Tríceps Pulley",                 grupo: "Braço",    ...ISOLADOR,                   cue: "PRIMEIRO — mais carga. PR work aqui. Cotovelos baixos e fixos. Medial em foco" },
     { nome: "Francês corda",                 grupo: "Braço",    ...ISOLADOR,                   cue: "Cabeça longa. Cotovelos apontados para cima, amplitude máxima no alongamento" },
     { nome: "Rosca inversa",                 grupo: "Braço",    ...ISOLADOR, seriesValidas: 3, cue: "Pegada pronada. Extensores do antebraço em foco. Amplitude completa" },
     { nome: "Abdômen cabo ajoelhado",        grupo: "Core",     ...ISOLADOR,                   cue: "Enrola o tronco com carga. Progressão de carga toda semana — encerra o Upper B" },
   ],
 
-  "Braço": [
-    { nome: "Tríceps testa halteres",   grupo: "Braço", ...ISOLADOR, cue: "cabeça longa + medial, cotovelos fixos" },
-    { nome: "Tríceps polia barra reta", grupo: "Braço", ...ISOLADOR, cue: "PR work, cotovelos baixos e fixos" },
-    { nome: "Tríceps polia unilateral", grupo: "Braço", ...ISOLADOR, cue: "supinada, cotovelo fixo, extensão completa" },
-    { nome: "Rosca inclinada 45°",      grupo: "Braço", ...ISOLADOR, cue: "porção longa em alongamento máximo" },
-    { nome: "Rosca scott unilateral",   grupo: "Braço", ...ISOLADOR, cue: "cotovelo fixo na mesa, unilateral" },
-    { nome: "Rosca polia alta",         grupo: "Braço", ...ISOLADOR, cue: "porção longa, ângulo diferente" },
-    { nome: "Rosca inversa",            grupo: "Braço", ...ISOLADOR, cue: "pegada pronada, extensores do antebraço" },
-    { nome: "Rolar barra cabo",         grupo: "Braço", ...ISOLADOR, cue: "flexores e preensão" },
-    { nome: "Abdômen infra banco",      grupo: "Core",  ...ISOLADOR, cue: "reto inferior, joelhos ao peito" },
-  ],
 };
 
 export const SESSOES_LABELS: SessaoTipo[] = [
@@ -99,5 +88,4 @@ export const SESSOES_LABELS: SessaoTipo[] = [
   "Upper B",
   "Lower A",
   "Lower B",
-  "Braço",
 ];

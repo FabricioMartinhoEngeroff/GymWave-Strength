@@ -8,12 +8,12 @@ import { ROTACAO, ROTACAO_LABELS } from "../../data/cycles";
 
 describe("CyclesData — Rotacao de treinos Saizen", () => {
   describe("Quantidade e identificadores", () => {
-    it("deve ter exatamente 5 treinos na rotacao", () => {
-      expect(ROTACAO).toHaveLength(5);
+    it("deve ter exatamente 4 treinos na rotacao", () => {
+      expect(ROTACAO).toHaveLength(4);
     });
 
-    it("ids devem ser UA, UB, LA, LB, BR", () => {
-      expect(ROTACAO.map((r) => r.id)).toEqual(["UA", "UB", "LA", "LB", "BR"]);
+    it("ids devem ser UA, UB, LA, LB", () => {
+      expect(ROTACAO.map((r) => r.id)).toEqual(["UA", "UB", "LA", "LB"]);
     });
 
     it("ids devem ser unicos", () => {
@@ -42,15 +42,11 @@ describe("CyclesData — Rotacao de treinos Saizen", () => {
       expect(ROTACAO.find((r) => r.id === "LA")!.tipo).toBe("lower");
       expect(ROTACAO.find((r) => r.id === "LB")!.tipo).toBe("lower");
     });
-
-    it("BR deve ser tipo braco", () => {
-      expect(ROTACAO.find((r) => r.id === "BR")!.tipo).toBe("braco");
-    });
   });
 
   describe("ROTACAO_LABELS", () => {
-    it("deve ter 5 labels", () => {
-      expect(ROTACAO_LABELS).toHaveLength(5);
+    it("deve ter 4 labels", () => {
+      expect(ROTACAO_LABELS).toHaveLength(4);
     });
 
     it("labels correspondem aos titulos da ROTACAO", () => {

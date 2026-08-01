@@ -41,11 +41,6 @@ describe("MuscleMap — Cobertura exercicio -> grupo muscular", () => {
       });
     });
 
-    it("todos os exercicios de Braco devem ter mapeamento", () => {
-      SESSOES["Braço"].forEach((ex) => {
-        expect(MUSCLE_MAP[ex.nome], `Sem mapeamento: "${ex.nome}"`).toBeDefined();
-      });
-    });
   });
 
   describe("Cobertura total (sem gaps)", () => {

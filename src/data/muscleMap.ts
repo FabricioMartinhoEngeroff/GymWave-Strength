@@ -44,7 +44,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Tríceps polia unilateral":         "Braço",
   "Francês corda":                    "Braço",
   "Pulley barra reta pronada":        "Braço",
-  "Polia barra reta pronada":         "Braço",
+  "Tríceps Pulley":                   "Braço",
   "Pulley corda":                     "Braço",
   // Bíceps
   "Rosca Bayesian":                   "Braço",

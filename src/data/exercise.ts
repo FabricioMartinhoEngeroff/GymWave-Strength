@@ -42,7 +42,7 @@ export const EXERCICIOS = [
   "Tríceps polia unilateral",
   "Francês corda",
   "Pulley barra reta pronada",
-  "Polia barra reta pronada",
+  "Tríceps Pulley",
   "Pulley corda",
 
   // ── Braço — Bíceps ────────────────────────────────────────────────────────

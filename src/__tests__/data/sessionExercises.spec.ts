@@ -4,19 +4,19 @@ import { SESSOES, SESSOES_LABELS } from "../../data/sessionExercises";
 
 describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
   describe("Estrutura geral", () => {
-    it("deve ter exatamente 5 sessoes", () => {
-      expect(Object.keys(SESSOES)).toHaveLength(5);
+    it("deve ter exatamente 4 sessoes", () => {
+      expect(Object.keys(SESSOES)).toHaveLength(4);
     });
 
-    it("SESSOES_LABELS deve listar todas as 5 sessoes", () => {
-      expect(SESSOES_LABELS).toHaveLength(5);
+    it("SESSOES_LABELS deve listar todas as 4 sessoes", () => {
+      expect(SESSOES_LABELS).toHaveLength(4);
       SESSOES_LABELS.forEach((label) => {
         expect(SESSOES).toHaveProperty(label);
       });
     });
 
-    it("deve conter Upper A, Upper B, Lower A, Lower B e Braco", () => {
-      const sessoes = ["Upper A", "Upper B", "Lower A", "Lower B", "Braço"];
+    it("deve conter Upper A, Upper B, Lower A e Lower B", () => {
+      const sessoes = ["Upper A", "Upper B", "Lower A", "Lower B"];
       sessoes.forEach((s) => expect(SESSOES).toHaveProperty(s));
     });
   });
@@ -38,9 +38,6 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
       expect(SESSOES["Lower B"].length).toBeGreaterThanOrEqual(6);
     });
 
-    it("Braco deve ter pelo menos 8 exercicios", () => {
-      expect(SESSOES["Braço"].length).toBeGreaterThanOrEqual(8);
-    });
   });
 
   describe("Formato ExercicioSessao", () => {
@@ -149,7 +146,7 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
     });
 
     it("exercicios de braco devem ter faixaTopSet [8,10] e faixaBackoff [10,12]", () => {
-      const bracos = SESSOES["Braço"].filter((ex) => ex.grupo === "Braço");
+      const bracos = Object.values(SESSOES).flat().filter((ex) => ex.grupo === "Braço");
       expect(bracos.length).toBeGreaterThan(0);
       bracos.forEach((ex) => {
         expect(ex.faixaTopSet, `${ex.nome} faixaTopSet inesperada`).toEqual([8, 10]);

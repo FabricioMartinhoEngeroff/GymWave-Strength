@@ -1,7 +1,7 @@
 export interface TreinoRotacao {
-  id: string; // "UA", "UB", "LA", "LB", "BR"
+  id: string; // "UA", "UB", "LA", "LB"
   titulo: string; // "Upper A", "Upper B"...
-  tipo: "upper" | "lower" | "braco";
+  tipo: "upper" | "lower";
   dia: string; // "Terça", "Sexta"...
 }
 
@@ -10,7 +10,6 @@ export const ROTACAO: TreinoRotacao[] = [
   { id: "UB", titulo: "Upper B", tipo: "upper", dia: "Sexta" },
   { id: "LA", titulo: "Lower A", tipo: "lower", dia: "Segunda" },
   { id: "LB", titulo: "Lower B", tipo: "lower", dia: "Quinta" },
-  { id: "BR", titulo: "Braço", tipo: "braco", dia: "Domingo" },
 ];
 
 export const ROTACAO_LABELS = ROTACAO.map((r) => r.titulo);
