@@ -12,6 +12,8 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Pull-around cabo":                 "Costas",
   "Pulldown inclinado":               "Costas",
   "Remada peito apoiado":             "Costas",
+  "Remada cabo sentado triângulo":    "Costas",
+  "Remada unilateral apoiada":        "Costas",
 
   // ── Ombro ─────────────────────────────────────────────────────────────────
   "Elevação lateral livre":           "Ombro",
@@ -42,6 +44,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Tríceps polia unilateral":         "Braço",
   "Francês corda":                    "Braço",
   "Pulley barra reta pronada":        "Braço",
+  "Polia barra reta pronada":         "Braço",
   "Pulley corda":                     "Braço",
   // Bíceps
   "Rosca Bayesian":                   "Braço",
@@ -56,6 +59,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Antebraço invertido":              "Braço",
   "Antebraço rola palma":             "Braço",
   "Rolar barra cabo":                 "Braço",
+  "Rosca punho cabo":                 "Braço",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado":           "Core",

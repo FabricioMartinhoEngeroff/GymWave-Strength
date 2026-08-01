@@ -137,16 +137,7 @@ const NOME_MAP: Record<string, string> = {
   "Panturrilha no leg press":                    "Panturrilha leg press",
   "Barra fixa pegada aberta pronada":            "Barra fixa pronada",
   "Desenvolvimento máquina pegada neutra":       "Desenvolvimento máquina",
-  "Remada peito apoiado banco inclinado":        "Remada peito apoiado",
-  "Supino halteres com amplitude":               "Supino halteres amplitude",
-  "Tríceps testa halteres deitado":              "Tríceps testa halteres",
-  "Tríceps polia barra reta pronada":            "Tríceps polia barra reta",
-  "Tríceps polia alta unilateral supinada":      "Tríceps polia unilateral",
   "Rosca inclinada halteres 45°":                "Rosca inclinada 45°",
-  "Rosca scott mesa unilateral":                 "Rosca scott unilateral",
-  "Rosca polia alta unilateral":                 "Rosca polia alta",
-  "Rosca inversa barra ou halteres":             "Rosca inversa",
-  "Rolar barra na mão no cabo":                  "Rolar barra cabo",
   "Abdômen infra banco inclinado":               "Abdômen infra banco",
 };
 

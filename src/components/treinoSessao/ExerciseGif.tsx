@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { fetchExerciseGif } from "../../services/exerciseDbService";
+import { EXERCISE_VIDEOS } from "../../data/exerciseVideos";
 
 type GifState = "idle" | "loading" | "loaded" | "error";
 
@@ -8,7 +9,10 @@ export function ExerciseGif({ exerciseName }: { exerciseName: string }) {
   const [gifUrl, setGifUrl] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
-  async function load() {
+  const youtubeId = EXERCISE_VIDEOS[exerciseName] || "";
+  const hasVideo = youtubeId.length > 0;
+
+  async function loadGif() {
     setGifState("loading");
     try {
       const url = await fetchExerciseGif(exerciseName);
@@ -25,7 +29,7 @@ export function ExerciseGif({ exerciseName }: { exerciseName: string }) {
 
   function openModal() {
     setModalOpen(true);
-    if (gifState === "idle") load();
+    if (!hasVideo && gifState === "idle") loadGif();
   }
 
   function closeModal() {
@@ -74,7 +78,7 @@ export function ExerciseGif({ exerciseName }: { exerciseName: string }) {
               background: "#fff",
               borderRadius: 18,
               padding: "14px 14px 18px",
-              width: "min(320px, 90vw)",
+              width: "min(360px, 90vw)",
               boxShadow: "0 12px 40px rgba(0,0,0,0.3)",
             }}
           >
@@ -107,22 +111,36 @@ export function ExerciseGif({ exerciseName }: { exerciseName: string }) {
 
             {/* Content */}
             <div style={{ borderRadius: 12, overflow: "hidden", background: "#f5f6fa", minHeight: 100 }}>
-              {gifState === "loading" && (
-                <p style={{ fontSize: 12, color: "#6b7280", textAlign: "center", padding: "40px 0", margin: 0 }}>
-                  Carregando...
-                </p>
-              )}
-              {gifState === "error" && (
-                <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "40px 0", margin: 0 }}>
-                  Demonstração não disponível
-                </p>
-              )}
-              {gifState === "loaded" && gifUrl && (
-                <img
-                  src={gifUrl}
-                  alt={`Demonstração: ${exerciseName}`}
-                  style={{ width: "100%", display: "block" }}
+              {hasVideo ? (
+                <iframe
+                  src={`https://www.youtube.com/embed/${youtubeId}`}
+                  title={`Demonstração: ${exerciseName}`}
+                  width="100%"
+                  height="200"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  style={{ border: "none", display: "block" }}
                 />
+              ) : (
+                <>
+                  {gifState === "loading" && (
+                    <p style={{ fontSize: 12, color: "#6b7280", textAlign: "center", padding: "40px 0", margin: 0 }}>
+                      Carregando...
+                    </p>
+                  )}
+                  {gifState === "error" && (
+                    <p style={{ fontSize: 12, color: "#9ca3af", textAlign: "center", padding: "40px 0", margin: 0 }}>
+                      Demonstração não disponível
+                    </p>
+                  )}
+                  {gifState === "loaded" && gifUrl && (
+                    <img
+                      src={gifUrl}
+                      alt={`Demonstração: ${exerciseName}`}
+                      style={{ width: "100%", display: "block" }}
+                    />
+                  )}
+                </>
               )}
             </div>
 

@@ -11,6 +11,8 @@ export const EXERCICIOS = [
   "Pull-around cabo",
   "Pulldown inclinado",
   "Remada peito apoiado",
+  "Remada cabo sentado triângulo",
+  "Remada unilateral apoiada",
   "Desenvolvimento máquina",
 
   // ── Ombro ─────────────────────────────────────────────────────────────────
@@ -40,6 +42,7 @@ export const EXERCICIOS = [
   "Tríceps polia unilateral",
   "Francês corda",
   "Pulley barra reta pronada",
+  "Polia barra reta pronada",
   "Pulley corda",
 
   // ── Braço — Bíceps ────────────────────────────────────────────────────────
@@ -55,6 +58,7 @@ export const EXERCICIOS = [
   // ── Braço — Antebraço ─────────────────────────────────────────────────────
   "Antebraço rola palma",
   "Rolar barra cabo",
+  "Rosca punho cabo",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado",
