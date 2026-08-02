@@ -6,12 +6,12 @@ export const EXERCICIOS = [
   "Crossover braço estendido",
 
   // ── Costas ────────────────────────────────────────────────────────────────
-  "Barra fixa pronada",
+  "Barra fixa",
   "Puxada triângulo",
-  "Pull-around cabo",
-  "Pulldown inclinado",
+  "Pull-around",
+  "Pull-down",
   "Remada peito apoiado",
-  "Remada cabo sentado triângulo",
+  "Remada baixa",
   "Remada unilateral apoiada",
   "Desenvolvimento máquina",
 
@@ -22,14 +22,20 @@ export const EXERCICIOS = [
   // ── Quadríceps ────────────────────────────────────────────────────────────
   "Agachamento livre",
   "Cadeira extensora",
+  "Afundo no Smith",
 
   // ── Posterior/Glúteo ──────────────────────────────────────────────────────
   "Terra sumô",
   "Stiff",
-  "Elevação pélvica máquina",
+  "Stiff perna reta",
+  "Elevação pélvica",
   "Cadeira flexora sentada",
-  "Cadeira flexora deitado",
-  "Adutor máquina",
+  "Mesa flexora",
+  "Cadeira flexora unilateral",
+  "Adutor",
+  "Abdutora",
+  "Coice no cross joelho estendido",
+  "Coice no cross joelho dobrado",
 
   // ── Panturrilha ───────────────────────────────────────────────────────────
   "Panturrilha em pé",
@@ -40,7 +46,7 @@ export const EXERCICIOS = [
   "Tríceps testa halteres",
   "Tríceps polia barra reta",
   "Tríceps polia unilateral",
-  "Francês corda",
+  "Tríceps Francês",
   "Pulley barra reta pronada",
   "Tríceps Pulley",
   "Pulley corda",
@@ -53,12 +59,13 @@ export const EXERCICIOS = [
   "Rosca inclinada 45°",
   "Rosca scott unilateral",
   "Rosca polia alta",
+  "Rosca direta na polia baixa",
   "Rosca inversa",
 
   // ── Braço — Antebraço ─────────────────────────────────────────────────────
   "Antebraço rola palma",
   "Rolar barra cabo",
-  "Rosca punho cabo",
+  "Rosca punho",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado",

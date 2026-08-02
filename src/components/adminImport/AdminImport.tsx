@@ -98,7 +98,7 @@ const NOME_MAP: Record<string, string> = {
   // ── Planilha v3 (nomes curtos de sessão de Braço e Upper) ─────────────────
   // Upper A
   "Crossover braço estendido polia alta":        "Crossover braço estendido",
-  "Pulldown braço estendido tronco inclinado":   "Pulldown inclinado",
+  "Pulldown braço estendido tronco inclinado":   "Pull-down",
   "Rosca scott mesa":                            "Rosca scott",
   "Antebraço mesa scott barra W invertida":      "Antebraço invertido",
   // Upper B
@@ -130,12 +130,27 @@ const NOME_MAP: Record<string, string> = {
   "Rolar barra na mão no cabo":                  "Rolar barra cabo",
   "Abdômen infra banco inclinado 45°":           "Abdômen infra banco",
 
+  // ── Planilha Amanda v1 ────────────────────────────────────────────────────
+  "Elevação pélvica máquina":                     "Elevação pélvica",
+  "Mesa flexora deitada":                         "Mesa flexora",
+  "Cadeira flexora deitado":                      "Mesa flexora",
+  "Abdominal infra elevação de pernas":           "Abdômen infra pendurado",
+  // Nomes com sufixo de equipamento removido
+  "Remada cabo sentado triângulo":                "Remada baixa",
+  "Pull-around cabo":                             "Pull-around",
+  "Pull-down cabo":                               "Pull-down",
+  "Adutor máquina":                               "Adutor",
+  "Abdutora máquina":                             "Abdutora",
+  "Rosca punho cabo":                             "Rosca punho",
+  "Francês corda":                                "Tríceps Francês",
+
   // ── Planilha v2 (nomes descritivos longos) — mantidos para compat ─────────
   "Panturrilha sentado máquina":                 "Panturrilha sentado",
   "Pull-around cabo polia baixa":                "Pull-around cabo",
-  "Pulldown braço estendido inclinado":          "Pulldown inclinado",
+  "Pulldown braço estendido inclinado":          "Pull-down",
   "Panturrilha no leg press":                    "Panturrilha leg press",
-  "Barra fixa pegada aberta pronada":            "Barra fixa pronada",
+  "Barra fixa pegada aberta pronada":            "Barra fixa",
+  "Barra fixa pronada":                          "Barra fixa",
   "Desenvolvimento máquina pegada neutra":       "Desenvolvimento máquina",
   "Rosca inclinada halteres 45°":                "Rosca inclinada 45°",
   "Abdômen infra banco inclinado":               "Abdômen infra banco",
