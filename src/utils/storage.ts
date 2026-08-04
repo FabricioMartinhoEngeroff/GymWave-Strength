@@ -1,5 +1,43 @@
 import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
 
+// ─── User-scoped storage keys ─────────────────────────────────────────────────
+
+let _userId: string = localStorage.getItem("email") ?? "";
+
+// Keys that hold real user data (not auth infrastructure)
+const USER_DATA_KEYS = ["logbook", "dadosTreino", "planoTreino"];
+
+// On first login after this change, migrate any pre-existing unscoped data
+// into the new user-scoped keys so no data is lost.
+function migrateUnscoped(userId: string) {
+  USER_DATA_KEYS.forEach((base) => {
+    const scopedKey = `${userId}_${base}`;
+    const old = localStorage.getItem(base);
+    if (old && old !== "{}" && old !== "[]") {
+      // Só migra se o destino ainda não existe
+      if (!localStorage.getItem(scopedKey)) {
+        localStorage.setItem(scopedKey, old);
+      }
+      // Remove a chave global para que outro usuário não herde esses dados
+      localStorage.removeItem(base);
+    }
+  });
+}
+
+export function setCurrentUser(id: string | null) {
+  _userId = id ?? "";
+  if (_userId) migrateUnscoped(_userId);
+}
+
+export function storageKey(base: string): string {
+  return _userId ? `${_userId}_${base}` : base;
+}
+
+// Run migration immediately for users who are already logged in on page load
+if (_userId) migrateUnscoped(_userId);
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const salvarDados = (dados: DadosTreino) => {
   const dadosFiltrados: DadosTreino = {};
 
@@ -27,12 +65,12 @@ export const salvarDados = (dados: DadosTreino) => {
     }
   }
 
-  localStorage.setItem("dadosTreino", JSON.stringify(dadosFiltrados));
+  localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosFiltrados));
 };
 
 
 export const carregarDados = (): DadosTreino => {
-  const local = localStorage.getItem("dadosTreino");
+  const local = localStorage.getItem(storageKey("dadosTreino"));
   if (local) {
     return JSON.parse(local);
   }
@@ -41,13 +79,13 @@ export const carregarDados = (): DadosTreino => {
 
 
 function carregarLogbook(): Logbook {
-  const raw = localStorage.getItem("logbook");
+  const raw = localStorage.getItem(storageKey("logbook"));
   if (raw) return JSON.parse(raw);
   return {};
 }
 
 function salvarLogbook(logbook: Logbook): void {
-  localStorage.setItem("logbook", JSON.stringify(logbook));
+  localStorage.setItem(storageKey("logbook"), JSON.stringify(logbook));
 }
 
 

@@ -55,7 +55,8 @@ Sistema web de gerenciamento de treinos de força com periodização ondulatóri
 
 - **React Context API** - Gerenciamento de estado global
 - **Custom Hooks** - useAuth, useState, useEffect, etc
-- **localStorage** - Persistência de dados offline
+- **localStorage com isolamento por usuário** - Persistência de dados offline com chaves prefixadas por email (`{email}_logbook`, `{email}_dadosTreino`, `{email}_planoTreino`), garantindo que cada conta só enxerga seus próprios dados
+- **Migração automática de dados legados** - Na primeira sessão após o isolamento, dados sem prefixo são copiados para a chave do usuário e a chave global é removida, sem perda de histórico
 
 ---
 
@@ -73,6 +74,9 @@ Sistema web de gerenciamento de treinos de força com periodização ondulatóri
 
 - Sistema de Autenticação (Login/Register)
 - Protected Routes (rotas privadas)
+- **Isolamento de dados por usuário** — localStorage prefixado por email; cada conta vê apenas seus próprios treinos
+- **Migração automática de dados legados** — dados existentes sem prefixo são migrados para a conta no primeiro login, sem perda de histórico
+- Importação de planilha Excel/CSV com dados salvos na conta do usuário logado
 - Validação de formulários
 - Tratamento de erros
 - Design Responsivo (Mobile-First)
@@ -124,9 +128,10 @@ Documentação completa incluindo README, guia de contribuição, especificaçã
 5. "**Design mobile-first** com Styled Components"
 6. "Integração com **APIs REST** usando Axios com tratamento de erros"
 7. "**State management** com Context API e Custom Hooks"
-8. "Aplicação **offline-first** com localStorage"
-9. "**Documentação completa** seguindo melhores práticas da indústria"
-10. "**Versionamento com Git** seguindo Conventional Commits"
+8. "Aplicação **offline-first** com localStorage com **isolamento por usuário** — cada conta tem seu namespace (`{email}_chave`) e os dados nunca vazam entre contas"
+9. "Implementei **migração automática** de dados legados: na primeira sessão após o isolamento, o histórico antigo é copiado para a chave do usuário sem nenhuma perda"
+10. "**Documentação completa** seguindo melhores práticas da indústria"
+11. "**Versionamento com Git** seguindo Conventional Commits"
 
 ---
 
@@ -180,6 +185,7 @@ React.js • TypeScript • JavaScript • HTML5 & CSS3 • Styled Components �
 6. **Data Visualization** - Gráficos interativos para análise
 7. **Autenticação Completa** - Sistema de login/registro seguro
 8. **Código Limpo** - Seguindo princípios SOLID e Clean Code
+9. **Isolamento de dados multi-usuário** - Cada conta tem seu namespace no localStorage (`{email}_chave`), com migração automática de dados legados e sem perda de histórico
 
 ---
 

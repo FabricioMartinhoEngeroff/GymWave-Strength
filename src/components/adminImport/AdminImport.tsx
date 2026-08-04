@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino } from "../../types/TrainingData";
-import { salvarRegistro } from "../../utils/storage";
+import { salvarRegistro, storageKey } from "../../utils/storage";
 import {
   Screen,
   Header,
@@ -332,28 +332,28 @@ export default function AdminImport() {
   function desfazerImport() {
     const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
     if (!ok) return;
-    const backup = localStorage.getItem("logbook_backup");
-    if (backup) localStorage.setItem("logbook", backup);
-    const backupLegacy = localStorage.getItem("dadosTreino_backup");
-    if (backupLegacy) localStorage.setItem("dadosTreino", backupLegacy);
-    const backupPlano = localStorage.getItem("planoTreino_backup");
-    if (backupPlano) localStorage.setItem("planoTreino", backupPlano);
+    const backup = localStorage.getItem(storageKey("logbook_backup"));
+    if (backup) localStorage.setItem(storageKey("logbook"), backup);
+    const backupLegacy = localStorage.getItem(storageKey("dadosTreino_backup"));
+    if (backupLegacy) localStorage.setItem(storageKey("dadosTreino"), backupLegacy);
+    const backupPlano = localStorage.getItem(storageKey("planoTreino_backup"));
+    if (backupPlano) localStorage.setItem(storageKey("planoTreino"), backupPlano);
     setResult(null);
     setCanUndo(false);
   }
 
   function confirmarImport() {
-    localStorage.setItem("logbook_backup", localStorage.getItem("logbook") || "{}");
-    localStorage.setItem("dadosTreino_backup", localStorage.getItem("dadosTreino") || "{}");
-    localStorage.setItem("planoTreino_backup", localStorage.getItem("planoTreino") || "{}");
+    localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
+    localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
+    localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
 
     const porTreino: Record<string, number> = {};
     let total = 0;
     const today = getTodayBR();
     const todayTs = Date.now();
 
-    const legacyDb = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+    const legacyDb = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
     const planoNovo: PlanoTreino = {};
 
     // Primeira passagem: salva plano para TODOS os exercícios (template de ordem e séries)
@@ -412,8 +412,8 @@ export default function AdminImport() {
       total++;
     });
 
-    localStorage.setItem("dadosTreino", JSON.stringify(legacyDb));
-    localStorage.setItem("planoTreino", JSON.stringify({ ...planoExistente, ...planoNovo }));
+    localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(legacyDb));
+    localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
     setResult({ total, porTreino });
     setCanUndo(true);
     setRows([]);
@@ -427,8 +427,8 @@ export default function AdminImport() {
       "Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) do localStorage. Tem certeza?"
     );
     if (!ok) return;
-    localStorage.removeItem("dadosTreino");
-    localStorage.removeItem("logbook");
+    localStorage.removeItem(storageKey("dadosTreino"));
+    localStorage.removeItem(storageKey("logbook"));
     setResult(null);
     setRows([]);
     setFileName(null);

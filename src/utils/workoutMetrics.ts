@@ -1,4 +1,5 @@
 import type { DadosTreino, RegistroTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
+import { storageKey } from "./storage";
 
 export type SessionPoint = {
   ts: number;
@@ -105,7 +106,7 @@ export interface LogbookPoint {
 }
 
 export function buildLogbookHistory(logbook?: Logbook): Record<string, LogbookPoint[]> {
-  const lb: Logbook = logbook ?? JSON.parse(localStorage.getItem("logbook") || "{}");
+  const lb: Logbook = logbook ?? JSON.parse(localStorage.getItem(storageKey("logbook")) || "{}");
   const out: Record<string, LogbookPoint[]> = {};
 
   Object.entries(lb).forEach(([exercicio, registros]) => {

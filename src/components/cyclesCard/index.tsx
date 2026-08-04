@@ -5,6 +5,7 @@ import {
   Bloco,
   MensagemMotivacional,
 } from "./CycleCard.styles";
+import { storageKey } from "../../utils/storage";
 
 import {
   useCycleCardLogic,
@@ -65,7 +66,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
   const { pesoMaximo, sugestaoPeso } = useSugestaoDePeso(cicloInfo, exercicioSelecionado);
 
   const exportarDados = () => {
-    const blob = new Blob([JSON.stringify(localStorage.getItem("dadosTreino") || {}, null, 2)], {
+    const blob = new Blob([JSON.stringify(localStorage.getItem(storageKey("dadosTreino")) || {}, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);

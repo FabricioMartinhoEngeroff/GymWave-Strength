@@ -1,5 +1,6 @@
 import { MUSCLE_MAP } from "../data/muscleMap";
 import type { DadosTreino, Logbook } from "../types/TrainingData";
+import { storageKey } from "./storage";
 
 export interface VolumeMusculo {
   musculo: string;
@@ -60,11 +61,11 @@ function countValidSets(pesos: string[], reps: string[]): number {
 
 export function calcVolumeLoad(granularity: "week" | "month" = "week"): VolumeMusculo[] {
   const db = JSON.parse(
-    localStorage.getItem("dadosTreino") || "{}"
+    localStorage.getItem(storageKey("dadosTreino")) || "{}"
   ) as DadosTreino;
 
   const logbook = JSON.parse(
-    localStorage.getItem("logbook") || "{}"
+    localStorage.getItem(storageKey("logbook")) || "{}"
   ) as Logbook;
 
   const current = granularity === "month" ? getMonthBounds(0) : getISOWeekBounds(0);
@@ -163,7 +164,7 @@ function getMondayOf(ts: number): number {
 
 export function calcStreakSemanas(): number {
   const logbook = JSON.parse(
-    localStorage.getItem("logbook") || "{}"
+    localStorage.getItem(storageKey("logbook")) || "{}"
   ) as Logbook;
 
   const weekSet = new Set<number>();
@@ -192,7 +193,7 @@ export function calcStreakSemanas(): number {
 
 export function calcEstagnadoMusculo(musculo: string): boolean {
   const logbook = JSON.parse(
-    localStorage.getItem("logbook") || "{}"
+    localStorage.getItem(storageKey("logbook")) || "{}"
   ) as Logbook;
 
   const exerciciosDoGrupo = Object.keys(MUSCLE_MAP).filter(
@@ -227,7 +228,7 @@ export function calcQuedaCargaMusculo(
   granularity: "week" | "month" = "week"
 ): boolean {
   const logbook = JSON.parse(
-    localStorage.getItem("logbook") || "{}"
+    localStorage.getItem(storageKey("logbook")) || "{}"
   ) as Logbook;
 
   const current = granularity === "month" ? getMonthBounds(0) : getISOWeekBounds(0);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { EXERCICIOS } from "../../data/exercise";
 import type { TreinoRotacao } from "../../data/cycles";
+import { storageKey } from "../../utils/storage";
 
 interface CycleLogicParams {
   ciclo: string;
@@ -85,10 +86,10 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
       exercicio: exercicioSelecionado,
     };
 
-    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
     if (!db[exercicioSelecionado]) db[exercicioSelecionado] = {};
     db[exercicioSelecionado][ciclo] = novoRegistro;
-    localStorage.setItem("dadosTreino", JSON.stringify(db));
+    localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(db));
 
     setPesos(["", "", ""]);
     setRepeticoes(["", "", ""]);
@@ -137,7 +138,7 @@ export function useSugestaoDePeso(
   exercicio: string
 ): { pesoMaximo: number; sugestaoPeso: number } {
   return useMemo(() => {
-    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+    const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
     const entries = db?.[exercicio];
     if (!entries) return { pesoMaximo: 0, sugestaoPeso: 0 };
 

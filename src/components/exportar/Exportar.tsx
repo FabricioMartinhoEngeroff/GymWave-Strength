@@ -3,6 +3,7 @@ import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { DadosTreino, Logbook, PlanoTreino } from "../../types/TrainingData";
+import { storageKey } from "../../utils/storage";
 import {
   DropZone,
   DropIcon,
@@ -315,7 +316,7 @@ function parseDateBR(data: string): number | null {
 function useStats() {
   return useMemo(() => {
     const db = JSON.parse(
-      localStorage.getItem("dadosTreino") || "{}"
+      localStorage.getItem(storageKey("dadosTreino")) || "{}"
     ) as DadosTreino;
 
     let count = 0;
@@ -352,7 +353,7 @@ function useStats() {
 }
 
 function exportJSON() {
-  const data = localStorage.getItem("dadosTreino") || "{}";
+  const data = localStorage.getItem(storageKey("dadosTreino")) || "{}";
   const blob = new Blob([data], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -364,7 +365,7 @@ function exportJSON() {
 
 function exportCSV() {
   const logbook = JSON.parse(
-    localStorage.getItem("logbook") || "{}"
+    localStorage.getItem(storageKey("logbook")) || "{}"
   ) as Logbook;
 
   const rows: string[] = [
@@ -467,19 +468,19 @@ export default function Exportar() {
   function desfazerImport() {
     const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
     if (!ok) return;
-    const backup = localStorage.getItem("dadosTreino_backup");
-    if (backup) localStorage.setItem("dadosTreino", backup);
-    const planoBackup = localStorage.getItem("planoTreino_backup");
-    if (planoBackup) localStorage.setItem("planoTreino", planoBackup);
+    const backup = localStorage.getItem(storageKey("dadosTreino_backup"));
+    if (backup) localStorage.setItem(storageKey("dadosTreino"), backup);
+    const planoBackup = localStorage.getItem(storageKey("planoTreino_backup"));
+    if (planoBackup) localStorage.setItem(storageKey("planoTreino"), planoBackup);
     setResult(null);
     setCanUndo(false);
   }
 
   function confirmarImport() {
-    localStorage.setItem("dadosTreino_backup", localStorage.getItem("dadosTreino") || "{}");
-    localStorage.setItem("planoTreino_backup", localStorage.getItem("planoTreino") || "{}");
-    const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
-    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+    localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
+    localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
+    const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
     const planoNovo: PlanoTreino = {};
     const porSessao: Record<string, number> = {};
     let total = 0;
@@ -526,8 +527,8 @@ export default function Exportar() {
       });
     });
 
-    localStorage.setItem("dadosTreino", JSON.stringify(db));
-    localStorage.setItem("planoTreino", JSON.stringify({ ...planoExistente, ...planoNovo }));
+    localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(db));
+    localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
     setResult({ total, preservados, porSessao });
     setCanUndo(true);
     setRows([]);

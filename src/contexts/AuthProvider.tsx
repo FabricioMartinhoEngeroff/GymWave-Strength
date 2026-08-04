@@ -3,6 +3,7 @@ import { AuthContext } from "./AuthContext";
 import { login as authLogin } from "../services/authService";
 import { fetchAuthenticatedUser } from "../services/userService";
 import { User } from "../types/User";
+import { setCurrentUser } from "../utils/storage";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await fetchAuthenticatedUser();
         if (userData) {
           setUser(userData);
+          setCurrentUser(userData.id);
         }
       } catch (error) {
         console.error("Erro ao buscar dados do usuário:", error);
@@ -26,6 +28,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function logout() {
     localStorage.removeItem("token");
+    localStorage.removeItem("email");
+    setCurrentUser(null);
     setUser(null);
   }
 

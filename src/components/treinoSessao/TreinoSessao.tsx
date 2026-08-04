@@ -11,6 +11,7 @@ import {
   carregarDados,
   existeTreinoNaData,
   removerTreinoNaData,
+  storageKey,
 } from "../../utils/storage";
 import { calcEpley, extractReferenceBlock } from "../../utils/epleyCalc";
 import {
@@ -156,7 +157,7 @@ function emptyExerciseState(): ExerciseState {
 
 // ─── Draft persistence ───────────────────────────────────────────────────────
 
-const DRAFT_KEY = "rascunho_treino";
+const DRAFT_KEY = () => storageKey("rascunho_treino");
 
 interface DraftPayload {
   states: Record<string, ExerciseState>;
@@ -167,7 +168,7 @@ type DraftStore = Partial<Record<SessaoTipo, DraftPayload>>;
 
 function loadDraftStore(): DraftStore {
   try {
-    const raw = localStorage.getItem(DRAFT_KEY);
+    const raw = localStorage.getItem(DRAFT_KEY());
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return {};
@@ -178,7 +179,7 @@ function loadDraftStore(): DraftStore {
 }
 
 function saveDraftStore(store: DraftStore) {
-  localStorage.setItem(DRAFT_KEY, JSON.stringify(store));
+  localStorage.setItem(DRAFT_KEY(), JSON.stringify(store));
 }
 
 function saveDraft(sessao: SessaoTipo, states: Record<string, ExerciseState>, idx: number) {
@@ -191,7 +192,7 @@ function clearDraft(sessao: SessaoTipo) {
   const store = loadDraftStore();
   delete store[sessao];
   if (Object.keys(store).length === 0) {
-    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(DRAFT_KEY());
   } else {
     saveDraftStore(store);
   }
@@ -277,7 +278,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   const exercicios = useMemo(() => {
     if (!sessao) return [] as ExercicioSessao[];
     const base = [...SESSOES[sessao]];
-    const plano: PlanoTreino = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+    const plano: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
     const sp = plano[sessao];
     if (!sp) return base;
     const updated = base.map((ex) => {

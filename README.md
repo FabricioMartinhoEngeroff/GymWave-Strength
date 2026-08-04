@@ -2,7 +2,7 @@
 Sistema pessoal de gerenciamento de treinos de força com periodização ondulatória.
 LINK: https://gym-wave-strength.vercel.app/#
 
-⚠️ Projeto pessoal — feito exclusivamente para uso próprio, sem autenticação robusta, sem backend e sem nenhuma preocupação com segurança. Os dados ficam salvos localmente no navegador via localStorage. Use por sua conta e risco.
+⚠️ Projeto pessoal — feito exclusivamente para uso próprio, sem backend real. Os dados ficam salvos localmente no navegador via localStorage, isolados por conta de usuário. Use por sua conta e risco.
 
 
 📖 O que é isso?
@@ -74,7 +74,27 @@ Navegador moderno (Chrome, Firefox, Edge)
 
 📝 Observações
 
-Não tem login real nem proteção de dados. É pessoal mesmo.
-Limpar o localStorage do navegador apaga todos os registros.
+Cada conta (email) tem seu próprio espaço no localStorage — os dados de um usuário não aparecem para outro.
+Na primeira vez que uma conta faz login, os dados antigos (sem prefixo) são migrados automaticamente para ela.
+Limpar o localStorage do navegador apaga todos os registros de todos os usuários.
 Funciona offline depois do primeiro carregamento.
 Mobile-first: foi pensado pra usar pelo celular na academia.
+
+🗝️ Regras de isolamento de dados (localStorage)
+
+Todas as chaves de dado são prefixadas com o email do usuário logado:
+  - {email}_logbook       → histórico de treinos (novo formato)
+  - {email}_dadosTreino   → histórico legado
+  - {email}_planoTreino   → template de exercícios por sessão
+  - {email}_rascunho_treino → rascunho da sessão em andamento
+
+Chaves globais (não prefixadas, compartilhadas):
+  - token       → JWT da sessão atual
+  - email       → email do usuário logado (usado como prefixo)
+  - mock-users  → cadastro de usuários
+
+Migração automática:
+  Quando um usuário faz login pela primeira vez após a adoção do isolamento,
+  qualquer dado salvo sob a chave sem prefixo é copiado para a chave com o
+  email e a chave global é removida. Isso garante que nenhum dado histórico
+  seja perdido na transição.
