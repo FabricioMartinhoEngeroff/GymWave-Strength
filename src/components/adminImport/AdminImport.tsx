@@ -372,7 +372,6 @@ export default function AdminImport() {
       const todayTs = Date.now();
 
       const legacyDb = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
-      const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
       const planoNovo: PlanoTreino = {};
 
       const sessoesConfigMap: Record<string, {
@@ -449,7 +448,7 @@ export default function AdminImport() {
       });
 
       localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(legacyDb));
-      localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
+      localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
       localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
       return { total, porTreino };
     });

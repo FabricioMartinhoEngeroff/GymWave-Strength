@@ -194,7 +194,6 @@ export default function TextImport() {
       const sessoesConfig: Record<string, ExercicioSessao[]> = {};
       const logbook = JSON.parse(localStorage.getItem(storageKey("logbook")) || "{}");
       const dadosTreino = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
-      const planoExistente = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
       const planoNovo: Record<string, Record<string, { ordem: number; series_validas: number }>> = {};
       let totalEx = 0;
 
@@ -252,7 +251,7 @@ export default function TextImport() {
       localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfig));
       localStorage.setItem(storageKey("logbook"), JSON.stringify(logbook));
       localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosTreino));
-      localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
+      localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
 
       setResult({ sessoes: sessions.length, exercicios: totalEx });
       setErrors([]);

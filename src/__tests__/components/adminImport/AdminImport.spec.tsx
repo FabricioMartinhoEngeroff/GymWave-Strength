@@ -312,6 +312,98 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     });
   });
 
+  // ── Substituicao do treino ao reimportar ─────────────────────────────────────
+
+  describe("Reimportacao substitui treino mas mantem historico", () => {
+    async function loadAndConfirm() {
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByText("Confirmar importação"));
+    }
+
+    it("sessoes_config substitui o treino antigo completamente", async () => {
+      localStorage.setItem("sessoes_config", JSON.stringify({
+        "Braço": [{ nome: "Rosca direta", grupo: "Bíceps" }],
+        "Upper A": [{ nome: "Exercicio antigo", grupo: "Peitoral" }],
+      }));
+
+      await loadAndConfirm();
+
+      const config = JSON.parse(localStorage.getItem("sessoes_config") || "{}");
+      expect(config["Braço"]).toBeUndefined();
+      expect(config["Upper A"][0].nome).toBe("Supino reto barra");
+    });
+
+    it("planoTreino substitui sessoes antigas e nao faz merge", async () => {
+      localStorage.setItem("planoTreino", JSON.stringify({
+        "Braço": { "Rosca direta": { ordem: 1, series_validas: 2 } },
+        "Upper A": { "Exercicio antigo": { ordem: 1, series_validas: 3 } },
+      }));
+
+      await loadAndConfirm();
+
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Braço"]).toBeUndefined();
+      expect(plano["Upper A"]["Exercicio antigo"]).toBeUndefined();
+      expect(plano["Upper A"]["Supino reto barra"]).toBeDefined();
+    });
+
+    it("mantem logbook existente apos reimportacao", async () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Rosca direta": [{ topSetKg: 30, data: "01/07/2026", dataTs: 1000 }],
+      }));
+
+      await loadAndConfirm();
+
+      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      expect(logbook["Rosca direta"]).toBeDefined();
+      expect(logbook["Rosca direta"][0].topSetKg).toBe(30);
+      expect(logbook["Supino reto barra"]).toBeDefined();
+    });
+
+    it("mantem dadosTreino existente apos reimportacao", async () => {
+      localStorage.setItem("dadosTreino", JSON.stringify({
+        "Rosca direta": { C1: { pesos: ["30"], reps: ["10"], data: "01/07/2026" } },
+      }));
+
+      await loadAndConfirm();
+
+      const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
+      expect(db["Rosca direta"]).toBeDefined();
+      expect(db["Rosca direta"]["C1"].pesos[0]).toBe("30");
+      expect(db["Supino reto barra"]).toBeDefined();
+    });
+
+    it("atualiza series_validas e ordem ao reimportar", async () => {
+      localStorage.setItem("planoTreino", JSON.stringify({
+        "Upper A": { "Supino reto barra": { ordem: 5, series_validas: 2 } },
+      }));
+
+      await loadAndConfirm();
+
+      const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
+      expect(plano["Upper A"]["Supino reto barra"].ordem).toBe(1);
+      expect(plano["Upper A"]["Supino reto barra"].series_validas).toBe(3);
+    });
+
+    it("backup contem o treino antigo para possivel desfazer", async () => {
+      const treinoAntigo = { "Braço": [{ nome: "Rosca direta", grupo: "Bíceps" }] };
+      localStorage.setItem("sessoes_config", JSON.stringify(treinoAntigo));
+
+      await loadAndConfirm();
+
+      const backup = JSON.parse(localStorage.getItem("sessoes_config_backup") || "{}");
+      expect(backup["Braço"]).toBeDefined();
+      expect(backup["Braço"][0].nome).toBe("Rosca direta");
+    });
+  });
+
   describe("Desfazer importacao", () => {
     async function importarDados() {
       mockFileReader("mock csv content");

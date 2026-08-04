@@ -196,11 +196,11 @@ describe("TextImport", () => {
     expect(screen.getByText(/Formato por linha/i)).toBeInTheDocument();
   });
 
-  it("preserva dados existentes ao adicionar nova sessao", () => {
+  it("substitui sessoes_config antigo completamente ao reimportar", () => {
     localStorage.setItem("email", "treino@gmail.com");
     localStorage.setItem(
       "treino@gmail.com_sessoes_config",
-      JSON.stringify({ "Upper B": [{ nome: "Remada", grupo: "Costas" }] })
+      JSON.stringify({ "Braço": [{ nome: "Rosca direta", grupo: "Bíceps" }] })
     );
     render(<TextImport />);
 
@@ -211,5 +211,60 @@ describe("TextImport", () => {
 
     const config = JSON.parse(localStorage.getItem("treino@gmail.com_sessoes_config") || "{}");
     expect(config["Lower A"]).toBeDefined();
+    expect(config["Braço"]).toBeUndefined();
+  });
+
+  it("substitui planoTreino antigo completamente ao reimportar", () => {
+    localStorage.setItem("email", "treino@gmail.com");
+    localStorage.setItem(
+      "treino@gmail.com_planoTreino",
+      JSON.stringify({ "Braço": { "Rosca direta": { ordem: 1, series_validas: 2 } } })
+    );
+    render(<TextImport />);
+
+    fireEvent.change(screen.getByTestId("text-import-input"), {
+      target: { value: "## Lower A\nAgachamento | Quadríceps | 5-8 | 8-10" },
+    });
+    fireEvent.click(screen.getByText("Salvar treino"));
+
+    const plano = JSON.parse(localStorage.getItem("treino@gmail.com_planoTreino") || "{}");
+    expect(plano["Lower A"]).toBeDefined();
+    expect(plano["Braço"]).toBeUndefined();
+  });
+
+  it("mantem logbook existente ao reimportar novo treino", () => {
+    localStorage.setItem("email", "treino@gmail.com");
+    localStorage.setItem(
+      "treino@gmail.com_logbook",
+      JSON.stringify({ "Rosca direta": [{ topSetKg: 30, data: "01/07/2026" }] })
+    );
+    render(<TextImport />);
+
+    fireEvent.change(screen.getByTestId("text-import-input"), {
+      target: { value: "## Lower A\nAgachamento | Quadríceps | 5-8 | 8-10 | 100kg" },
+    });
+    fireEvent.click(screen.getByText("Salvar treino"));
+
+    const logbook = JSON.parse(localStorage.getItem("treino@gmail.com_logbook") || "{}");
+    expect(logbook["Rosca direta"][0].topSetKg).toBe(30);
+    expect(logbook["Agachamento"]).toBeDefined();
+  });
+
+  it("mantem dadosTreino existente ao reimportar novo treino", () => {
+    localStorage.setItem("email", "treino@gmail.com");
+    localStorage.setItem(
+      "treino@gmail.com_dadosTreino",
+      JSON.stringify({ "Rosca direta": { C1: { pesos: ["30"] } } })
+    );
+    render(<TextImport />);
+
+    fireEvent.change(screen.getByTestId("text-import-input"), {
+      target: { value: "## Lower A\nAgachamento | Quadríceps | 5-8 | 8-10 | 100kg" },
+    });
+    fireEvent.click(screen.getByText("Salvar treino"));
+
+    const db = JSON.parse(localStorage.getItem("treino@gmail.com_dadosTreino") || "{}");
+    expect(db["Rosca direta"]["C1"].pesos[0]).toBe("30");
+    expect(db["Agachamento"]).toBeDefined();
   });
 });
