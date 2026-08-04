@@ -29,7 +29,7 @@ describe("HARDCODED_USERS — dados dos usuários do sistema", () => {
     const amanda = HARDCODED_USERS.find((u) => u.name === "Amanda");
     expect(amanda).toBeDefined();
     expect(amanda!.email).toBe("amanda@treino.com");
-    expect(amanda!.password).toBe("@TreinoAmanda");
+    expect(amanda!.password).toBe("@TreinoAmanda123");
   });
 
   it("todos os emails são únicos", () => {

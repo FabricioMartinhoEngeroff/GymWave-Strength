@@ -336,31 +336,42 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     prevSessaoRef.current = sessao;
 
     // Restore from in-memory draft (same app session, switching tabs)
+    const currentExNames = new Set(exercicios.map((e) => e.nome));
     const memDraft = rascunhosRef.current[sessao];
     if (memDraft) {
-      setExerciseStates(memDraft);
-      setCurrentIdx(0);
-      setMostrarRevisao(false);
-      setResumo(null);
-      setSalvo(false);
-      setSalvarErro(null);
-      setConfirmarSubstituir(false);
-      statesSessaoRef.current = sessao;
-      return;
+      const draftNames = Object.keys(memDraft);
+      const draftMatchesCurrent = draftNames.length > 0 && draftNames.some((n) => currentExNames.has(n));
+      if (draftMatchesCurrent) {
+        setExerciseStates(memDraft);
+        setCurrentIdx(0);
+        setMostrarRevisao(false);
+        setResumo(null);
+        setSalvo(false);
+        setSalvarErro(null);
+        setConfirmarSubstituir(false);
+        statesSessaoRef.current = sessao;
+        return;
+      }
+      delete rascunhosRef.current[sessao];
     }
 
     // Restore from localStorage draft (app was closed/reopened)
     const lsDraft = loadDraft(sessao);
     if (lsDraft) {
-      setExerciseStates(lsDraft.states);
-      setCurrentIdx(lsDraft.currentIdx);
-      setMostrarRevisao(false);
-      setResumo(null);
-      setSalvo(false);
-      setSalvarErro(null);
-      setConfirmarSubstituir(false);
-      statesSessaoRef.current = sessao;
-      return;
+      const draftNames = Object.keys(lsDraft.states);
+      const draftMatchesCurrent = draftNames.length > 0 && draftNames.some((n) => currentExNames.has(n));
+      if (draftMatchesCurrent) {
+        setExerciseStates(lsDraft.states);
+        setCurrentIdx(lsDraft.currentIdx);
+        setMostrarRevisao(false);
+        setResumo(null);
+        setSalvo(false);
+        setSalvarErro(null);
+        setConfirmarSubstituir(false);
+        statesSessaoRef.current = sessao;
+        return;
+      }
+      clearDraft(sessao);
     }
 
     // Load from history

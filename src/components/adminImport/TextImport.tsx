@@ -255,6 +255,7 @@ export default function TextImport() {
       localStorage.setItem(storageKey("logbook"), JSON.stringify(logbook));
       localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosTreino));
       localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
+      localStorage.removeItem(storageKey("rascunho_treino"));
 
       setResult({ sessoes: sessions.length, exercicios: totalEx });
       setErrors([]);

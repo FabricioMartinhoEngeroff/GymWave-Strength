@@ -88,7 +88,7 @@ describe("useLoginForm — login Amanda", () => {
     const { result } = renderHook(() => useLoginForm(false));
     act(() => {
       result.current.handleChange(change("email", "amanda@treino.com"));
-      result.current.handleChange(change("password", "@TreinoAmanda"));
+      result.current.handleChange(change("password", "@TreinoAmanda123"));
     });
     await act(async () => { await result.current.handleSubmit(fakeSubmit()); });
 
@@ -99,7 +99,7 @@ describe("useLoginForm — login Amanda", () => {
     const { result } = renderHook(() => useLoginForm(false));
     act(() => {
       result.current.handleChange(change("email", "amanda@treino.com"));
-      result.current.handleChange(change("password", "@TreinoAmanda"));
+      result.current.handleChange(change("password", "@TreinoAmanda123"));
     });
     await act(async () => { await result.current.handleSubmit(fakeSubmit()); });
 
@@ -110,7 +110,7 @@ describe("useLoginForm — login Amanda", () => {
     const { result } = renderHook(() => useLoginForm(false));
     act(() => {
       result.current.handleChange(change("email", "amanda@treino.com"));
-      result.current.handleChange(change("password", "@TreinoAmanda"));
+      result.current.handleChange(change("password", "@TreinoAmanda123"));
     });
     await act(async () => { await result.current.handleSubmit(fakeSubmit()); });
 
@@ -123,7 +123,7 @@ describe("useLoginForm — login Amanda", () => {
     const { result } = renderHook(() => useLoginForm(false));
     act(() => {
       result.current.handleChange(change("email", "amanda@treino.com"));
-      result.current.handleChange(change("password", "@TreinoAmanda"));
+      result.current.handleChange(change("password", "@TreinoAmanda123"));
     });
     await act(async () => { await result.current.handleSubmit(fakeSubmit()); });
 
