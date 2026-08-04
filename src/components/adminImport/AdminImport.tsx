@@ -338,6 +338,8 @@ export default function AdminImport() {
     if (backupLegacy) localStorage.setItem(storageKey("dadosTreino"), backupLegacy);
     const backupPlano = localStorage.getItem(storageKey("planoTreino_backup"));
     if (backupPlano) localStorage.setItem(storageKey("planoTreino"), backupPlano);
+    const backupSessoes = localStorage.getItem(storageKey("sessoes_config_backup"));
+    if (backupSessoes) localStorage.setItem(storageKey("sessoes_config"), backupSessoes);
     setResult(null);
     setCanUndo(false);
   }
@@ -346,6 +348,7 @@ export default function AdminImport() {
     localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
     localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
     localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
+    localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
 
     const porTreino: Record<string, number> = {};
     let total = 0;
@@ -357,6 +360,14 @@ export default function AdminImport() {
     const planoNovo: PlanoTreino = {};
 
     // Primeira passagem: salva plano para TODOS os exercícios (template de ordem e séries)
+    // e constrói sessoes_config com a configuração completa por usuário
+    const sessoesConfigMap: Record<string, {
+      nome: string; grupo: string;
+      faixaTopSet: [number, number]; faixaBackoff: [number, number];
+      backoffPct: number; seriesValidas: 2 | 3;
+      tecnica: "RP" | null; cue: string;
+    }[]> = {};
+
     rows.forEach((row) => {
       const sessao = row.treino || row.treino_id || "Sem sessão";
       const seriesCount = Math.max(1, Math.min(3, row.series_validas ?? 2)) as 2 | 3;
@@ -365,6 +376,19 @@ export default function AdminImport() {
         ordem: row.ordem,
         series_validas: seriesCount,
       };
+
+      if (!sessoesConfigMap[sessao]) sessoesConfigMap[sessao] = [];
+      const pct = parseFloat(String(row.backoff_pct ?? "85").replace('%', '')) / 100 || 0.85;
+      sessoesConfigMap[sessao].push({
+        nome: row.exercicio,
+        grupo: row.grupo || "Outro",
+        faixaTopSet: [row.faixa_top_min, row.faixa_top_max],
+        faixaBackoff: [row.faixa_backoff_min, row.faixa_backoff_max],
+        backoffPct: pct,
+        seriesValidas: seriesCount,
+        tecnica: String(row.tecnica ?? "").toUpperCase() === "RP" ? "RP" : null,
+        cue: String(row.cue ?? ""),
+      });
     });
 
     // Segunda passagem: salva registros apenas para exercícios com peso
@@ -414,6 +438,7 @@ export default function AdminImport() {
 
     localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(legacyDb));
     localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
+    localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
     setResult({ total, porTreino });
     setCanUndo(true);
     setRows([]);

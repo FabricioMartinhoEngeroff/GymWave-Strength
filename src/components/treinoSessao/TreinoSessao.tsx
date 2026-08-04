@@ -277,7 +277,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
   const exercicios = useMemo(() => {
     if (!sessao) return [] as ExercicioSessao[];
-    const base = [...SESSOES[sessao]];
+    const configRaw = localStorage.getItem(storageKey("sessoes_config"));
+    const sessoesConfig: Record<string, ExercicioSessao[]> = configRaw ? JSON.parse(configRaw) : {};
+    const base = sessoesConfig[sessao] ? [...sessoesConfig[sessao]] : [...SESSOES[sessao]];
     const plano: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
     const sp = plano[sessao];
     if (!sp) return base;
@@ -677,9 +679,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
   function renderDaysSince() {
     if (!sessao || !treinoId) return null;
-    const exs = SESSOES[sessao];
     let lastDate: string | undefined;
-    exs.forEach((ex) => {
+    exercicios.forEach((ex) => {
       const u = ultimoRegistro(ex.nome, treinoId);
       if (u && (!lastDate || u.dataTs > parseDateBRToTs(lastDate))) {
         lastDate = u.data;
