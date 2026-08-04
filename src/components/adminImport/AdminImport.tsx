@@ -4,6 +4,7 @@ import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino } from "../../types/TrainingData";
 import { salvarRegistro, storageKey, setCurrentUser } from "../../utils/storage";
 import { HARDCODED_USERS } from "../../data/users";
+import TextImport from "./TextImport";
 import {
   Screen,
   Header,
@@ -612,6 +613,8 @@ export default function AdminImport() {
           Limpar tudo
         </BtnDanger>
       </BtnRow>
+
+      <TextImport />
     </Screen>
   );
 }

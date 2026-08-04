@@ -261,8 +261,8 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
     it("exibe feedback por treino", async () => {
       await loadAndConfirm();
-      expect(screen.getByText(/Upper A/)).toBeInTheDocument();
-      expect(screen.getByText(/Lower A/)).toBeInTheDocument();
+      expect(screen.getByText(/Upper A: 1 exercício/)).toBeInTheDocument();
+      expect(screen.getByText(/Lower A: 1 exercício/)).toBeInTheDocument();
     });
 
     it("reseta preview apos confirmar", async () => {
@@ -367,6 +367,240 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       fireEvent.click(screen.getByText("Limpar tudo"));
       expect(localStorage.getItem("logbook")).toBeNull();
       expect(localStorage.getItem("dadosTreino")).toBeNull();
+    });
+  });
+
+  // ── Seletor de usuario destino ───────────────────────────────────────────────
+
+  describe("Seletor de usuario destino", () => {
+    function getFileImportSelect() {
+      return screen.getAllByRole("combobox")[0];
+    }
+
+    it("exibe o seletor 'Importar para' com todos os usuarios", () => {
+      render(<AdminImport />);
+      expect(screen.getByText("Importar para:")).toBeInTheDocument();
+      const select = getFileImportSelect();
+      expect(select).toBeInTheDocument();
+      const options = select.querySelectorAll("option");
+      expect(options.length).toBe(2);
+      expect(options[0].textContent).toContain("Fabricio");
+      expect(options[1].textContent).toContain("Amanda");
+    });
+
+    it("usuario padrao e o email do localStorage", () => {
+      localStorage.setItem("email", "treino@gmail.com");
+      render(<AdminImport />);
+      const select = getFileImportSelect() as HTMLSelectElement;
+      expect(select.value).toBe("treino@gmail.com");
+    });
+
+    it("importa dados para Amanda quando selecionada como destino", async () => {
+      localStorage.setItem("email", "treino@gmail.com");
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+
+      fireEvent.change(getFileImportSelect(), { target: { value: "amanda@treino.com" } });
+
+      const input = screen.getByTestId("file-input");
+      fireEvent.change(input, {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+
+      fireEvent.click(screen.getByText("Confirmar importação"));
+
+      expect(localStorage.getItem("amanda@treino.com_logbook")).not.toBeNull();
+      expect(localStorage.getItem("amanda@treino.com_dadosTreino")).not.toBeNull();
+      expect(localStorage.getItem("amanda@treino.com_planoTreino")).not.toBeNull();
+      expect(localStorage.getItem("amanda@treino.com_sessoes_config")).not.toBeNull();
+    });
+
+    it("nao salva dados sob o prefixo do admin quando destino e outro usuario", async () => {
+      localStorage.setItem("email", "treino@gmail.com");
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+
+      fireEvent.change(getFileImportSelect(), { target: { value: "amanda@treino.com" } });
+
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+
+      fireEvent.click(screen.getByText("Confirmar importação"));
+
+      expect(localStorage.getItem("treino@gmail.com_logbook")).toBeNull();
+      expect(localStorage.getItem("treino@gmail.com_dadosTreino")).toBeNull();
+    });
+
+    it("limpar tudo age no usuario selecionado, nao no admin", () => {
+      localStorage.setItem("email", "treino@gmail.com");
+      localStorage.setItem("amanda@treino.com_logbook", JSON.stringify({ x: [] }));
+      localStorage.setItem("amanda@treino.com_dadosTreino", JSON.stringify({ x: {} }));
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      render(<AdminImport />);
+
+      fireEvent.change(getFileImportSelect(), { target: { value: "amanda@treino.com" } });
+      fireEvent.click(screen.getByText("Limpar tudo"));
+
+      expect(localStorage.getItem("amanda@treino.com_logbook")).toBeNull();
+      expect(localStorage.getItem("amanda@treino.com_dadosTreino")).toBeNull();
+    });
+
+    it("desfazer importacao restaura backup do usuario destino", async () => {
+      localStorage.setItem("email", "treino@gmail.com");
+      localStorage.setItem("amanda@treino.com_logbook", JSON.stringify({ "Agachamento": [] }));
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+
+      fireEvent.change(getFileImportSelect(), { target: { value: "amanda@treino.com" } });
+
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+
+      fireEvent.click(screen.getByText("Confirmar importação"));
+
+      vi.spyOn(window, "confirm").mockReturnValue(true);
+      fireEvent.click(screen.getByText(/desfazer importação/i));
+
+      const logbook = JSON.parse(localStorage.getItem("amanda@treino.com_logbook") || "{}");
+      expect(logbook).toHaveProperty("Agachamento");
+    });
+
+    it("confirm do limpar tudo mostra nome do usuario destino", () => {
+      localStorage.setItem("email", "treino@gmail.com");
+      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
+      render(<AdminImport />);
+
+      fireEvent.change(getFileImportSelect(), { target: { value: "amanda@treino.com" } });
+      fireEvent.click(screen.getByText("Limpar tudo"));
+
+      expect(confirmSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Amanda")
+      );
+    });
+  });
+
+  // ── Carregamento de XLSX (v4 com linhas de titulo) ──────────────────────────
+
+  describe("Carregamento de XLSX com header detection", () => {
+    it("pula linhas descritivas e encontra o cabecalho real com 'Exercicio'", async () => {
+      mockFileReader(new ArrayBuffer(10));
+      render(<AdminImport />);
+
+      const input = screen.getByTestId("file-input");
+      fireEvent.change(input, {
+        target: { files: [makeFile("treinos.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")] },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/pré-visualização.*2 exercícios/i)).toBeInTheDocument();
+      });
+
+      expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
+      expect(screen.getByText("Terra sumô")).toBeInTheDocument();
+    });
+  });
+
+  // ── sessoes_config ──────────────────────────────────────────────────────────
+
+  describe("sessoes_config na importacao", () => {
+    async function loadAndConfirm() {
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+      fireEvent.change(screen.getByTestId("file-input"), {
+        target: { files: [makeFile("treinos.csv")] },
+      });
+      await waitFor(() => {
+        expect(screen.getByText("Confirmar importação").closest("button")).not.toBeDisabled();
+      });
+      fireEvent.click(screen.getByText("Confirmar importação"));
+    }
+
+    it("salva sessoes_config no localStorage apos confirmar", async () => {
+      await loadAndConfirm();
+      expect(localStorage.getItem("sessoes_config")).not.toBeNull();
+    });
+
+    it("sessoes_config contem exercicios agrupados por sessao", async () => {
+      await loadAndConfirm();
+      const config = JSON.parse(localStorage.getItem("sessoes_config") || "{}");
+      expect(config["Upper A"]).toBeDefined();
+      expect(config["Lower A"]).toBeDefined();
+      expect(config["Upper A"][0].nome).toBe("Supino reto barra");
+      expect(config["Lower A"][0].nome).toBe("Terra sumô");
+    });
+
+    it("sessoes_config contem faixas de reps corretas", async () => {
+      await loadAndConfirm();
+      const config = JSON.parse(localStorage.getItem("sessoes_config") || "{}");
+      expect(config["Upper A"][0].faixaTopSet).toEqual([5, 9]);
+      expect(config["Upper A"][0].faixaBackoff).toEqual([9, 15]);
+    });
+
+    it("sessoes_config contem seriesValidas correto", async () => {
+      await loadAndConfirm();
+      const config = JSON.parse(localStorage.getItem("sessoes_config") || "{}");
+      expect(config["Upper A"][0].seriesValidas).toBe(3);
+      expect(config["Lower A"][0].seriesValidas).toBe(2);
+    });
+  });
+
+  // ── Drag and drop ──────────────────────────────────────────────────────────
+
+  describe("Drag and drop", () => {
+    it("muda estilo ao arrastar arquivo sobre a drop zone", () => {
+      render(<AdminImport />);
+      const dropZone = screen.getByRole("button", { name: /área de upload/i });
+
+      fireEvent.dragOver(dropZone, { dataTransfer: { files: [] } });
+      fireEvent.dragLeave(dropZone);
+    });
+
+    it("carrega arquivo ao soltar na drop zone", async () => {
+      mockFileReader("mock csv content");
+      render(<AdminImport />);
+      const dropZone = screen.getByRole("button", { name: /área de upload/i });
+
+      fireEvent.drop(dropZone, {
+        dataTransfer: { files: [makeFile("treinos.csv")] },
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText(/pré-visualização.*2 exercícios/i)).toBeInTheDocument();
+      });
+    });
+
+    it("abre file picker ao clicar na drop zone", () => {
+      render(<AdminImport />);
+      const dropZone = screen.getByRole("button", { name: /área de upload/i });
+      const input = screen.getByTestId("file-input") as HTMLInputElement;
+      const clickSpy = vi.spyOn(input, "click");
+
+      fireEvent.click(dropZone);
+      expect(clickSpy).toHaveBeenCalled();
+    });
+
+    it("abre file picker ao pressionar Enter na drop zone", () => {
+      render(<AdminImport />);
+      const dropZone = screen.getByRole("button", { name: /área de upload/i });
+      const input = screen.getByTestId("file-input") as HTMLInputElement;
+      const clickSpy = vi.spyOn(input, "click");
+
+      fireEvent.keyDown(dropZone, { key: "Enter" });
+      expect(clickSpy).toHaveBeenCalled();
     });
   });
 });
