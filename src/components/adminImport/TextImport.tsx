@@ -201,7 +201,10 @@ export default function TextImport() {
       const todayTs = Date.now();
 
       sessions.forEach(({ sessao, exercicios }) => {
-        sessoesConfig[sessao] = exercicios.map(({ topSetKg: _, ...rest }) => rest) as ExercicioSessao[];
+        sessoesConfig[sessao] = exercicios.map((ex) => {
+          const { topSetKg: _, ...rest } = ex as ExercicioSessao & { topSetKg?: number };
+          return rest;
+        });
         if (!planoNovo[sessao]) planoNovo[sessao] = {};
 
         exercicios.forEach((ex, idx) => {
