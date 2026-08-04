@@ -235,3 +235,40 @@ export const BtnWarning = styled.button`
     background: #fffbeb;
   }
 `;
+
+/* ── User selector ──────────────────────────────────────────── */
+
+export const UserSelectorRow = styled.div`
+  background: #ffffff;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const UserSelectorLabel = styled.span`
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+  white-space: nowrap;
+`;
+
+export const UserSelect = styled.select`
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #111827;
+  background: #f9fafb;
+  cursor: pointer;
+  outline: none;
+
+  &:focus {
+    border-color: #2563eb;
+    background: #eff6ff;
+  }
+`;

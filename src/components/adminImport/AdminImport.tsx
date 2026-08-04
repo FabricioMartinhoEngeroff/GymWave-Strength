@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino } from "../../types/TrainingData";
-import { salvarRegistro, storageKey } from "../../utils/storage";
+import { salvarRegistro, storageKey, setCurrentUser } from "../../utils/storage";
+import { HARDCODED_USERS } from "../../data/users";
 import {
   Screen,
   Header,
@@ -29,6 +30,9 @@ import {
   BtnPrimary,
   BtnDanger,
   BtnWarning,
+  UserSelectorRow,
+  UserSelectorLabel,
+  UserSelect,
 } from "./AdminImport.styles";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -262,12 +266,20 @@ function getTodayBR(): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminImport() {
+  const loggedInUser = localStorage.getItem("email") ?? "";
+  const [targetUser, setTargetUser] = useState(loggedInUser);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function withTargetUser<T>(fn: () => T): T {
+    setCurrentUser(targetUser);
+    try { return fn(); }
+    finally { setCurrentUser(loggedInUser); }
+  }
 
   // ── Parse file ─────────────────────────────────────────────
 
@@ -332,113 +344,115 @@ export default function AdminImport() {
   function desfazerImport() {
     const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
     if (!ok) return;
-    const backup = localStorage.getItem(storageKey("logbook_backup"));
-    if (backup) localStorage.setItem(storageKey("logbook"), backup);
-    const backupLegacy = localStorage.getItem(storageKey("dadosTreino_backup"));
-    if (backupLegacy) localStorage.setItem(storageKey("dadosTreino"), backupLegacy);
-    const backupPlano = localStorage.getItem(storageKey("planoTreino_backup"));
-    if (backupPlano) localStorage.setItem(storageKey("planoTreino"), backupPlano);
-    const backupSessoes = localStorage.getItem(storageKey("sessoes_config_backup"));
-    if (backupSessoes) localStorage.setItem(storageKey("sessoes_config"), backupSessoes);
+    withTargetUser(() => {
+      const backup = localStorage.getItem(storageKey("logbook_backup"));
+      if (backup) localStorage.setItem(storageKey("logbook"), backup);
+      const backupLegacy = localStorage.getItem(storageKey("dadosTreino_backup"));
+      if (backupLegacy) localStorage.setItem(storageKey("dadosTreino"), backupLegacy);
+      const backupPlano = localStorage.getItem(storageKey("planoTreino_backup"));
+      if (backupPlano) localStorage.setItem(storageKey("planoTreino"), backupPlano);
+      const backupSessoes = localStorage.getItem(storageKey("sessoes_config_backup"));
+      if (backupSessoes) localStorage.setItem(storageKey("sessoes_config"), backupSessoes);
+    });
     setResult(null);
     setCanUndo(false);
   }
 
   function confirmarImport() {
-    localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
-    localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
-    localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
-    localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
+    const { total, porTreino } = withTargetUser(() => {
+      localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
+      localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
+      localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
+      localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
 
-    const porTreino: Record<string, number> = {};
-    let total = 0;
-    const today = getTodayBR();
-    const todayTs = Date.now();
+      const porTreino: Record<string, number> = {};
+      let total = 0;
+      const today = getTodayBR();
+      const todayTs = Date.now();
 
-    const legacyDb = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
-    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
-    const planoNovo: PlanoTreino = {};
+      const legacyDb = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+      const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
+      const planoNovo: PlanoTreino = {};
 
-    // Primeira passagem: salva plano para TODOS os exercícios (template de ordem e séries)
-    // e constrói sessoes_config com a configuração completa por usuário
-    const sessoesConfigMap: Record<string, {
-      nome: string; grupo: string;
-      faixaTopSet: [number, number]; faixaBackoff: [number, number];
-      backoffPct: number; seriesValidas: 2 | 3;
-      tecnica: "RP" | null; cue: string;
-    }[]> = {};
+      const sessoesConfigMap: Record<string, {
+        nome: string; grupo: string;
+        faixaTopSet: [number, number]; faixaBackoff: [number, number];
+        backoffPct: number; seriesValidas: 2 | 3;
+        tecnica: "RP" | null; cue: string;
+      }[]> = {};
 
-    rows.forEach((row) => {
-      const sessao = row.treino || row.treino_id || "Sem sessão";
-      const seriesCount = Math.max(1, Math.min(3, row.series_validas ?? 2)) as 2 | 3;
-      if (!planoNovo[sessao]) planoNovo[sessao] = {};
-      planoNovo[sessao][row.exercicio] = {
-        ordem: row.ordem,
-        series_validas: seriesCount,
-      };
+      rows.forEach((row) => {
+        const sessao = row.treino || row.treino_id || "Sem sessão";
+        const seriesCount = Math.max(1, Math.min(3, row.series_validas ?? 2)) as 2 | 3;
+        if (!planoNovo[sessao]) planoNovo[sessao] = {};
+        planoNovo[sessao][row.exercicio] = {
+          ordem: row.ordem,
+          series_validas: seriesCount,
+        };
 
-      if (!sessoesConfigMap[sessao]) sessoesConfigMap[sessao] = [];
-      const pct = parseFloat(String(row.backoff_pct ?? "85").replace('%', '')) / 100 || 0.85;
-      sessoesConfigMap[sessao].push({
-        nome: row.exercicio,
-        grupo: row.grupo || "Outro",
-        faixaTopSet: [row.faixa_top_min, row.faixa_top_max],
-        faixaBackoff: [row.faixa_backoff_min, row.faixa_backoff_max],
-        backoffPct: pct,
-        seriesValidas: seriesCount,
-        tecnica: String(row.tecnica ?? "").toUpperCase() === "RP" ? "RP" : null,
-        cue: String(row.cue ?? ""),
+        if (!sessoesConfigMap[sessao]) sessoesConfigMap[sessao] = [];
+        const pct = parseFloat(String(row.backoff_pct ?? "85").replace('%', '')) / 100 || 0.85;
+        sessoesConfigMap[sessao].push({
+          nome: row.exercicio,
+          grupo: row.grupo || "Outro",
+          faixaTopSet: [row.faixa_top_min, row.faixa_top_max],
+          faixaBackoff: [row.faixa_backoff_min, row.faixa_backoff_max],
+          backoffPct: pct,
+          seriesValidas: seriesCount,
+          tecnica: String(row.tecnica ?? "").toUpperCase() === "RP" ? "RP" : null,
+          cue: String(row.cue ?? ""),
+        });
       });
+
+      rows.forEach((row) => {
+        const topKg = parsePeso(row.top_set_kg);
+        if (!topKg) return;
+
+        const boKg = parsePeso(row.backoff_kg) ?? Math.round(topKg * 0.85);
+
+        const registro: RegistroExercicio = {
+          exercicio: row.exercicio,
+          treinoId: row.treino_id,
+          data: today,
+          dataTs: todayTs,
+          topSetKg: topKg,
+          topSetReps: 0,
+          topSetFaixaMin: row.faixa_top_min,
+          topSetFaixaMax: row.faixa_top_max,
+          topSetBateuTeto: false,
+          backoffKg: boKg,
+          backoffReps: 0,
+          backoffFaixaMin: row.faixa_backoff_min,
+          backoffFaixaMax: row.faixa_backoff_max,
+          seriesValidas: (row.series_validas === 3 ? 3 : 2) as 2 | 3,
+          pesoAnterior: undefined,
+          repsAnterior: undefined,
+          progrediu: false,
+          obs: "Importado da planilha",
+        };
+
+        salvarRegistro(registro);
+
+        if (!legacyDb[row.exercicio]) legacyDb[row.exercicio] = {};
+        legacyDb[row.exercicio][row.treino_id] = {
+          data: today,
+          pesos: [String(topKg), String(boKg)],
+          reps: ["", ""],
+          obs: "Importado da planilha",
+          exercicio: row.exercicio,
+        };
+
+        const label = row.treino || row.treino_id || "Sem treino";
+        porTreino[label] = (porTreino[label] || 0) + 1;
+        total++;
+      });
+
+      localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(legacyDb));
+      localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
+      localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
+      return { total, porTreino };
     });
 
-    // Segunda passagem: salva registros apenas para exercícios com peso
-    rows.forEach((row) => {
-      const topKg = parsePeso(row.top_set_kg);
-      if (!topKg) return;
-
-      const boKg = parsePeso(row.backoff_kg) ?? Math.round(topKg * 0.85);
-
-      const registro: RegistroExercicio = {
-        exercicio: row.exercicio,
-        treinoId: row.treino_id,
-        data: today,
-        dataTs: todayTs,
-        topSetKg: topKg,
-        topSetReps: 0,
-        topSetFaixaMin: row.faixa_top_min,
-        topSetFaixaMax: row.faixa_top_max,
-        topSetBateuTeto: false,
-        backoffKg: boKg,
-        backoffReps: 0,
-        backoffFaixaMin: row.faixa_backoff_min,
-        backoffFaixaMax: row.faixa_backoff_max,
-        seriesValidas: (row.series_validas === 3 ? 3 : 2) as 2 | 3,
-        pesoAnterior: undefined,
-        repsAnterior: undefined,
-        progrediu: false,
-        obs: "Importado da planilha",
-      };
-
-      salvarRegistro(registro);
-
-      // Legacy
-      if (!legacyDb[row.exercicio]) legacyDb[row.exercicio] = {};
-      legacyDb[row.exercicio][row.treino_id] = {
-        data: today,
-        pesos: [String(topKg), String(boKg)],
-        reps: ["", ""],
-        obs: "Importado da planilha",
-        exercicio: row.exercicio,
-      };
-
-      const label = row.treino || row.treino_id || "Sem treino";
-      porTreino[label] = (porTreino[label] || 0) + 1;
-      total++;
-    });
-
-    localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(legacyDb));
-    localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
-    localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
     setResult({ total, porTreino });
     setCanUndo(true);
     setRows([]);
@@ -448,12 +462,15 @@ export default function AdminImport() {
   // ── Clear all ──────────────────────────────────────────────
 
   function limparTudo() {
+    const targetName = HARDCODED_USERS.find((u) => u.email === targetUser)?.name ?? targetUser;
     const ok = window.confirm(
-      "Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) do localStorage. Tem certeza?"
+      `Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) de ${targetName}. Tem certeza?`
     );
     if (!ok) return;
-    localStorage.removeItem(storageKey("dadosTreino"));
-    localStorage.removeItem(storageKey("logbook"));
+    withTargetUser(() => {
+      localStorage.removeItem(storageKey("dadosTreino"));
+      localStorage.removeItem(storageKey("logbook"));
+    });
     setResult(null);
     setRows([]);
     setFileName(null);
@@ -471,6 +488,15 @@ export default function AdminImport() {
         <Title>Importar dados</Title>
         <Subtitle>Carregue o logbook Saizen (.xlsx ou .csv) para popular o histórico</Subtitle>
       </Header>
+
+      <UserSelectorRow>
+        <UserSelectorLabel>Importar para:</UserSelectorLabel>
+        <UserSelect value={targetUser} onChange={(e) => setTargetUser(e.target.value)}>
+          {HARDCODED_USERS.map((u) => (
+            <option key={u.email} value={u.email}>{u.name} ({u.email})</option>
+          ))}
+        </UserSelect>
+      </UserSelectorRow>
 
       {/* Drop zone */}
       <DropZone
