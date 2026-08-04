@@ -31,7 +31,7 @@ function confirmarBackoff(reps = "12") {
   fireEvent.click(screen.getByText("Confirmar Back-off"));
 }
 
-function pularParaUltimo(total = 13) {
+function pularParaUltimo(total = 11) {
   for (let i = 0; i < total - 1; i++) {
     fireEvent.click(screen.getByText("Pular"));
   }
@@ -146,20 +146,20 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       confirmarTopSet("100", "7");
       confirmarBackoff("12");
       fireEvent.click(screen.getByText("Próximo"));
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
 
       cleanup();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
     });
 
     it("restaura exercicio pulado como concluido", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByText("Pular")); // pula exercicio 1
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
 
       cleanup();
       render(<TreinoSessao />);
@@ -168,7 +168,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       // Volta ao exercicio 1 e verifica que esta marcado como pulado
       fireEvent.click(screen.getByLabelText(/exercício anterior/i));
       // O ponto do exercicio 1 deve estar verde (concluido/pulado)
-      expect(screen.getByText("1 / 13")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
     });
 
     it("restaura dados de observacao", () => {

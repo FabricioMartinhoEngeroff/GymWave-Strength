@@ -79,8 +79,8 @@ describe("MuscleMap — Cobertura exercicio -> grupo muscular", () => {
       expect(MUSCLE_MAP["Supino reto barra"]).toBe("Peitoral");
     });
 
-    it("Barra fixa pronada -> Costas", () => {
-      expect(MUSCLE_MAP["Barra fixa pronada"]).toBe("Costas");
+    it("Barra fixa -> Costas", () => {
+      expect(MUSCLE_MAP["Barra fixa"]).toBe("Costas");
     });
 
     it("Elevacao lateral cabo -> Ombro", () => {
@@ -95,8 +95,8 @@ describe("MuscleMap — Cobertura exercicio -> grupo muscular", () => {
       expect(MUSCLE_MAP["Stiff"]).toBe("Posterior/Glúteo");
     });
 
-    it("Elevacao pelvica maquina -> Posterior/Gluteo", () => {
-      expect(MUSCLE_MAP["Elevação pélvica máquina"]).toBe("Posterior/Glúteo");
+    it("Elevacao pelvica -> Posterior/Gluteo", () => {
+      expect(MUSCLE_MAP["Elevação pélvica"]).toBe("Posterior/Glúteo");
     });
 
     it("Adutor maquina -> Posterior/Gluteo", () => {

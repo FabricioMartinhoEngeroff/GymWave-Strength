@@ -5,7 +5,7 @@ import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingD
 let _userId: string = localStorage.getItem("email") ?? "";
 
 // Keys that hold real user data (not auth infrastructure)
-const USER_DATA_KEYS = ["logbook", "dadosTreino", "planoTreino"];
+const USER_DATA_KEYS = ["logbook", "dadosTreino", "planoTreino", "sessoes_config"];
 
 // On first login after this change, migrate any pre-existing unscoped data
 // into the new user-scoped keys so no data is lost.

@@ -9,6 +9,8 @@ import {
   validateEmptyFields,
 } from "../utils/validators";
 import type { FormData, FormErrors, Address } from "../types/Form";
+import { HARDCODED_USERS } from "../data/users";
+import { setCurrentUser } from "../utils/storage";
 
 // ─── Máscaras para inputs ────────────────────────────────────────────────────
 const maskPhone = (value: string): string => {
@@ -113,25 +115,17 @@ export function useLoginForm(isRegistering: boolean) {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // tenta ler user cadastrado anteriormente
-    const raw = localStorage.getItem("newUser");
-    const savedUser = raw
-      ? (JSON.parse(raw) as { email: string; password: string })
-      : null;
-
     try {
       if (!isRegistering) {
         // ─── LOGIN ───
-        const okFixed =
-          formData.email === "treino@gmail.com" &&
-          formData.password === "@Treino123";
-        const okSaved =
-          savedUser &&
-          formData.email === savedUser.email &&
-          formData.password === savedUser.password;
+        const matched = HARDCODED_USERS.find(
+          (u) => u.email === formData.email && u.password === formData.password
+        );
 
-        if (okFixed || okSaved) {
+        if (matched) {
           localStorage.setItem("token", "fake-token-hardcoded");
+          localStorage.setItem("email", matched.email);
+          setCurrentUser(matched.email);
           navigate("/app");
           return;
         }

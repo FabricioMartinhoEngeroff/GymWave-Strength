@@ -29,8 +29,8 @@ function confirmarBackoff(reps = "12") {
   fireEvent.click(screen.getByText("Confirmar Back-off"));
 }
 
-// Navigate to last exercise of Upper A (13 exercises) via Pular
-function pularParaUltimo(total = 13) {
+// Navigate to last exercise of Upper A (11 exercises) via Pular
+function pularParaUltimo(total = 11) {
   for (let i = 0; i < total - 1; i++) {
     fireEvent.click(screen.getByText("Pular"));
   }
@@ -49,13 +49,12 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByText("GymWave Strength")).toBeInTheDocument();
     });
 
-    it("exibe os 5 seletores de treino", () => {
+    it("exibe os 4 seletores de treino", () => {
       renderFresh();
       expect(screen.getByRole("button", { name: "Upper A" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Upper B" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Lower A" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Lower B" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Braço" })).toBeInTheDocument();
     });
 
     it("exibe mensagem para selecionar treino", () => {
@@ -79,28 +78,22 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByText("Terra sumô")).toBeInTheDocument();
     });
 
-    it("selecionar Upper B carrega Barra fixa pronada", () => {
+    it("selecionar Upper B carrega Remada baixa", () => {
       renderFresh();
       selecionarSessao("Upper B");
-      expect(screen.getByText("Barra fixa pronada")).toBeInTheDocument();
+      expect(screen.getByText("Remada baixa")).toBeInTheDocument();
     });
 
-    it("selecionar Lower B carrega Agachamento livre", () => {
+    it("selecionar Lower B carrega Panturrilha leg press", () => {
       renderFresh();
       selecionarSessao("Lower B");
-      expect(screen.getByText("Agachamento livre")).toBeInTheDocument();
-    });
-
-    it("selecionar Braco carrega Triceps testa halteres", () => {
-      renderFresh();
-      selecionarSessao("Braço");
-      expect(screen.getByText("Tríceps testa halteres")).toBeInTheDocument();
+      expect(screen.getByText("Panturrilha leg press")).toBeInTheDocument();
     });
 
     it("exibe contador de exercicio 1/N", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByText("1 / 13")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
     });
   });
 
@@ -261,9 +254,9 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("botao Pular avanca para proximo exercicio", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByText("1 / 13")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
       fireEvent.click(screen.getByText("Pular"));
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
     });
 
     it("setas de navegacao funcionam", () => {
@@ -271,10 +264,10 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       const nextBtn = screen.getByLabelText(/próximo exercício/i);
       fireEvent.click(nextBtn);
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
       const prevBtn = screen.getByLabelText(/exercício anterior/i);
       fireEvent.click(prevBtn);
-      expect(screen.getByText("1 / 13")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
     });
   });
 
@@ -334,11 +327,11 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       // Avanca para o segundo exercício
       fireEvent.click(screen.getByLabelText(/próximo exercício/i));
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
 
       // Volta ao primeiro
       fireEvent.click(screen.getByLabelText(/exercício anterior/i));
-      expect(screen.getByText("1 / 13")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
 
       const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("100");
@@ -392,7 +385,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       // Troca para Upper B
       selecionarSessao("Upper B");
-      expect(screen.getByText("Barra fixa pronada")).toBeInTheDocument();
+      expect(screen.getByText("Remada baixa")).toBeInTheDocument();
 
       // Volta para Upper A
       selecionarSessao("Upper A");
@@ -629,9 +622,9 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       pularParaUltimo();
       fireEvent.click(screen.getByText("Ver Resumo"));
 
-      // Todos os 13 exercícios devem aparecer na revisão
+      // Todos os 11 exercícios devem aparecer na revisão
       expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
-      expect(screen.getByText("Antebraço rola palma")).toBeInTheDocument();
+      expect(screen.getByText("Abdômen cabo ajoelhado")).toBeInTheDocument();
     });
 
     it("exercicio confirmado mostra valores no resumo", () => {
@@ -641,7 +634,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       confirmarBackoff("12");
       // Use the navigation arrow to advance without overwriting the confirmed state
       fireEvent.click(screen.getByLabelText(/próximo exercício/i));
-      pularParaUltimo(12); // 11 more skips from idx=1 to reach idx=12
+      pularParaUltimo(10); // 9 more skips from idx=1 to reach idx=10 (last)
       fireEvent.click(screen.getByText("Ver Resumo"));
 
       expect(screen.getByText(/100kg/)).toBeInTheDocument();
@@ -651,7 +644,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
       fireEvent.click(screen.getByText("Pular")); // pula exercicio 1
-      pularParaUltimo(12); // pula restantes até o último (11 mais)
+      pularParaUltimo(10); // 9 mais skips de idx=1 até idx=10 (último)
       fireEvent.click(screen.getByText("Ver Resumo"));
 
       expect(screen.getAllByText("Pulado").length).toBeGreaterThan(0);
@@ -668,7 +661,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(editarBtns[0]);
 
       // Volta para a tela do exercício 1
-      expect(screen.getByText("1 / 13")).toBeInTheDocument();
+      expect(screen.getByText("1 / 11")).toBeInTheDocument();
       expect(screen.queryByText("Confirmar e Salvar Treino")).not.toBeInTheDocument();
     });
 
@@ -679,7 +672,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Voltar ao exercício"));
 
-      expect(screen.getByText("13 / 13")).toBeInTheDocument();
+      expect(screen.getByText("11 / 11")).toBeInTheDocument();
       expect(screen.queryByText("Confirmar e Salvar Treino")).not.toBeInTheDocument();
     });
 
@@ -1116,7 +1109,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       ativarDeload();
       confirmarTopSet("100", "7");
       fireEvent.click(screen.getByText("Próximo"));
-      expect(screen.getByText("2 / 13")).toBeInTheDocument();
+      expect(screen.getByText("2 / 11")).toBeInTheDocument();
     });
 
     it("ponto de progresso do exercicio atual reflete estado done apos confirmar Top Set em Deload", () => {
@@ -1189,7 +1182,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Próximo"));
 
       // Ultimo exercicio normal (sem deload)
-      pularParaUltimo(12);
+      pularParaUltimo(10); // 9 skips de idx=1 até idx=10 (último)
       confirmarTopSet("50", "12");
       confirmarBackoff("18");
       fireEvent.click(screen.getByText("Ver Resumo"));

@@ -33,6 +33,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Mesa flexora":          "Posterior/Glúteo",
   "Cadeira flexora unilateral":       "Posterior/Glúteo",
   "Adutor":                           "Posterior/Glúteo",
+  "Adutor máquina":                  "Posterior/Glúteo",
   "Abdutora":                         "Posterior/Glúteo",
   "Coice no cross joelho estendido":  "Posterior/Glúteo",
   "Coice no cross joelho dobrado":    "Posterior/Glúteo",

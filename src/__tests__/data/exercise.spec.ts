@@ -31,7 +31,7 @@ describe("exercise — Lista de exercicios Saizen", () => {
   });
 
   it("contem exercicios de costas", () => {
-    expect(EXERCICIOS).toContain("Barra fixa pronada");
+    expect(EXERCICIOS).toContain("Barra fixa");
     expect(EXERCICIOS).toContain("Puxada triângulo");
     expect(EXERCICIOS).toContain("Remada peito apoiado");
   });

@@ -668,6 +668,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       setResumo({ feitos, total: exercicios.length, subirPeso });
       setSalvo(true);
       setTimeout(() => setSalvo(false), 5000);
+      setSessao(null);
+      setExerciseStates({});
+      setCurrentIdx(0);
     } catch (err) {
       console.error("Erro ao salvar treino:", err);
       setSalvarErro("Não foi possível salvar o treino. Tente novamente.");

@@ -84,16 +84,18 @@ describe("storageKey()", () => {
 // ─── Migração de dados legados ─────────────────────────────────────────────────
 
 describe("setCurrentUser() — migração de dados legados", () => {
-  it("migra logbook, dadosTreino e planoTreino para a chave do usuário", () => {
+  it("migra logbook, dadosTreino, planoTreino e sessoes_config para a chave do usuário", () => {
     localStorage.setItem("logbook", JSON.stringify({ Supino: [{ topSetKg: 100 }] }));
     localStorage.setItem("dadosTreino", JSON.stringify({ Supino: { UA: {} } }));
     localStorage.setItem("planoTreino", JSON.stringify({ "Upper A": {} }));
+    localStorage.setItem("sessoes_config", JSON.stringify({ "Upper A": [{ nome: "Supino" }] }));
 
     setCurrentUser("fabricio@gmail.com");
 
     expect(localStorage.getItem("fabricio@gmail.com_logbook")).not.toBeNull();
     expect(localStorage.getItem("fabricio@gmail.com_dadosTreino")).not.toBeNull();
     expect(localStorage.getItem("fabricio@gmail.com_planoTreino")).not.toBeNull();
+    expect(localStorage.getItem("fabricio@gmail.com_sessoes_config")).not.toBeNull();
   });
 
   it("o conteúdo migrado é idêntico ao original", () => {
@@ -205,6 +207,63 @@ describe("salvarDados / carregarDados — isolamento por usuário", () => {
     // Amanda loga — não deve ver os dados do Fabricio
     setCurrentUser("amanda@gmail.com");
     expect(carregarDados()).toEqual({});
+  });
+});
+
+// ─── sessoes_config — isolamento por usuário ──────────────────────────────────
+
+describe("sessoes_config — isolamento por usuário", () => {
+  it("planilha importada como Fabricio não aparece para Amanda", () => {
+    setCurrentUser("treino@gmail.com");
+    localStorage.setItem(storageKey("sessoes_config"), JSON.stringify({ "Upper A": [{ nome: "Supino" }] }));
+
+    setCurrentUser("amanda@treino.com");
+    expect(localStorage.getItem(storageKey("sessoes_config"))).toBeNull();
+  });
+
+  it("planilha importada como Amanda não aparece para Fabricio", () => {
+    setCurrentUser("amanda@treino.com");
+    localStorage.setItem(storageKey("sessoes_config"), JSON.stringify({ "Upper A": [{ nome: "Remada" }] }));
+
+    setCurrentUser("treino@gmail.com");
+    expect(localStorage.getItem(storageKey("sessoes_config"))).toBeNull();
+  });
+
+  it("cada usuário tem seu sessoes_config independente e correto", () => {
+    const configFabricio = JSON.stringify({ "Upper A": [{ nome: "Supino" }] });
+    const configAmanda = JSON.stringify({ "Upper A": [{ nome: "Remada" }] });
+
+    setCurrentUser("treino@gmail.com");
+    localStorage.setItem(storageKey("sessoes_config"), configFabricio);
+
+    setCurrentUser("amanda@treino.com");
+    localStorage.setItem(storageKey("sessoes_config"), configAmanda);
+
+    setCurrentUser("treino@gmail.com");
+    expect(localStorage.getItem(storageKey("sessoes_config"))).toBe(configFabricio);
+
+    setCurrentUser("amanda@treino.com");
+    expect(localStorage.getItem(storageKey("sessoes_config"))).toBe(configAmanda);
+  });
+
+  it("migra sessoes_config legado para o primeiro usuário que logar", () => {
+    const configAntigo = JSON.stringify({ "Lower A": [{ nome: "Agachamento" }] });
+    localStorage.setItem("sessoes_config", configAntigo);
+
+    setCurrentUser("treino@gmail.com");
+
+    expect(localStorage.getItem("treino@gmail.com_sessoes_config")).toBe(configAntigo);
+    expect(localStorage.getItem("sessoes_config")).toBeNull();
+  });
+
+  it("sessoes_config migrado não é herdado pelo segundo usuário", () => {
+    const configAntigo = JSON.stringify({ "Lower A": [{ nome: "Agachamento" }] });
+    localStorage.setItem("sessoes_config", configAntigo);
+
+    setCurrentUser("treino@gmail.com");
+
+    setCurrentUser("amanda@treino.com");
+    expect(localStorage.getItem(storageKey("sessoes_config"))).toBeNull();
   });
 });
 
