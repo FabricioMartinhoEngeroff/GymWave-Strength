@@ -2,8 +2,8 @@ import { useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { DadosTreino, Logbook, PlanoTreino } from "../../types/TrainingData";
-import { storageKey } from "../../utils/storage";
+import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio } from "../../types/TrainingData";
+import { storageKey, salvarRegistro } from "../../utils/storage";
 import {
   DropZone,
   DropIcon,
@@ -472,6 +472,10 @@ export default function Exportar() {
     if (backup) localStorage.setItem(storageKey("dadosTreino"), backup);
     const planoBackup = localStorage.getItem(storageKey("planoTreino_backup"));
     if (planoBackup) localStorage.setItem(storageKey("planoTreino"), planoBackup);
+    const sessoesBackup = localStorage.getItem(storageKey("sessoes_config_backup"));
+    if (sessoesBackup) localStorage.setItem(storageKey("sessoes_config"), sessoesBackup);
+    const logbookBackup = localStorage.getItem(storageKey("logbook_backup"));
+    if (logbookBackup) localStorage.setItem(storageKey("logbook"), logbookBackup);
     setResult(null);
     setCanUndo(false);
   }
@@ -479,19 +483,27 @@ export default function Exportar() {
   function confirmarImport() {
     localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
     localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
+    localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
+    localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
+
     const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
-    const planoExistente: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
     const planoNovo: PlanoTreino = {};
+    const sessoesConfigMap: Record<string, {
+      nome: string; grupo: string;
+      faixaTopSet: [number, number]; faixaBackoff: [number, number];
+      backoffPct: number; seriesValidas: 2 | 3;
+      tecnica: "RP" | null; cue: string;
+    }[]> = {};
     const porSessao: Record<string, number> = {};
     let total = 0;
     let preservados = 0;
     const today = getTodayBR();
+    const todayTs = Date.now();
 
     rows.forEach((row) => {
-      const seriesCount = Math.max(1, Math.min(3, row.series_validas));
+      const seriesCount = Math.max(1, Math.min(3, row.series_validas)) as 2 | 3;
       const sessao = row.sessao || "Sem sessão";
 
-      // Atualiza plano sempre (sobrescreve — é template, não histórico)
       if (!planoNovo[sessao]) planoNovo[sessao] = {};
       planoNovo[sessao][row.exercicio] = {
         ordem: row.ordem,
@@ -502,13 +514,24 @@ export default function Exportar() {
         ...(row.series_C4_validas !== undefined && { series_C4: row.series_C4_validas }),
       };
 
+      if (!sessoesConfigMap[sessao]) sessoesConfigMap[sessao] = [];
+      sessoesConfigMap[sessao].push({
+        nome: row.exercicio,
+        grupo: row.musculo_primario || "Outro",
+        faixaTopSet: [row.rep_min || 5, row.rep_max || 8],
+        faixaBackoff: [row.rep_min || 8, row.rep_max || 10],
+        backoffPct: 0.85,
+        seriesValidas: seriesCount,
+        tecnica: null,
+        cue: "",
+      });
+
       CICLO_COLS.forEach(({ col, cicloId }) => {
         const pesoStr = parsePeso(row[col]);
         if (!pesoStr) return;
 
         if (!db[row.exercicio]) db[row.exercicio] = {};
 
-        // Preserva entradas existentes — só adiciona ciclos ainda não registrados
         if (db[row.exercicio][cicloId]) {
           preservados++;
           return;
@@ -522,13 +545,38 @@ export default function Exportar() {
           exercicio: row.exercicio,
         };
 
+        const topKg = Number(pesoStr);
+        const registro: RegistroExercicio = {
+          exercicio: row.exercicio,
+          treinoId: cicloId,
+          data: today,
+          dataTs: todayTs,
+          topSetKg: topKg,
+          topSetReps: 0,
+          topSetFaixaMin: row.rep_min || 5,
+          topSetFaixaMax: row.rep_max || 8,
+          topSetBateuTeto: false,
+          backoffKg: Math.round(topKg * 0.85),
+          backoffReps: 0,
+          backoffFaixaMin: row.rep_min || 8,
+          backoffFaixaMax: row.rep_max || 10,
+          seriesValidas: seriesCount,
+          pesoAnterior: undefined,
+          repsAnterior: undefined,
+          progrediu: false,
+          obs: "Importado da planilha",
+        };
+        salvarRegistro(registro);
+
         porSessao[sessao] = (porSessao[sessao] || 0) + 1;
         total++;
       });
     });
 
     localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(db));
-    localStorage.setItem(storageKey("planoTreino"), JSON.stringify({ ...planoExistente, ...planoNovo }));
+    localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
+    localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
+    localStorage.removeItem(storageKey("rascunho_treino"));
     setResult({ total, preservados, porSessao });
     setCanUndo(true);
     setRows([]);
