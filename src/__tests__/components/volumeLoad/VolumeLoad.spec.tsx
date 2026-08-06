@@ -151,14 +151,20 @@ describe("VolumeLoad — Componente de volume por musculo", () => {
       cleanup();
     });
 
-    it("renderiza chip 'Esta semana'", () => {
+    it("renderiza chip '1 sem'", () => {
       render(<VolumeLoad />);
-      expect(screen.getByText("Esta semana")).toBeInTheDocument();
+      expect(screen.getByText("1 sem")).toBeInTheDocument();
     });
 
-    it("renderiza chip 'Este mês'", () => {
+    it("renderiza chips de 1 a 6 semanas e Mês", () => {
       render(<VolumeLoad />);
-      expect(screen.getByText("Este mês")).toBeInTheDocument();
+      expect(screen.getByText("1 sem")).toBeInTheDocument();
+      expect(screen.getByText("2 sem")).toBeInTheDocument();
+      expect(screen.getByText("3 sem")).toBeInTheDocument();
+      expect(screen.getByText("4 sem")).toBeInTheDocument();
+      expect(screen.getByText("5 sem")).toBeInTheDocument();
+      expect(screen.getByText("6 sem")).toBeInTheDocument();
+      expect(screen.getByText("Mês")).toBeInTheDocument();
     });
 
     it("subtitulo inicial é 'Semana atual vs semana anterior'", () => {
@@ -166,17 +172,63 @@ describe("VolumeLoad — Componente de volume por musculo", () => {
       expect(screen.getByText("Semana atual vs semana anterior")).toBeInTheDocument();
     });
 
-    it("clicar 'Este mês' muda subtitulo para 'Mês atual vs mês anterior'", () => {
+    it("clicar 'Mês' muda subtitulo para 'Mês atual vs mês anterior'", () => {
       render(<VolumeLoad />);
-      fireEvent.click(screen.getByText("Este mês"));
+      fireEvent.click(screen.getByText("Mês"));
       expect(screen.getByText("Mês atual vs mês anterior")).toBeInTheDocument();
     });
 
-    it("clicar 'Esta semana' após 'Este mês' restaura subtitulo semanal", () => {
+    it("clicar '1 sem' após 'Mês' restaura subtitulo semanal", () => {
       render(<VolumeLoad />);
-      fireEvent.click(screen.getByText("Este mês"));
-      fireEvent.click(screen.getByText("Esta semana"));
+      fireEvent.click(screen.getByText("Mês"));
+      fireEvent.click(screen.getByText("1 sem"));
       expect(screen.getByText("Semana atual vs semana anterior")).toBeInTheDocument();
+    });
+
+    it("clicar '3 sem' muda subtitulo para range de 3 semanas", () => {
+      render(<VolumeLoad />);
+      fireEvent.click(screen.getByText("3 sem"));
+      expect(screen.getByText("Últimas 3 semanas vs 3 semanas anteriores")).toBeInTheDocument();
+    });
+
+    it("clicar '2 sem' muda subtitulo para range de 2 semanas", () => {
+      render(<VolumeLoad />);
+      fireEvent.click(screen.getByText("2 sem"));
+      expect(screen.getByText("Últimas 2 semanas vs 2 semanas anteriores")).toBeInTheDocument();
+    });
+
+    it("clicar '6 sem' muda subtitulo para range de 6 semanas", () => {
+      render(<VolumeLoad />);
+      fireEvent.click(screen.getByText("6 sem"));
+      expect(screen.getByText("Últimas 6 semanas vs 6 semanas anteriores")).toBeInTheDocument();
+    });
+
+    it("clicar '1 sem' após '4 sem' restaura subtitulo de 1 semana", () => {
+      render(<VolumeLoad />);
+      fireEvent.click(screen.getByText("4 sem"));
+      expect(screen.getByText("Últimas 4 semanas vs 4 semanas anteriores")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("1 sem"));
+      expect(screen.getByText("Semana atual vs semana anterior")).toBeInTheDocument();
+    });
+
+    it("clicar 'Mês' após '3 sem' muda para subtitulo mensal", () => {
+      render(<VolumeLoad />);
+      fireEvent.click(screen.getByText("3 sem"));
+      fireEvent.click(screen.getByText("Mês"));
+      expect(screen.getByText("Mês atual vs mês anterior")).toBeInTheDocument();
+    });
+
+    it("dado da semana anterior aparece quando range é 2 sem", () => {
+      // Jun 3 = W23 (semana anterior) — com 2 sem, faz parte do período atual
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [makeLogbookEntry("Supino reto barra", "2026-06-03")],
+      }));
+      render(<VolumeLoad />);
+      // Com 1 sem: Jun 3 é anterior, vol atual = 0
+      expect(screen.getByText("Peitoral")).toBeInTheDocument();
+      // Troca para 2 sem: Jun 3 passa a ser atual
+      fireEvent.click(screen.getByText("2 sem"));
+      expect(screen.getByText("Peitoral")).toBeInTheDocument();
     });
 
     it("dado de junho (semana anterior) aparece como atual ao trocar para mês", () => {
@@ -188,8 +240,8 @@ describe("VolumeLoad — Componente de volume por musculo", () => {
 
       // Em modo semana: Jun 3 é semana anterior → card de Peitoral aparece (volumeAnterior > 0)
       // mas "Esta sem." mostra 0 kg
-      // Em modo mês: Jun 3 é mês atual → "Este mês" mostra o valor
-      fireEvent.click(screen.getByText("Este mês"));
+      // Em modo mês: Jun 3 é mês atual → "Mês" mostra o valor
+      fireEvent.click(screen.getByText("Mês"));
       expect(screen.getByText("Peitoral")).toBeInTheDocument();
     });
   });

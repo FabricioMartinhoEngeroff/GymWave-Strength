@@ -8,6 +8,7 @@ import {
 } from "../../utils/volumeLoadCalc";
 
 type Granularity = "week" | "month";
+type WeekRange = 1 | 2 | 3 | 4 | 5 | 6;
 
 const Screen = styled.div`
   width: 100%;
@@ -47,6 +48,9 @@ const ToggleRow = styled.div`
   display: flex;
   gap: 6px;
   margin-bottom: 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
 `;
 
 const ToggleChip = styled.button<{ $active: boolean }>`
@@ -59,6 +63,8 @@ const ToggleChip = styled.button<{ $active: boolean }>`
   color: ${(p) => (p.$active ? "#ffffff" : "#374151")};
   font-weight: ${(p) => (p.$active ? 500 : 400)};
   transition: background 0.15s;
+  white-space: nowrap;
+  flex-shrink: 0;
 `;
 
 const DeloadBanner = styled.div`
@@ -229,8 +235,12 @@ function seriesLabel(series: number): string {
 
 export default function VolumeLoad() {
   const [granularity, setGranularity] = useState<Granularity>("week");
+  const [weekRange, setWeekRange] = useState<WeekRange>(1);
 
-  const dados = useMemo(() => calcVolumeLoad(granularity), [granularity]);
+  const dados = useMemo(
+    () => calcVolumeLoad(granularity, weekRange),
+    [granularity, weekRange]
+  );
   const totalAtual = useMemo(
     () => dados.reduce((s, d) => s + d.volumeAtual, 0),
     [dados]
@@ -258,10 +268,16 @@ export default function VolumeLoad() {
   const subtitle =
     granularity === "month"
       ? "Mês atual vs mês anterior"
-      : "Semana atual vs semana anterior";
+      : weekRange === 1
+      ? "Semana atual vs semana anterior"
+      : `Últimas ${weekRange} semanas vs ${weekRange} semanas anteriores`;
 
   const summaryPeriodLabel =
-    granularity === "month" ? "vs mês ant." : "vs semana ant.";
+    granularity === "month"
+      ? "vs mês ant."
+      : weekRange === 1
+      ? "vs semana ant."
+      : `vs ${weekRange} sem. ant.`;
 
   return (
     <Screen>
@@ -271,17 +287,20 @@ export default function VolumeLoad() {
       </TopBar>
       <Content>
         <ToggleRow>
-          <ToggleChip
-            $active={granularity === "week"}
-            onClick={() => setGranularity("week")}
-          >
-            Esta semana
-          </ToggleChip>
+          {([1, 2, 3, 4, 5, 6] as WeekRange[]).map((w) => (
+            <ToggleChip
+              key={w}
+              $active={granularity === "week" && weekRange === w}
+              onClick={() => { setGranularity("week"); setWeekRange(w); }}
+            >
+              {w === 1 ? "1 sem" : `${w} sem`}
+            </ToggleChip>
+          ))}
           <ToggleChip
             $active={granularity === "month"}
             onClick={() => setGranularity("month")}
           >
-            Este mês
+            Mês
           </ToggleChip>
         </ToggleRow>
 
@@ -365,7 +384,11 @@ export default function VolumeLoad() {
               {d.volumeAnterior > 0 && (
                 <VlBarWrap>
                   <VlBarLabel>
-                    {granularity === "month" ? "Mês ant." : "Sem. ant."}
+                    {granularity === "month"
+                      ? "Mês ant."
+                      : weekRange === 1
+                      ? "Sem. ant."
+                      : `${weekRange} sem. ant.`}
                   </VlBarLabel>
                   <VlBarBg>
                     <VlBarFill
@@ -379,7 +402,11 @@ export default function VolumeLoad() {
 
               <VlBarWrap>
                 <VlBarLabel>
-                  {granularity === "month" ? "Este mês" : "Esta sem."}
+                  {granularity === "month"
+                    ? "Este mês"
+                    : weekRange === 1
+                    ? "Esta sem."
+                    : `${weekRange} sem.`}
                 </VlBarLabel>
                 <VlBarBg>
                   <VlBarFill

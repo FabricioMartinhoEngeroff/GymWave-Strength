@@ -28,7 +28,7 @@ Qualquer usuário autenticado com dados registrados possui acesso.
   - **Risco de overtraining:** > 16 séries semanais.
 - **RG5** – Se não houver dados no período atual nem no anterior, exibe a mensagem `[sem_dados_periodo]`.
 - **RG6** – Apenas grupos musculares com ao menos um registro são exibidos.
-- **RG7** – O toggle de granularidade alterna entre **Semana** e **Mês**. A comparação acompanha: semana atual vs semana anterior, ou mês atual vs mês anterior.
+- **RG7** – O seletor de granularidade oferece **7 opções**: chips de **1 sem** a **6 sem** e **Mês**. Ao selecionar N semanas, o período atual agrega as últimas N semanas ISO e o período anterior agrega as N semanas imediatamente anteriores. A opção **Mês** compara mês calendário atual vs mês anterior.
 - **RG8** – O banner de semanas consecutivas (`[banner_deload]`) é exibido quando o usuário possui ≥ 10 semanas de treino contínuo no logbook sem pausa de ≥ 7 dias. Semanas consecutivas são contadas a partir das datas reais dos registros.
 - **RG9** – O badge `[estagnado]` é exibido no card do grupo muscular quando ≥ 2 exercícios daquele grupo acumulam ≥ 4 sessões consecutivas sem progressão (`progrediu === false` e `topSetBateuTeto === false`).
 - **RG10** – O badge `[↓ carga]` é exibido no card do grupo muscular quando o tonnage (peso × reps) caiu entre o período anterior e o atual em ≥ 2 exercícios daquele grupo.
@@ -41,17 +41,25 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 
 - Título: **Volume load por músculo**
 - Subtítulo dinâmico conforme granularidade:
-  - Semana: *Semana atual vs semana anterior*
+  - 1 semana: *Semana atual vs semana anterior*
+  - N semanas (2–6): *Últimas N semanas vs N semanas anteriores*
   - Mês: *Mês atual vs mês anterior*
 
 ### 4.2 Toggle de Granularidade
 
-Chips clicáveis abaixo da TopBar:
+Chips clicáveis e scrolláveis abaixo da TopBar:
 
 | Opção | Janela de cálculo |
 |---|---|
-| **Esta semana** (padrão) | Seg–Dom da semana ISO atual vs semana anterior |
-| **Este mês** | Mês calendário atual vs mês anterior |
+| **1 sem** (padrão) | Semana ISO atual vs semana anterior |
+| **2 sem** | Últimas 2 semanas ISO vs 2 semanas anteriores |
+| **3 sem** | Últimas 3 semanas ISO vs 3 semanas anteriores |
+| **4 sem** | Últimas 4 semanas ISO vs 4 semanas anteriores |
+| **5 sem** | Últimas 5 semanas ISO vs 5 semanas anteriores |
+| **6 sem** | Últimas 6 semanas ISO vs 6 semanas anteriores |
+| **Mês** | Mês calendário atual vs mês anterior |
+
+Para N semanas, o período **atual** = semana ISO 0 até semana ISO N−1; o período **anterior** = semana ISO N até semana ISO 2N−1.
 
 ### 4.3 Banner de Deload (`[banner_deload]`)
 
@@ -85,8 +93,8 @@ Para cada grupo muscular com dados, exibe:
 | Badge de estagnação | `estagnado` (laranja) — conforme RG9; exibido ao lado do badge de volume |
 | Badge de queda | `↓ carga` (vermelho) — conforme RG10; exibido ao lado dos outros badges |
 | Variação percentual | Variação vs período anterior (verde / vermelho / "—") |
-| Barra período anterior | Barra cinza proporcional ao volume anterior |
-| Barra período atual | Barra colorida (verde = crescimento, vermelho = queda, azul = igual) |
+| Barra período anterior | Barra cinza proporcional ao volume anterior. Label: "Sem. ant." (1 sem), "N sem. ant." (2–6 sem), "Mês ant." (mês) |
+| Barra período atual | Barra colorida (verde = crescimento, vermelho = queda, azul = igual). Label: "Esta sem." (1 sem), "N sem." (2–6 sem), "Este mês" (mês) |
 | Valores numéricos | Volume em kg ao lado de cada barra |
 
 Regra de exibição dos badges de diagnóstico:

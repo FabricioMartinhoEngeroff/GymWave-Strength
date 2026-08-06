@@ -59,7 +59,7 @@ function countValidSets(pesos: string[], reps: string[]): number {
   return count;
 }
 
-export function calcVolumeLoad(granularity: "week" | "month" = "week"): VolumeMusculo[] {
+export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: number = 1): VolumeMusculo[] {
   const db = JSON.parse(
     localStorage.getItem(storageKey("dadosTreino")) || "{}"
   ) as DadosTreino;
@@ -68,8 +68,21 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week"): VolumeMu
     localStorage.getItem(storageKey("logbook")) || "{}"
   ) as Logbook;
 
-  const current = granularity === "month" ? getMonthBounds(0) : getISOWeekBounds(0);
-  const previous = granularity === "month" ? getMonthBounds(1) : getISOWeekBounds(1);
+  let current: { start: number; end: number };
+  let previous: { start: number; end: number };
+
+  if (granularity === "month") {
+    current = getMonthBounds(0);
+    previous = getMonthBounds(1);
+  } else {
+    const currentEnd = getISOWeekBounds(0).end;
+    const currentStart = getISOWeekBounds(weeks - 1).start;
+    current = { start: currentStart, end: currentEnd };
+
+    const prevEnd = getISOWeekBounds(weeks).end;
+    const prevStart = getISOWeekBounds(weeks * 2 - 1).start;
+    previous = { start: prevStart, end: prevEnd };
+  }
 
   const musculoAtual: Record<string, number> = {};
   const musculoAnterior: Record<string, number> = {};
