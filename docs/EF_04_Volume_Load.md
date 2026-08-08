@@ -28,7 +28,10 @@ Qualquer usuário autenticado com dados registrados possui acesso.
   - **Risco de overtraining:** > 16 séries semanais.
 - **RG5** – Se não houver dados no período atual nem no anterior, exibe a mensagem `[sem_dados_periodo]`.
 - **RG6** – Apenas grupos musculares com ao menos um registro são exibidos.
-- **RG7** – O seletor de granularidade oferece **7 opções**: chips de **1 sem** a **6 sem** e **Mês**. Ao selecionar N semanas, o período atual agrega as últimas N semanas ISO e o período anterior agrega as N semanas imediatamente anteriores. A opção **Mês** compara mês calendário atual vs mês anterior.
+- **RG7** – O seletor de granularidade oferece **7 opções**: chips de **1 sem** a **6 sem** e **Mês**.
+  - **1 sem** — compara semana ISO atual vs semana anterior (2 barras por músculo).
+  - **2–6 sem** — modo **comparativo semana a semana**: exibe N barras horizontais por músculo, uma para cada semana individual (da mais antiga à mais recente), permitindo comparar a evolução semana a semana.
+  - **Mês** — compara mês calendário atual vs mês anterior (2 barras por músculo).
 - **RG8** – O banner de semanas consecutivas (`[banner_deload]`) é exibido quando o usuário possui ≥ 10 semanas de treino contínuo no logbook sem pausa de ≥ 7 dias. Semanas consecutivas são contadas a partir das datas reais dos registros.
 - **RG9** – O badge `[estagnado]` é exibido no card do grupo muscular quando ≥ 2 exercícios daquele grupo acumulam ≥ 4 sessões consecutivas sem progressão (`progrediu === false` e `topSetBateuTeto === false`).
 - **RG10** – O badge `[↓ carga]` é exibido no card do grupo muscular quando o tonnage (peso × reps) caiu entre o período anterior e o atual em ≥ 2 exercícios daquele grupo.
@@ -42,24 +45,25 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 - Título: **Volume load por músculo**
 - Subtítulo dinâmico conforme granularidade:
   - 1 semana: *Semana atual vs semana anterior*
-  - N semanas (2–6): *Últimas N semanas vs N semanas anteriores*
+  - N semanas (2–6): *Comparativo semanal — últimas N semanas*
   - Mês: *Mês atual vs mês anterior*
 
 ### 4.2 Toggle de Granularidade
 
 Chips clicáveis e scrolláveis abaixo da TopBar:
 
-| Opção | Janela de cálculo |
+| Opção | Modo de exibição |
 |---|---|
-| **1 sem** (padrão) | Semana ISO atual vs semana anterior |
-| **2 sem** | Últimas 2 semanas ISO vs 2 semanas anteriores |
-| **3 sem** | Últimas 3 semanas ISO vs 3 semanas anteriores |
-| **4 sem** | Últimas 4 semanas ISO vs 4 semanas anteriores |
-| **5 sem** | Últimas 5 semanas ISO vs 5 semanas anteriores |
-| **6 sem** | Últimas 6 semanas ISO vs 6 semanas anteriores |
-| **Mês** | Mês calendário atual vs mês anterior |
+| **1 sem** (padrão) | 2 barras: semana ISO atual vs semana anterior |
+| **2 sem** | 2 barras individuais: cada semana com seu volume |
+| **3 sem** | 3 barras individuais: cada semana com seu volume |
+| **4 sem** | 4 barras individuais: cada semana com seu volume |
+| **5 sem** | 5 barras individuais: cada semana com seu volume |
+| **6 sem** | 6 barras individuais: cada semana com seu volume |
+| **Mês** | 2 barras: mês calendário atual vs mês anterior |
 
-Para N semanas, o período **atual** = semana ISO 0 até semana ISO N−1; o período **anterior** = semana ISO N até semana ISO 2N−1.
+- **1 sem / Mês**: período atual vs período anterior (2 barras por músculo).
+- **2–6 sem**: modo comparativo — cada barra representa uma semana individual (da mais antiga para a mais recente), com label DD/MM da segunda-feira correspondente.
 
 ### 4.3 Banner de Deload (`[banner_deload]`)
 
@@ -78,8 +82,8 @@ O banner some automaticamente quando o usuário fizer uma pausa ≥ 7 dias (dete
 
 | Card | Dado exibido |
 |---|---|
-| Volume load total | Soma do volume load de todos os músculos no período atual (formato "Xk kg") |
-| Variação vs período anterior | Percentual de variação (verde se positivo, vermelho se negativo, "—" se igual) |
+| Volume load total | Soma do volume load de todos os músculos no período atual — no modo comparativo (2–6 sem), usa a semana mais recente (formato "Xk kg") |
+| Variação vs período anterior | Percentual de variação (verde se positivo, vermelho se negativo, "—" se igual). No modo comparativo, compara a semana mais recente com a penúltima semana. Label: "vs sem. anterior" |
 
 ### 4.5 Cards por Grupo Muscular
 
@@ -92,10 +96,29 @@ Para cada grupo muscular com dados, exibe:
 | Badge de volume | `abaixo do estímulo` (amarelo) / `adequado` (verde) / `volume alto` (laranja) / `risco overtraining` (vermelho) — conforme RG4 |
 | Badge de estagnação | `estagnado` (laranja) — conforme RG9; exibido ao lado do badge de volume |
 | Badge de queda | `↓ carga` (vermelho) — conforme RG10; exibido ao lado dos outros badges |
-| Variação percentual | Variação vs período anterior (verde / vermelho / "—") |
-| Barra período anterior | Barra cinza proporcional ao volume anterior. Label: "Sem. ant." (1 sem), "N sem. ant." (2–6 sem), "Mês ant." (mês) |
-| Barra período atual | Barra colorida (verde = crescimento, vermelho = queda, azul = igual). Label: "Esta sem." (1 sem), "N sem." (2–6 sem), "Este mês" (mês) |
+| Variação percentual | Variação vs período anterior (verde / vermelho / "—"). No modo comparativo (2–6 sem), delta entre a semana mais recente e a penúltima |
+| Barras de volume | Varia conforme o modo — ver 4.5.1 e 4.5.2 abaixo |
 | Valores numéricos | Volume em kg ao lado de cada barra |
+
+#### 4.5.1 Modo padrão (1 sem / Mês) — 2 barras
+
+| Barra | Cor | Label |
+|---|---|---|
+| Período anterior | Cinza (`#d1d5db`) | "Sem. ant." (1 sem) / "Mês ant." (mês) |
+| Período atual | Verde se crescimento, vermelho se queda, azul se igual | "Esta sem." (1 sem) / "Este mês" (mês) |
+
+A barra anterior só aparece se `volumeAnterior > 0`.
+
+#### 4.5.2 Modo comparativo (2–6 sem) — N barras
+
+Exibe **N barras horizontais** (uma por semana), da mais antiga (topo) à mais recente (base).
+
+| Elemento | Detalhe |
+|---|---|
+| Label | DD/MM da segunda-feira ISO de cada semana (ex.: "25/05", "01/06", "08/06") |
+| Cores | Gradiente de azul — paleta sequencial de 6 tons de `#dbeafe` (mais claro, semana mais antiga) a `#2563eb` (mais escuro, semana mais recente). Para N < 6, as cores são distribuídas uniformemente pela paleta |
+| Barras vazias | Semanas sem registros aparecem com barra em 0% e "0 kg" |
+| Escala | Todas as barras de todos os músculos compartilham o mesmo `maxVol` para comparação proporcional |
 
 Regra de exibição dos badges de diagnóstico:
 - Os badges `[estagnado]` e `[↓ carga]` são independentes do badge de volume — podem aparecer juntos ou separados.

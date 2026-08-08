@@ -6,6 +6,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import { vi } from "vitest";
 import {
   calcVolumeLoad,
+  calcVolumeLoadPerWeek,
   calcTotalVolumeWeek,
   calcStreakSemanas,
   calcEstagnadoMusculo,
@@ -734,6 +735,230 @@ describe("VolumeLoadCalc", () => {
       const costas = result.find((r) => r.musculo === "Costas");
       expect(peito?.volumeAtual).toBe(1500);  // 3 × 500
       expect(costas?.volumeAtual).toBe(1920); // 3 × 640
+    });
+  });
+
+  // ── calcVolumeLoadPerWeek — comparativo semana a semana ──────────────────
+
+  describe("calcVolumeLoadPerWeek — comparativo semana a semana", () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    // DATA_FIXA = 2026-06-10 (quarta)
+    // calcVolumeLoadPerWeek(3) → weekSlots (oldest first):
+    //   [0] W22: Mon 25/05, label "25/05"
+    //   [1] W23: Mon 01/06, label "01/06"
+    //   [2] W24: Mon 08/06, label "08/06"
+
+    it("retorna array vazio quando nao ha dados", () => {
+      expect(calcVolumeLoadPerWeek(3)).toEqual([]);
+    });
+
+    it("retorna 3 semanas com volumes individuais para weeks=3", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W24
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 80, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),  // W23
+          makeEntry("Supino reto barra", "2026-05-27", { topSetKg: 60, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),  // W22
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(3);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito).toBeDefined();
+      expect(peito!.semanas).toHaveLength(3);
+      expect(peito!.semanas[0].volume).toBe(600);  // W22 oldest
+      expect(peito!.semanas[1].volume).toBe(800);  // W23
+      expect(peito!.semanas[2].volume).toBe(1000); // W24 newest
+    });
+
+    it("labels mostram DD/MM da segunda-feira de cada semana", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 5, backoffKg: 0, backoffReps: 0 }),
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(3);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.semanas[0].label).toBe("25/05"); // Mon W22
+      expect(peito!.semanas[1].label).toBe("01/06"); // Mon W23
+      expect(peito!.semanas[2].label).toBe("08/06"); // Mon W24
+    });
+
+    it("semanas sem dados mostram volume 0", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W24 only
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(3);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.semanas[0].volume).toBe(0);    // W22 sem dados
+      expect(peito!.semanas[1].volume).toBe(0);    // W23 sem dados
+      expect(peito!.semanas[2].volume).toBe(1000); // W24 com dados
+    });
+
+    it("delta é calculado entre as 2 últimas semanas (newest vs second-newest)", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W24: 1000
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 50, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),  // W23: 500
+          makeEntry("Supino reto barra", "2026-05-27", { topSetKg: 200, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W22: 2000
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(3);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      // delta = (1000 - 500) / 500 * 100 = +100%
+      expect(peito!.delta).toBe(100);
+    });
+
+    it("delta é 0 quando segunda semana mais recente tem volume 0", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W24
+          // W23 sem dados → prev = 0
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(3);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.delta).toBe(0);
+    });
+
+    it("seriesAtual vem da semana mais recente", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 7, backoffKg: 85, backoffReps: 12 }), // W24: 2 series
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 100, topSetReps: 7, backoffKg: 85, backoffReps: 12, seriesValidas: 3, extraKg: 80, extraReps: 10 }), // W23: 3 series
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(2);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.seriesAtual).toBe(2); // W24 = 2 series
+    });
+
+    it("6 semanas retorna 6 slots com volumes individuais", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 60, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W24
+          makeEntry("Supino reto barra", "2026-06-03", { topSetKg: 50, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W23
+          makeEntry("Supino reto barra", "2026-05-27", { topSetKg: 40, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W22
+          makeEntry("Supino reto barra", "2026-05-20", { topSetKg: 30, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W21
+          makeEntry("Supino reto barra", "2026-05-13", { topSetKg: 20, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W20
+          makeEntry("Supino reto barra", "2026-05-06", { topSetKg: 10, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // W19
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(6);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.semanas).toHaveLength(6);
+      expect(peito!.semanas[0].volume).toBe(100);  // W19 oldest
+      expect(peito!.semanas[1].volume).toBe(200);  // W20
+      expect(peito!.semanas[2].volume).toBe(300);  // W21
+      expect(peito!.semanas[3].volume).toBe(400);  // W22
+      expect(peito!.semanas[4].volume).toBe(500);  // W23
+      expect(peito!.semanas[5].volume).toBe(600);  // W24 newest
+    });
+
+    it("múltiplos músculos aparecem com dados individuais por semana", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),
+        ],
+        "Remada peito apoiado": [
+          makeEntry("Remada peito apoiado", "2026-06-03", { topSetKg: 80, topSetReps: 8, backoffKg: 0, backoffReps: 0 }),
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(2);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      const costas = result.find((r) => r.musculo === "Costas");
+      expect(peito).toBeDefined();
+      expect(costas).toBeDefined();
+      expect(peito!.semanas[1].volume).toBe(1000); // W24
+      expect(peito!.semanas[0].volume).toBe(0);    // W23
+      expect(costas!.semanas[0].volume).toBe(640); // W23
+      expect(costas!.semanas[1].volume).toBe(0);   // W24
+    });
+
+    it("resultado é ordenado por volume da semana mais recente (decrescente)", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 50, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),
+        ],
+        "Remada peito apoiado": [
+          makeEntry("Remada peito apoiado", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(2);
+      expect(result[0].musculo).toBe("Costas");   // 1000 > 500
+      expect(result[1].musculo).toBe("Peitoral");
+    });
+
+    it("dados legacy (dadosTreino) são classificados por semana corretamente", () => {
+      setDb({
+        "Supino reto barra": {
+          UA: {
+            data: "10/06/2026",
+            pesos: ["100"],
+            reps: ["10"],
+            exercicio: "Supino reto barra",
+          },
+          UB: {
+            data: "03/06/2026",
+            pesos: ["80"],
+            reps: ["10"],
+            exercicio: "Supino reto barra",
+          },
+        },
+      });
+      const result = calcVolumeLoadPerWeek(2);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.semanas[0].volume).toBe(800);  // W23
+      expect(peito!.semanas[1].volume).toBe(1000); // W24
+    });
+
+    it("clusterSeries RP é computado por semana individual", () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra",
+          treinoId: "UA",
+          data: "10/06/2026",
+          dataTs: new Date("2026-06-10T12:00:00").getTime(),
+          topSetKg: 0,
+          topSetReps: 0,
+          topSetFaixaMin: 5,
+          topSetFaixaMax: 9,
+          topSetBateuTeto: false,
+          backoffKg: 0,
+          backoffReps: 0,
+          backoffFaixaMin: 9,
+          backoffFaixaMax: 15,
+          seriesValidas: 2,
+          progrediu: false,
+          tecnica: "RP",
+          clusterSeries: [
+            { kg: 80, reps: 10 },
+            { kg: 80, reps: 8 },
+          ],
+        }],
+      }));
+      const result = calcVolumeLoadPerWeek(2);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      // 80*10 + 80*8 = 800 + 640 = 1440
+      expect(peito!.semanas[1].volume).toBe(1440); // W24
+      expect(peito!.semanas[1].series).toBe(2);
+      expect(peito!.semanas[0].volume).toBe(0);    // W23 sem dados
+    });
+
+    it("dado fora do range de semanas é ignorado", () => {
+      setLogbook({
+        "Supino reto barra": [
+          makeEntry("Supino reto barra", "2026-06-10", { topSetKg: 100, topSetReps: 10, backoffKg: 0, backoffReps: 0 }),
+          makeEntry("Supino reto barra", "2026-01-15", { topSetKg: 200, topSetReps: 10, backoffKg: 0, backoffReps: 0 }), // fora
+        ],
+      });
+      const result = calcVolumeLoadPerWeek(2);
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito!.semanas[0].volume).toBe(0);    // W23
+      expect(peito!.semanas[1].volume).toBe(1000); // W24
     });
   });
 

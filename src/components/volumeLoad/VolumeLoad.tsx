@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import styled from "styled-components";
 import {
   calcVolumeLoad,
+  calcVolumeLoadPerWeek,
   calcStreakSemanas,
   calcEstagnadoMusculo,
   calcQuedaCargaMusculo,
@@ -233,51 +234,73 @@ function seriesLabel(series: number): string {
   return "";
 }
 
+const WEEK_PALETTE = ["#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb"];
+
+function getWeekColors(count: number): string[] {
+  if (count <= 1) return [WEEK_PALETTE[5]];
+  return Array.from({ length: count }, (_, i) => {
+    const idx = Math.round((i / (count - 1)) * 5);
+    return WEEK_PALETTE[idx];
+  });
+}
+
 export default function VolumeLoad() {
   const [granularity, setGranularity] = useState<Granularity>("week");
   const [weekRange, setWeekRange] = useState<WeekRange>(1);
 
+  const isPerWeek = granularity === "week" && weekRange > 1;
+
   const dados = useMemo(
-    () => calcVolumeLoad(granularity, weekRange),
+    () => (granularity === "week" && weekRange > 1) ? [] : calcVolumeLoad(granularity, weekRange),
     [granularity, weekRange]
   );
-  const totalAtual = useMemo(
-    () => dados.reduce((s, d) => s + d.volumeAtual, 0),
-    [dados]
+
+  const dadosPerWeek = useMemo(
+    () => (granularity === "week" && weekRange > 1) ? calcVolumeLoadPerWeek(weekRange) : [],
+    [granularity, weekRange]
   );
+
+  const weekColors = useMemo(() => getWeekColors(weekRange), [weekRange]);
+
   const streak = useMemo(() => calcStreakSemanas(), []);
 
   const withData = dados.filter(
     (d) => d.volumeAtual > 0 || d.volumeAnterior > 0
   );
-  const maxVol = Math.max(
-    ...withData.map((d) => Math.max(d.volumeAtual, d.volumeAnterior)),
-    1
-  );
 
-  const totalDelta =
-    dados.reduce((s, d) => s + d.volumeAnterior, 0) > 0
-      ? Math.round(
-          ((totalAtual -
-            dados.reduce((s, d) => s + d.volumeAnterior, 0)) /
-            dados.reduce((s, d) => s + d.volumeAnterior, 0)) *
-            100
-        )
-      : 0;
+  const maxVol = isPerWeek
+    ? Math.max(...dadosPerWeek.flatMap((d) => d.semanas.map((s) => s.volume)), 1)
+    : Math.max(...withData.map((d) => Math.max(d.volumeAtual, d.volumeAnterior)), 1);
+
+  const totalAtual = isPerWeek
+    ? dadosPerWeek.reduce((s, d) => s + d.semanas[d.semanas.length - 1].volume, 0)
+    : dados.reduce((s, d) => s + d.volumeAtual, 0);
+
+  const totalDelta = (() => {
+    if (isPerWeek) {
+      const newest = dadosPerWeek.reduce((s, d) => s + d.semanas[d.semanas.length - 1].volume, 0);
+      const prev = dadosPerWeek.reduce(
+        (s, d) => s + (d.semanas.length >= 2 ? d.semanas[d.semanas.length - 2].volume : 0), 0
+      );
+      return prev > 0 ? Math.round(((newest - prev) / prev) * 100) : 0;
+    }
+    const ant = dados.reduce((s, d) => s + d.volumeAnterior, 0);
+    return ant > 0 ? Math.round(((totalAtual - ant) / ant) * 100) : 0;
+  })();
 
   const subtitle =
     granularity === "month"
       ? "Mês atual vs mês anterior"
       : weekRange === 1
       ? "Semana atual vs semana anterior"
-      : `Últimas ${weekRange} semanas vs ${weekRange} semanas anteriores`;
+      : `Comparativo semanal — últimas ${weekRange} semanas`;
 
   const summaryPeriodLabel =
     granularity === "month"
       ? "vs mês ant."
       : weekRange === 1
       ? "vs semana ant."
-      : `vs ${weekRange} sem. ant.`;
+      : "vs sem. anterior";
 
   return (
     <Screen>
@@ -334,97 +357,130 @@ export default function VolumeLoad() {
           </SummaryCard>
         </SummaryRow>
 
-        {withData.length === 0 && (
+        {(isPerWeek ? dadosPerWeek.length === 0 : withData.length === 0) && (
           <EmptyMsg>
-            Nenhum treino registrado esta semana ou na anterior.
+            {isPerWeek
+              ? `Nenhum treino registrado nas últimas ${weekRange} semanas.`
+              : "Nenhum treino registrado esta semana ou na anterior."}
           </EmptyMsg>
         )}
 
-        {withData.map((d) => {
-          const estagnado = calcEstagnadoMusculo(d.musculo);
-          const quedaCarga = calcQuedaCargaMusculo(d.musculo, granularity);
-          const badgeLabel = seriesLabel(d.seriesAtual);
+        {isPerWeek
+          ? dadosPerWeek.map((d) => {
+              const estagnado = calcEstagnadoMusculo(d.musculo);
+              const quedaCarga = calcQuedaCargaMusculo(d.musculo, granularity);
+              const badgeLabel = seriesLabel(d.seriesAtual);
 
-          return (
-            <VlCard key={d.musculo}>
-              <VlHeader>
-                <div>
-                  <VlMusculo>{d.musculo}</VlMusculo>
-                  {d.seriesAtual > 0 && (
-                    <BadgesRow>
-                      <span style={{ fontSize: 11, color: "#6b7280" }}>
-                        {d.seriesAtual} séries
-                      </span>
-                      {badgeLabel && (
-                        <SeriesBadge $status={seriesStatus(d.seriesAtual)}>
-                          {badgeLabel}
-                        </SeriesBadge>
+              return (
+                <VlCard key={d.musculo}>
+                  <VlHeader>
+                    <div>
+                      <VlMusculo>{d.musculo}</VlMusculo>
+                      {d.seriesAtual > 0 && (
+                        <BadgesRow>
+                          <span style={{ fontSize: 11, color: "#6b7280" }}>
+                            {d.seriesAtual} séries
+                          </span>
+                          {badgeLabel && (
+                            <SeriesBadge $status={seriesStatus(d.seriesAtual)}>
+                              {badgeLabel}
+                            </SeriesBadge>
+                          )}
+                          {estagnado && (
+                            <DiagBadge $variant="estagnado">estagnado</DiagBadge>
+                          )}
+                          {quedaCarga && (
+                            <DiagBadge $variant="queda">↓ carga</DiagBadge>
+                          )}
+                        </BadgesRow>
                       )}
-                      {estagnado && (
-                        <DiagBadge $variant="estagnado">estagnado</DiagBadge>
+                    </div>
+                    <VlDelta $positive={d.delta > 0} $zero={d.delta === 0}>
+                      {d.delta > 0 ? `+${d.delta}%` : d.delta < 0 ? `${d.delta}%` : "—"}
+                    </VlDelta>
+                  </VlHeader>
+
+                  {d.semanas.map((sem, i) => (
+                    <VlBarWrap key={sem.label}>
+                      <VlBarLabel>{sem.label}</VlBarLabel>
+                      <VlBarBg>
+                        <VlBarFill
+                          $pct={maxVol > 0 ? Math.round((sem.volume / maxVol) * 100) : 0}
+                          $color={weekColors[i]}
+                        />
+                      </VlBarBg>
+                      <VlNum>{fmt(sem.volume)}</VlNum>
+                    </VlBarWrap>
+                  ))}
+                </VlCard>
+              );
+            })
+          : withData.map((d) => {
+              const estagnado = calcEstagnadoMusculo(d.musculo);
+              const quedaCarga = calcQuedaCargaMusculo(d.musculo, granularity);
+              const badgeLabel = seriesLabel(d.seriesAtual);
+
+              return (
+                <VlCard key={d.musculo}>
+                  <VlHeader>
+                    <div>
+                      <VlMusculo>{d.musculo}</VlMusculo>
+                      {d.seriesAtual > 0 && (
+                        <BadgesRow>
+                          <span style={{ fontSize: 11, color: "#6b7280" }}>
+                            {d.seriesAtual} séries
+                          </span>
+                          {badgeLabel && (
+                            <SeriesBadge $status={seriesStatus(d.seriesAtual)}>
+                              {badgeLabel}
+                            </SeriesBadge>
+                          )}
+                          {estagnado && (
+                            <DiagBadge $variant="estagnado">estagnado</DiagBadge>
+                          )}
+                          {quedaCarga && (
+                            <DiagBadge $variant="queda">↓ carga</DiagBadge>
+                          )}
+                        </BadgesRow>
                       )}
-                      {quedaCarga && (
-                        <DiagBadge $variant="queda">↓ carga</DiagBadge>
-                      )}
-                    </BadgesRow>
+                    </div>
+                    <VlDelta $positive={d.delta > 0} $zero={d.delta === 0}>
+                      {d.delta > 0 ? `+${d.delta}%` : d.delta < 0 ? `${d.delta}%` : "—"}
+                    </VlDelta>
+                  </VlHeader>
+
+                  {d.volumeAnterior > 0 && (
+                    <VlBarWrap>
+                      <VlBarLabel>
+                        {granularity === "month" ? "Mês ant." : "Sem. ant."}
+                      </VlBarLabel>
+                      <VlBarBg>
+                        <VlBarFill
+                          $pct={Math.round((d.volumeAnterior / maxVol) * 100)}
+                          $color="#d1d5db"
+                        />
+                      </VlBarBg>
+                      <VlNum>{fmt(d.volumeAnterior)}</VlNum>
+                    </VlBarWrap>
                   )}
-                </div>
-                <VlDelta
-                  $positive={d.delta > 0}
-                  $zero={d.delta === 0}
-                >
-                  {d.delta > 0
-                    ? `+${d.delta}%`
-                    : d.delta < 0
-                    ? `${d.delta}%`
-                    : "—"}
-                </VlDelta>
-              </VlHeader>
 
-              {d.volumeAnterior > 0 && (
-                <VlBarWrap>
-                  <VlBarLabel>
-                    {granularity === "month"
-                      ? "Mês ant."
-                      : weekRange === 1
-                      ? "Sem. ant."
-                      : `${weekRange} sem. ant.`}
-                  </VlBarLabel>
-                  <VlBarBg>
-                    <VlBarFill
-                      $pct={Math.round((d.volumeAnterior / maxVol) * 100)}
-                      $color="#d1d5db"
-                    />
-                  </VlBarBg>
-                  <VlNum>{fmt(d.volumeAnterior)}</VlNum>
-                </VlBarWrap>
-              )}
-
-              <VlBarWrap>
-                <VlBarLabel>
-                  {granularity === "month"
-                    ? "Este mês"
-                    : weekRange === 1
-                    ? "Esta sem."
-                    : `${weekRange} sem.`}
-                </VlBarLabel>
-                <VlBarBg>
-                  <VlBarFill
-                    $pct={Math.round((d.volumeAtual / maxVol) * 100)}
-                    $color={
-                      d.delta > 0
-                        ? "#16a34a"
-                        : d.delta < 0
-                        ? "#dc2626"
-                        : "#2563eb"
-                    }
-                  />
-                </VlBarBg>
-                <VlNum>{fmt(d.volumeAtual)}</VlNum>
-              </VlBarWrap>
-            </VlCard>
-          );
-        })}
+                  <VlBarWrap>
+                    <VlBarLabel>
+                      {granularity === "month" ? "Este mês" : "Esta sem."}
+                    </VlBarLabel>
+                    <VlBarBg>
+                      <VlBarFill
+                        $pct={Math.round((d.volumeAtual / maxVol) * 100)}
+                        $color={
+                          d.delta > 0 ? "#16a34a" : d.delta < 0 ? "#dc2626" : "#2563eb"
+                        }
+                      />
+                    </VlBarBg>
+                    <VlNum>{fmt(d.volumeAtual)}</VlNum>
+                  </VlBarWrap>
+                </VlCard>
+              );
+            })}
       </Content>
     </Screen>
   );

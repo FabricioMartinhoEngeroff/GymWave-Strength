@@ -161,6 +161,112 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
   return result.sort((a, b) => b.volumeAtual - a.volumeAtual);
 }
 
+export interface WeekVolume {
+  label: string;
+  volume: number;
+  series: number;
+}
+
+export interface VolumeMusculoSemanal {
+  musculo: string;
+  semanas: WeekVolume[];
+  delta: number;
+  seriesAtual: number;
+}
+
+export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
+  const db = JSON.parse(
+    localStorage.getItem(storageKey("dadosTreino")) || "{}"
+  ) as DadosTreino;
+
+  const logbook = JSON.parse(
+    localStorage.getItem(storageKey("logbook")) || "{}"
+  ) as Logbook;
+
+  const weekSlots: { start: number; end: number; label: string }[] = [];
+  for (let i = weeks - 1; i >= 0; i--) {
+    const bounds = getISOWeekBounds(i);
+    const mon = new Date(bounds.start);
+    weekSlots.push({
+      ...bounds,
+      label: `${String(mon.getDate()).padStart(2, "0")}/${String(mon.getMonth() + 1).padStart(2, "0")}`,
+    });
+  }
+
+  const perWeek: Record<string, { volume: number; series: number }[]> = {};
+
+  function ensure(m: string) {
+    if (!perWeek[m]) perWeek[m] = weekSlots.map(() => ({ volume: 0, series: 0 }));
+  }
+
+  function addToSlot(musculo: string, ts: number, vol: number, sets: number) {
+    for (let w = 0; w < weekSlots.length; w++) {
+      if (ts >= weekSlots[w].start && ts <= weekSlots[w].end) {
+        ensure(musculo);
+        perWeek[musculo][w].volume += vol;
+        perWeek[musculo][w].series += sets;
+        return;
+      }
+    }
+  }
+
+  Object.entries(db).forEach(([exercicio, ciclos]) => {
+    const musculo = MUSCLE_MAP[exercicio];
+    if (!musculo) return;
+    Object.values(ciclos).forEach((reg) => {
+      if (!reg.data || !reg.pesos) return;
+      const ts = parseDateBR(reg.data);
+      if (!ts) return;
+      const vol = calcVolumeEntry(reg.pesos || [], reg.reps || []);
+      if (vol <= 0) return;
+      addToSlot(musculo, ts, vol, countValidSets(reg.pesos || [], reg.reps || []));
+    });
+  });
+
+  Object.entries(logbook).forEach(([exercicio, registros]) => {
+    const musculo = MUSCLE_MAP[exercicio];
+    if (!musculo) return;
+    registros.forEach((reg) => {
+      const ts = reg.dataTs;
+      if (!ts) return;
+      let vol = 0;
+      let sets = 0;
+      if (reg.clusterSeries && reg.clusterSeries.length > 0) {
+        reg.clusterSeries.forEach((b) => {
+          if (b.kg > 0 && b.reps > 0) { vol += b.kg * b.reps; sets++; }
+        });
+      } else {
+        vol = reg.topSetKg * reg.topSetReps + reg.backoffKg * reg.backoffReps +
+          ((reg.seriesValidas === 3 && reg.extraKg && reg.extraReps) ? reg.extraKg * reg.extraReps : 0);
+        if (reg.topSetKg > 0 && reg.topSetReps > 0) sets++;
+        if (reg.backoffKg > 0 && reg.backoffReps > 0) sets++;
+        if (reg.seriesValidas === 3 && reg.extraKg && reg.extraKg > 0 && reg.extraReps && reg.extraReps > 0) sets++;
+      }
+      if (vol <= 0) return;
+      addToSlot(musculo, ts, vol, sets);
+    });
+  });
+
+  const result: VolumeMusculoSemanal[] = [];
+  Object.entries(perWeek).forEach(([musculo, wds]) => {
+    if (!wds.some((w) => w.volume > 0)) return;
+
+    const semanas: WeekVolume[] = wds.map((wd, i) => ({
+      label: weekSlots[i].label,
+      volume: wd.volume,
+      series: wd.series,
+    }));
+
+    const newest = wds[wds.length - 1].volume;
+    const prev = wds.length >= 2 ? wds[wds.length - 2].volume : 0;
+    const delta = prev > 0 ? Math.round(((newest - prev) / prev) * 100) : 0;
+
+    result.push({ musculo, semanas, delta, seriesAtual: wds[wds.length - 1].series });
+  });
+
+  return result.sort((a, b) => b.semanas[b.semanas.length - 1].volume - a.semanas[a.semanas.length - 1].volume);
+}
+
 export function calcTotalVolumeWeek(): number {
   return calcVolumeLoad().reduce((sum, m) => sum + m.volumeAtual, 0);
 }
