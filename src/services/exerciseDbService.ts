@@ -25,7 +25,7 @@ const NAME_MAP: Record<string, string> = {
   "Panturrilha em pé": "standing calf raise",
   "Panturrilha sentado": "seated calf raise",
   "Panturrilha leg press": "leg press calf raise",
-  "Tríceps testa halteres": "dumbbell triceps extension",
+  "Tríceps testa": "dumbbell triceps extension",
   "Tríceps polia barra reta": "cable triceps pushdown",
   "Tríceps polia unilateral": "cable one arm triceps pushdown",
   "Rosca inclinada 45°": "incline dumbbell curl",

@@ -43,7 +43,7 @@ export const EXERCICIOS = [
   "Panturrilha leg press",
 
   // ── Braço — Tríceps ───────────────────────────────────────────────────────
-  "Tríceps testa halteres",
+  "Tríceps testa",
   "Tríceps polia barra reta",
   "Tríceps polia unilateral",
   "Tríceps Francês",

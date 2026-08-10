@@ -48,7 +48,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "Panturrilha leg press":     "ClGPnxuKXNQ",
 
   // ── Braço — Tríceps ───────────────────────────────────────────────────────
-  "Tríceps testa halteres":    "",
+  "Tríceps testa":             "",
   "Tríceps polia barra reta":  "",
   "Tríceps polia unilateral":  "",
   "Tríceps Francês":             "dMYGgTbtRIQ",

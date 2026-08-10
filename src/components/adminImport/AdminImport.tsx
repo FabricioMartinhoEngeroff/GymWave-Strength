@@ -110,7 +110,7 @@ const NOME_MAP: Record<string, string> = {
   "Antebraço rola barra na palma cabo":          "Antebraço rola palma",
   // Braço (BR) — nomes curtos sem prefixo de grupo
   "Polia barra reta pronada":                    "Tríceps Pulley",
-  "Testa halteres deitado":                      "Tríceps testa halteres",
+  "Testa halteres deitado":                      "Tríceps testa",
   "Polia supinada unilateral":                   "Rosca polia unilateral",
   "Mesa scott":                                  "Rosca scott",
   "Martelo halteres":                            "Rosca martelo",
@@ -125,7 +125,7 @@ const NOME_MAP: Record<string, string> = {
   "Puxada triângulo (cima p/ baixo)":            "Puxada triângulo",
   "Remada peito apoiado banco inclinado":        "Remada peito apoiado",
   "Supino halteres com amplitude":               "Supino halteres amplitude",
-  "Tríceps testa halteres deitado":              "Tríceps testa halteres",
+  "Tríceps testa halteres deitado":              "Tríceps testa",
   "Tríceps polia barra reta pronada":            "Tríceps polia barra reta",
   "Tríceps polia alta unilateral supinada":      "Tríceps polia unilateral",
   "Rosca inclinada halteres banco 45°":          "Rosca inclinada 45°",

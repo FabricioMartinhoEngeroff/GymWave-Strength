@@ -480,7 +480,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 5 | Selecionar Lower A | `Terra sumô` carregado como primeiro exercicio |
 | 6 | Selecionar Upper B | `Barra fixa pronada` carregado como primeiro exercicio |
 | 7 | Selecionar Lower B | `Agachamento livre` carregado como primeiro exercicio |
-| 8 | Selecionar Braço | `Tríceps testa halteres` carregado como primeiro exercicio |
+| 8 | Selecionar Braço | `Tríceps testa` carregado como primeiro exercicio |
 | 9 | Sessao com 8 exercicios | Contador `1 / 8` exibido |
 
 **Top Set + Back-off (6)**

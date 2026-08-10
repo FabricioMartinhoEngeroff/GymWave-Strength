@@ -46,7 +46,7 @@ describe("exercise — Lista de exercicios Saizen", () => {
   });
 
   it("contem exercicios de braco", () => {
-    expect(EXERCICIOS).toContain("Tríceps testa halteres");
+    expect(EXERCICIOS).toContain("Tríceps testa");
     expect(EXERCICIOS).toContain("Rosca inclinada 45°");
     expect(EXERCICIOS).toContain("Rosca scott unilateral");
   });
