@@ -19,6 +19,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "Remada baixa":     "e997VfKgOy0",
   "Remada unilateral apoiada":         "wvIZzV763vQ",
   "Desenvolvimento máquina":           "8L11uFDABos",
+  "Extensão banco romano":             "58YmYtyt3nU",
 
   // ── Ombro ─────────────────────────────────────────────────────────────────
   "Elevação lateral livre":    "QlENCLwEx_Q",
@@ -28,6 +29,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "Agachamento livre":         "zgk71dUUt0Y",
   "Cadeira extensora":         "tcdgal1epsI",
   "Afundo no Smith":           "DiYEb4E4pko",
+  "Afundo búlgaro livre":      "DiYEb4E4pko",
 
   // ── Posterior/Glúteo ──────────────────────────────────────────────────────
   "Terra sumô":                        "vvtJCxBgEys",

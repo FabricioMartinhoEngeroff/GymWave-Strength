@@ -5,6 +5,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Supino reto barra":                "Peitoral",
   "Supino halteres amplitude":        "Peitoral",
   "Crossover braço estendido":        "Peitoral",
+  "Press declinado máquina":          "Peitoral",
 
   // ── Costas ────────────────────────────────────────────────────────────────
   "Barra fixa":               "Costas",
@@ -13,6 +14,10 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Remada peito apoiado":             "Costas",
   "Remada baixa":    "Costas",
   "Remada unilateral apoiada":        "Costas",
+  "Remada cabo sentado triângulo":    "Costas",
+  "Pull-around cabo":                 "Costas",
+  "Barra fixa pronada":               "Costas",
+  "Extensão banco romano":            "Costas", // lombar/eretores dobrado em Costas
 
   // ── Ombro ─────────────────────────────────────────────────────────────────
   "Elevação lateral livre":           "Ombro",
@@ -23,6 +28,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Agachamento livre":                "Quadríceps",
   "Cadeira extensora":                "Quadríceps",
   "Afundo no Smith":                  "Quadríceps",
+  "Afundo búlgaro livre":             "Quadríceps", // glúteo/quadríceps dobrado em Quadríceps
 
   // ── Posterior/Glúteo ──────────────────────────────────────────────────────
   "Terra sumô":                       "Posterior/Glúteo",
@@ -30,6 +36,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Stiff perna reta":                 "Posterior/Glúteo",
   "Elevação pélvica":                 "Posterior/Glúteo",
   "Cadeira flexora sentada":          "Posterior/Glúteo",
+  "Cadeira flexora deitado":          "Posterior/Glúteo",
   "Mesa flexora":          "Posterior/Glúteo",
   "Cadeira flexora unilateral":       "Posterior/Glúteo",
   "Adutor":                           "Posterior/Glúteo",
@@ -42,6 +49,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Panturrilha em pé":                "Panturrilha",
   "Panturrilha sentado":              "Panturrilha",
   "Panturrilha leg press":            "Panturrilha",
+  "Dorsiflexão cabo":                 "Panturrilha", // canela/tibial dobrado em Panturrilha
 
   // ── Braço ─────────────────────────────────────────────────────────────────
   // Tríceps
@@ -49,6 +57,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Tríceps testa":                    "Braço",
   "Tríceps polia unilateral":         "Braço",
   "Tríceps Francês":                    "Braço",
+  "Francês corda":                    "Braço",
   "Pulley barra reta pronada":        "Braço",
   "Tríceps Pulley":                   "Braço",
   "Pulley corda":                     "Braço",
@@ -67,6 +76,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Antebraço rola palma":             "Braço",
   "Rolar barra cabo":                 "Braço",
   "Rosca punho":                      "Braço",
+  "Rosca punho cabo":                 "Braço",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado":           "Core",
