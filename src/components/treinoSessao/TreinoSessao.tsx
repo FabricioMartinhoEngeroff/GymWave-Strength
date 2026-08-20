@@ -75,7 +75,9 @@ interface ExerciseState {
   topSetConfirmed: boolean;
   backoffConfirmed: boolean;
   tecnica: "RP" | null;
-  clusterSeries: { kg: string; reps: string }[];
+  clusterSeries: { kg: string; reps: string }[];   // Cluster Set — Série 1
+  clusterSeries2: { kg: string; reps: string }[];  // Cluster Set — Série 2
+  clusterActiveSerie: 1 | 2;                        // qual série está sendo preenchida
   tecnicaConfirmed: boolean;
 
   // ── Meta ─────────────────────────────────────────────────────────────────
@@ -139,6 +141,8 @@ function emptyExerciseState(): ExerciseState {
     backoffConfirmed: false,
     tecnica: null,
     clusterSeries: [],
+    clusterSeries2: [],
+    clusterActiveSerie: 1,
     tecnicaConfirmed: false,
     obs: "",
     skipped: false,
@@ -211,6 +215,8 @@ function sanitizeExerciseState(raw: Partial<ExerciseState>): ExerciseState {
     extraReps: raw.extraReps ?? base.extraReps,
     obs: raw.obs ?? base.obs,
     clusterSeries: Array.isArray(raw.clusterSeries) ? raw.clusterSeries : base.clusterSeries,
+    clusterSeries2: Array.isArray(raw.clusterSeries2) ? raw.clusterSeries2 : base.clusterSeries2,
+    clusterActiveSerie: raw.clusterActiveSerie === 2 ? 2 : 1,
     seriesValidas: (raw.seriesValidas === 3 ? 3 : 2) as 2 | 3,
   };
 }
@@ -268,7 +274,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       (s) =>
         s.topSetKg !== "" || s.topSetReps !== "" || s.topSetConfirmed ||
         s.backoffConfirmed || s.skipped || s.obs !== "" ||
-        s.clusterSeries.some((b) => b.kg !== "" || b.reps !== "")
+        s.clusterSeries.some((b) => b.kg !== "" || b.reps !== "") ||
+        s.clusterSeries2.some((b) => b.kg !== "" || b.reps !== "")
     );
     if (hasData) {
       saveDraft(sessao, exerciseStates, currentIdx);
@@ -305,7 +312,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     Object.values(exerciseStates).some(
       (s) =>
         s.topSetKg !== "" || s.topSetReps !== "" || s.topSetConfirmed || s.backoffConfirmed ||
-        s.clusterSeries.some((b) => b.kg !== "" || b.reps !== "")
+        s.clusterSeries.some((b) => b.kg !== "" || b.reps !== "") ||
+        s.clusterSeries2.some((b) => b.kg !== "" || b.reps !== "")
     );
 
   // Notify parent of unsaved state
@@ -522,11 +530,28 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     return !isNaN(kg) && kg > 0 && !isNaN(reps) && reps > 0;
   }
 
+  function serieClusterTemBloco(blocos: { kg: string; reps: string }[]): boolean {
+    return blocos.some((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0);
+  }
+
   function canConfirmTecnica(): boolean {
     if (!currentEx) return false;
     const s = exerciseStates[currentEx.nome];
     if (!s || !s.tecnica) return false;
-    return s.clusterSeries.some((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0);
+    // Cluster Set tem sempre 2 séries: ambas precisam de ao menos um bloco válido.
+    return serieClusterTemBloco(s.clusterSeries) && serieClusterTemBloco(s.clusterSeries2);
+  }
+
+  /** Avança da Série 1 para a Série 2 (exige ao menos um bloco válido na Série 1). */
+  function finalizarSerieCluster1() {
+    if (!currentEx) return;
+    const s = exerciseStates[currentEx.nome];
+    if (!s || !serieClusterTemBloco(s.clusterSeries)) {
+      setTecnicaWarning(true);
+      return;
+    }
+    setTecnicaWarning(false);
+    updateState(currentEx.nome, { clusterActiveSerie: 2 });
   }
 
   function confirmTecnica() {
@@ -610,11 +635,12 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         const extraKg = state.seriesValidas === 3 ? (parseFloat(state.extraKg) || 0) : 0;
         const extraReps = state.seriesValidas === 3 ? (parseInt(state.extraReps) || 0) : 0;
 
-        const clusterData = isTecnicaMode
-          ? state.clusterSeries
-              .map((b) => ({ kg: parseFloat(b.kg) || 0, reps: parseInt(b.reps) || 0 }))
-              .filter((b) => b.kg > 0 && b.reps > 0)
-          : undefined;
+        const parseCluster = (blocos: { kg: string; reps: string }[]) =>
+          blocos
+            .map((b) => ({ kg: parseFloat(b.kg) || 0, reps: parseInt(b.reps) || 0 }))
+            .filter((b) => b.kg > 0 && b.reps > 0);
+        const clusterData = isTecnicaMode ? parseCluster(state.clusterSeries) : undefined;
+        const clusterData2 = isTecnicaMode ? parseCluster(state.clusterSeries2) : undefined;
 
         const ultimo = ultimoRegistro(ex.nome, treinoId);
         const bateuTeto = !isTecnicaMode && topReps >= ex.faixaTopSet[1];
@@ -639,6 +665,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
           extraReps: extraReps > 0 ? extraReps : undefined,
           tecnica: state.tecnica,
           clusterSeries: clusterData,
+          clusterSeries2: clusterData2 && clusterData2.length > 0 ? clusterData2 : undefined,
           pesoAnterior: ultimo?.topSetKg,
           repsAnterior: ultimo?.topSetReps,
           progrediu: ultimo ? topKg > ultimo.topSetKg : false,
@@ -649,11 +676,14 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         salvarRegistro(registro);
         feitos++;
 
+        const allClusterBlocks = isTecnicaMode
+          ? [...clusterData!, ...(clusterData2 ?? [])]
+          : [];
         const legacyPesos = isTecnicaMode
-          ? clusterData!.map((b) => String(b.kg))
+          ? allClusterBlocks.map((b) => String(b.kg))
           : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
         const legacyReps = isTecnicaMode
-          ? clusterData!.map((b) => String(b.reps))
+          ? allClusterBlocks.map((b) => String(b.reps))
           : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
         if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
         dadosDb[ex.nome][treinoId] = {
@@ -838,11 +868,16 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                 )}
                 {!state?.skipped && state?.tecnicaConfirmed && state?.tecnica && (
                   <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6b7280" }}>
-                    {state.tecnica}:{" "}
-                    {(state.clusterSeries ?? [])
-                      .filter((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0)
-                      .map((b, i) => `R${i + 1}: ${b.kg}kg × ${b.reps}reps`)
-                      .join(" · ")}
+                    {[state.clusterSeries ?? [], state.clusterSeries2 ?? []]
+                      .map((blocos) =>
+                        blocos
+                          .filter((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0)
+                          .map((b, i) => `B${i + 1}: ${b.kg}kg × ${b.reps}reps`)
+                          .join(" · ")
+                      )
+                      .filter((s) => s !== "")
+                      .map((serieTxt, si) => `Cluster S${si + 1} — ${serieTxt}`)
+                      .join("  |  ")}
                   </p>
                 )}
                 {!state?.skipped && !state?.topSetConfirmed && !state?.tecnicaConfirmed && (
@@ -1082,6 +1117,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             const restored: Partial<ExerciseState> = {
                               tecnica: null,
                               clusterSeries: [],
+                              clusterSeries2: [],
+                              clusterActiveSerie: 1,
                               tecnicaConfirmed: false,
                               topSetConfirmed: false,
                               backoffConfirmed: false,
@@ -1120,6 +1157,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               tecnica: "RP",
                               isDeload: false,
                               clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
+                              clusterSeries2: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
+                              clusterActiveSerie: 1,
                               topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
                               topSetConfirmed: false, backoffConfirmed: false,
                               topSetKgIsSuggestion: false, backoffKgIsSuggestion: false, backoffKgWasUserEdited: false,
@@ -1129,7 +1168,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         }}
                         type="button"
                       >
-                        Rest Pause
+                        Cluster Set
                       </CycleChip>
                       <CycleChip
                         $active={state.isDeload}
@@ -1161,6 +1200,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               isDeload: true,
                               tecnica: null,
                               clusterSeries: [],
+                              clusterSeries2: [],
+                              clusterActiveSerie: 1,
                               tecnicaConfirmed: false,
                               backoffKg: "",
                               backoffReps: "",
@@ -1183,9 +1224,47 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </p>
                     )}
 
-                    {state.tecnica && !state.tecnicaConfirmed && (
+                    {state.tecnica && !state.tecnicaConfirmed && (() => {
+                      const serie = state.clusterActiveSerie;
+                      const activeKey = serie === 1 ? "clusterSeries" : "clusterSeries2";
+                      const activeBlocks = serie === 1 ? state.clusterSeries : state.clusterSeries2;
+                      const setBlocks = (blocos: { kg: string; reps: string }[]) =>
+                        updateState(currentEx.nome, { [activeKey]: blocos } as Partial<ExerciseState>);
+                      const serie1Total = state.clusterSeries.reduce(
+                        (sum, b) => sum + (parseFloat(b.kg) || 0) * (parseInt(b.reps) || 0), 0);
+                      return (
                       <>
-                        {state.clusterSeries.map((bloco, i) => (
+                        {/* Navegação entre as 2 séries cluster */}
+                        <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
+                          {[1, 2].map((n) => (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => {
+                                setTecnicaWarning(false);
+                                // Só permite ir para a Série 2 se a Série 1 tiver um bloco válido
+                                if (n === 2 && !serieClusterTemBloco(state.clusterSeries)) {
+                                  setTecnicaWarning(true);
+                                  return;
+                                }
+                                updateState(currentEx.nome, { clusterActiveSerie: n as 1 | 2 });
+                              }}
+                              style={{
+                                flex: 1, padding: "6px 8px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                                cursor: "pointer",
+                                border: serie === n ? "1px solid #2563eb" : "1px solid #d1d5db",
+                                background: serie === n ? "#eff6ff" : "#fff",
+                                color: serie === n ? "#1d4ed8" : "#6b7280",
+                              }}
+                            >
+                              Série {n}
+                              {n === 1 && serieClusterTemBloco(state.clusterSeries) ? " ✓" : ""}
+                              {n === 2 && serieClusterTemBloco(state.clusterSeries2) ? " ✓" : ""}
+                            </button>
+                          ))}
+                        </div>
+
+                        {activeBlocks.map((bloco, i) => (
                           <div key={i}>
                             <p style={{ fontSize: 11, fontWeight: 600, color: "#374151", margin: "8px 0 4px" }}>
                               Bloco {i + 1}
@@ -1198,12 +1277,12 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                                   placeholder="kg"
                                   value={bloco.kg}
                                   onChange={(e) => {
-                                    const cs = [...state.clusterSeries];
+                                    const cs = [...activeBlocks];
                                     cs[i] = { ...cs[i], kg: e.target.value };
-                                    updateState(currentEx.nome, { clusterSeries: cs });
+                                    setBlocks(cs);
                                   }}
                                   $invalid={false}
-                                  aria-label={`Bloco ${i + 1} kg ${currentEx.nome}`}
+                                  aria-label={`Série ${serie} bloco ${i + 1} kg ${currentEx.nome}`}
                                 />
                                 <Unit>kg</Unit>
                               </SerieRow>
@@ -1214,12 +1293,12 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                                   placeholder="reps"
                                   value={bloco.reps}
                                   onChange={(e) => {
-                                    const cs = [...state.clusterSeries];
+                                    const cs = [...activeBlocks];
                                     cs[i] = { ...cs[i], reps: e.target.value };
-                                    updateState(currentEx.nome, { clusterSeries: cs });
+                                    setBlocks(cs);
                                   }}
                                   $invalid={false}
-                                  aria-label={`Bloco ${i + 1} reps ${currentEx.nome}`}
+                                  aria-label={`Série ${serie} bloco ${i + 1} reps ${currentEx.nome}`}
                                 />
                                 <Unit>reps</Unit>
                               </SerieRow>
@@ -1227,43 +1306,82 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           </div>
                         ))}
                         <p style={{ fontSize: 12, color: "#6b7280", margin: "8px 0 4px" }}>
-                          Total: {state.clusterSeries.reduce((sum, b) => {
+                          Total Série {serie}: {activeBlocks.reduce((sum, b) => {
                             return sum + (parseFloat(b.kg) || 0) * (parseInt(b.reps) || 0);
                           }, 0)} kg·reps
+                          {serie === 2 && (
+                            <> · Geral: {serie1Total + activeBlocks.reduce((sum, b) =>
+                              sum + (parseFloat(b.kg) || 0) * (parseInt(b.reps) || 0), 0)} kg·reps</>
+                          )}
                         </p>
-                        <button
-                          type="button"
-                          onClick={confirmTecnica}
-                          style={{
-                            width: "100%", padding: 10, marginTop: 4, border: "none", borderRadius: 8,
-                            background: "#2563eb", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
-                          }}
-                        >
-                          Confirmar Técnica
-                        </button>
+
+                        {serie === 1 ? (
+                          <button
+                            type="button"
+                            onClick={finalizarSerieCluster1}
+                            style={{
+                              width: "100%", padding: 10, marginTop: 4, border: "none", borderRadius: 8,
+                              background: "#2563eb", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                            }}
+                          >
+                            Finalizar Série 1 → Série 2
+                          </button>
+                        ) : (
+                          <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTecnicaWarning(false);
+                                updateState(currentEx.nome, { clusterActiveSerie: 1 });
+                              }}
+                              style={{
+                                flex: "0 0 auto", padding: "10px 14px", border: "1px solid #d1d5db",
+                                borderRadius: 8, background: "#fff", color: "#6b7280", fontSize: 13, cursor: "pointer",
+                              }}
+                            >
+                              ← Série 1
+                            </button>
+                            <button
+                              type="button"
+                              onClick={confirmTecnica}
+                              style={{
+                                flex: 1, padding: 10, border: "none", borderRadius: 8,
+                                background: "#16a34a", color: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer",
+                              }}
+                            >
+                              Confirmar Cluster
+                            </button>
+                          </div>
+                        )}
                         {tecnicaWarning && (
                           <div style={{
                             background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8,
                             padding: "9px 12px", fontSize: 12, color: "#c2410c", marginTop: 8,
                             display: "flex", alignItems: "center", gap: 6, fontWeight: 500,
                           }}>
-                            ⚠ Preencha pelo menos um bloco com peso e repetições.
+                            ⚠ Preencha pelo menos um bloco (peso e reps) em cada série.
                           </div>
                         )}
                       </>
-                    )}
+                      );
+                    })()}
 
                     {state.tecnica && state.tecnicaConfirmed && (
                       <>
-                        <div style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>
-                          {state.clusterSeries
-                            .filter((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0)
-                            .map((b, i) => (
-                              <span key={i} style={{ marginRight: 8 }}>
-                                R{i + 1}: {b.kg}kg × {b.reps}reps
-                              </span>
-                            ))}
-                        </div>
+                        {[state.clusterSeries, state.clusterSeries2].map((blocos, si) => {
+                          const validos = blocos.filter((b) => parseFloat(b.kg) > 0 && parseInt(b.reps) > 0);
+                          if (validos.length === 0) return null;
+                          return (
+                            <div key={si} style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>
+                              <strong style={{ color: "#1d4ed8", marginRight: 6 }}>S{si + 1}:</strong>
+                              {validos.map((b, i) => (
+                                <span key={i} style={{ marginRight: 8 }}>
+                                  B{i + 1}: {b.kg}kg × {b.reps}reps
+                                </span>
+                              ))}
+                            </div>
+                          );
+                        })}
                         <button
                           type="button"
                           onClick={() => updateState(currentEx.nome, { tecnicaConfirmed: false })}

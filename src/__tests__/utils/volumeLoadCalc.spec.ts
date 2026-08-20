@@ -326,7 +326,7 @@ describe("VolumeLoadCalc", () => {
       expect(peito?.volumeAtual).toBe(2000);
     });
 
-    it("conta somente blocos com kg>0 e reps>0 para seriesAtual", () => {
+    it("uma série cluster (só clusterSeries) conta como 1 série válida", () => {
       localStorage.setItem("logbook", JSON.stringify({
         "Supino reto barra": [makeLogbookEntry({
           tecnica: "RP",
@@ -340,6 +340,28 @@ describe("VolumeLoadCalc", () => {
       }));
       const result = calcVolumeLoad();
       const peito = result.find((r) => r.musculo === "Peitoral");
+      expect(peito?.seriesAtual).toBe(1);
+    });
+
+    it("duas séries cluster contam como 2 séries válidas e somam o volume", () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [makeLogbookEntry({
+          tecnica: "RP",
+          clusterSeries: [
+            { kg: 80, reps: 3 },
+            { kg: 80, reps: 2 },
+            { kg: 80, reps: 2 },
+          ],
+          clusterSeries2: [
+            { kg: 80, reps: 3 },
+            { kg: 80, reps: 2 },
+          ],
+        })],
+      }));
+      const result = calcVolumeLoad();
+      const peito = result.find((r) => r.musculo === "Peitoral");
+      // S1: 80*(3+2+2)=560 | S2: 80*(3+2)=400 → 960
+      expect(peito?.volumeAtual).toBe(960);
       expect(peito?.seriesAtual).toBe(2);
     });
 
@@ -944,7 +966,7 @@ describe("VolumeLoadCalc", () => {
       const peito = result.find((r) => r.musculo === "Peitoral");
       // 80*10 + 80*8 = 800 + 640 = 1440
       expect(peito!.semanas[1].volume).toBe(1440); // W24
-      expect(peito!.semanas[1].series).toBe(2);
+      expect(peito!.semanas[1].series).toBe(1);    // 1 série cluster = 1 série válida
       expect(peito!.semanas[0].volume).toBe(0);    // W23 sem dados
     });
 

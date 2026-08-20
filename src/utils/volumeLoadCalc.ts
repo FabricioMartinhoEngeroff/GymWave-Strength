@@ -1,6 +1,31 @@
 import { MUSCLE_MAP } from "../data/muscleMap";
-import type { DadosTreino, Logbook } from "../types/TrainingData";
+import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
 import { storageKey } from "./storage";
+
+type ClusterSerie = { kg: number; reps: number }[] | undefined;
+
+/**
+ * Volume e séries válidas de um registro Cluster Set.
+ * O volume soma todos os blocos das duas séries; cada série cluster com ao menos
+ * um bloco válido conta como 1 série válida (máx. 2), não cada bloco.
+ * Retorna null se o registro não for cluster.
+ */
+function clusterVolAndSets(reg: RegistroExercicio): { vol: number; sets: number } | null {
+  const series: ClusterSerie[] = [reg.clusterSeries, reg.clusterSeries2];
+  const temCluster = series.some((s) => s && s.length > 0);
+  if (!temCluster) return null;
+  let vol = 0;
+  let sets = 0;
+  series.forEach((blocos) => {
+    if (!blocos || blocos.length === 0) return;
+    let serieTemBloco = false;
+    blocos.forEach((b) => {
+      if (b.kg > 0 && b.reps > 0) { vol += b.kg * b.reps; serieTemBloco = true; }
+    });
+    if (serieTemBloco) sets++;
+  });
+  return { vol, sets };
+}
 
 export interface VolumeMusculo {
   musculo: string;
@@ -121,10 +146,10 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
       let vol = 0;
       let sets = 0;
 
-      if (reg.clusterSeries && reg.clusterSeries.length > 0) {
-        reg.clusterSeries.forEach((b) => {
-          if (b.kg > 0 && b.reps > 0) { vol += b.kg * b.reps; sets++; }
-        });
+      const cluster = clusterVolAndSets(reg);
+      if (cluster) {
+        vol = cluster.vol;
+        sets = cluster.sets;
       } else {
         vol = reg.topSetKg * reg.topSetReps + reg.backoffKg * reg.backoffReps +
           ((reg.seriesValidas === 3 && reg.extraKg && reg.extraReps) ? reg.extraKg * reg.extraReps : 0);
@@ -231,10 +256,10 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
       if (!ts) return;
       let vol = 0;
       let sets = 0;
-      if (reg.clusterSeries && reg.clusterSeries.length > 0) {
-        reg.clusterSeries.forEach((b) => {
-          if (b.kg > 0 && b.reps > 0) { vol += b.kg * b.reps; sets++; }
-        });
+      const cluster = clusterVolAndSets(reg);
+      if (cluster) {
+        vol = cluster.vol;
+        sets = cluster.sets;
       } else {
         vol = reg.topSetKg * reg.topSetReps + reg.backoffKg * reg.backoffReps +
           ((reg.seriesValidas === 3 && reg.extraKg && reg.extraReps) ? reg.extraKg * reg.extraReps : 0);

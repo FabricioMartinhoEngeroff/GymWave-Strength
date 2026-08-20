@@ -819,19 +819,25 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     });
   });
 
-  // ── Técnica Rest Pause ──────────────────────────────────────────────────
+  // ── Técnica Cluster Set (2 séries) ──────────────────────────────────────
 
-  describe("Tecnica Rest Pause — 4 blocos", () => {
-    it("chip Rest Pause e exibido na secao Tecnica", () => {
+  describe("Tecnica Cluster Set — 2 series de 4 blocos", () => {
+    /** Preenche o Bloco n da série ativa. */
+    function preencherBloco(n: number, kg: string, reps: string) {
+      fireEvent.change(screen.getByLabelText(new RegExp(`Bloco ${n} kg`, "i")), { target: { value: kg } });
+      fireEvent.change(screen.getByLabelText(new RegExp(`Bloco ${n} reps`, "i")), { target: { value: reps } });
+    }
+
+    it("chip Cluster Set e exibido na secao Tecnica", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByRole("button", { name: "Rest Pause" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Cluster Set" })).toBeInTheDocument();
     });
 
-    it("ao ativar Rest Pause exibe exatamente 4 blocos e oculta campos Top Set e Back-off", () => {
+    it("ao ativar Cluster Set exibe exatamente 4 blocos e oculta campos Top Set e Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
 
       expect(screen.getByText("Bloco 1")).toBeInTheDocument();
       expect(screen.getByText("Bloco 2")).toBeInTheDocument();
@@ -842,71 +848,87 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
     });
 
+    it("exibe navegacao entre Serie 1 e Serie 2", () => {
+      renderFresh();
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
+
+      expect(screen.getByRole("button", { name: "Série 1" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Série 2" })).toBeInTheDocument();
+    });
+
     it("Blocos 1 a 4 tem campos de peso e reps acessiveis", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
 
       expect(screen.getByLabelText(/Bloco 1 kg/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bloco 1 reps/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Bloco 2 kg/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Bloco 2 reps/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Bloco 3 kg/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Bloco 3 reps/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bloco 4 kg/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bloco 4 reps/i)).toBeInTheDocument();
     });
 
-    it("Bloco 5 nao existe apos ativar Rest Pause", () => {
+    it("Bloco 5 nao existe apos ativar Cluster Set", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
 
       expect(screen.queryByLabelText(/Bloco 5 kg/i)).not.toBeInTheDocument();
       expect(screen.queryByLabelText(/Bloco 5 reps/i)).not.toBeInTheDocument();
     });
 
-    it("confirmar tecnica sem dados exibe aviso de bloco obrigatorio", () => {
+    it("finalizar Serie 1 sem dados exibe aviso de bloco obrigatorio", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
-      fireEvent.click(screen.getByText("Confirmar Técnica"));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
+      fireEvent.click(screen.getByText(/Finalizar Série 1/i));
 
       expect(screen.getByText(/Preencha pelo menos um bloco/i)).toBeInTheDocument();
     });
 
-    it("ao preencher bloco 1 e confirmar exibe resumo com R1", () => {
+    it("preencher as 2 series e confirmar exibe resumo com S1 e S2", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
 
-      fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
-      fireEvent.click(screen.getByText("Confirmar Técnica"));
+      // Série 1
+      preencherBloco(1, "100", "5");
+      fireEvent.click(screen.getByText(/Finalizar Série 1/i));
+      // Série 2
+      preencherBloco(1, "90", "4");
+      fireEvent.click(screen.getByText("Confirmar Cluster"));
 
-      expect(screen.getByText(/R1: 100kg × 5reps/i)).toBeInTheDocument();
+      expect(screen.getByText(/S1:/)).toBeInTheDocument();
+      expect(screen.getByText(/B1: 100kg × 5reps/i)).toBeInTheDocument();
+      expect(screen.getByText(/S2:/)).toBeInTheDocument();
+      expect(screen.getByText(/B1: 90kg × 4reps/i)).toBeInTheDocument();
     });
 
-    it("desativar Rest Pause clicando novamente restaura Top Set e Back-off", () => {
+    it("desativar Cluster Set clicando novamente restaura Top Set e Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
       expect(screen.queryByText("Top Set")).not.toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
       expect(screen.getByText("Top Set")).toBeInTheDocument();
     });
 
-    it("salvar treino em modo Rest Pause persiste apenas blocos preenchidos no logbook", () => {
+    it("salvar treino Cluster Set persiste as 2 series no logbook", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
 
-      fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
-      fireEvent.change(screen.getByLabelText(/Bloco 2 kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Bloco 2 reps/i), { target: { value: "5" } });
-      fireEvent.click(screen.getByText("Confirmar Técnica"));
+      // Série 1: 3 + 2 + 2
+      preencherBloco(1, "100", "3");
+      preencherBloco(2, "100", "2");
+      preencherBloco(3, "100", "2");
+      fireEvent.click(screen.getByText(/Finalizar Série 1/i));
+      // Série 2: 3 + 2
+      preencherBloco(1, "95", "3");
+      preencherBloco(2, "95", "2");
+      fireEvent.click(screen.getByText("Confirmar Cluster"));
+
       fireEvent.click(screen.getByText("Próximo"));
       pularParaUltimo(12);
       fireEvent.click(screen.getByText("Ver Resumo"));
@@ -915,9 +937,10 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       const logbook = JSON.parse(localStorage.getItem("logbook") ?? "{}");
       const registro = logbook["Supino reto barra"]?.[0];
       expect(registro?.tecnica).toBe("RP");
-      expect(registro?.clusterSeries).toHaveLength(2);
-      expect(registro?.clusterSeries[0]).toEqual({ kg: 100, reps: 5 });
-      expect(registro?.clusterSeries[1]).toEqual({ kg: 100, reps: 5 });
+      expect(registro?.clusterSeries).toHaveLength(3);
+      expect(registro?.clusterSeries[0]).toEqual({ kg: 100, reps: 3 });
+      expect(registro?.clusterSeries2).toHaveLength(2);
+      expect(registro?.clusterSeries2[0]).toEqual({ kg: 95, reps: 3 });
     });
   });
 
@@ -961,7 +984,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("Rest Pause e Deload sao dois chips distintos na secao Tecnica", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByRole("button", { name: "Rest Pause" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Cluster Set" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Deload" })).toBeInTheDocument();
     });
 
@@ -1011,7 +1034,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("ativar Deload quando Rest Pause ativo: blocos RP somem e Top Set volta", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
       expect(screen.getByText("Bloco 1")).toBeInTheDocument();
 
       ativarDeload();
@@ -1023,7 +1046,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("ativar Deload quando Rest Pause ativo nao deixa aviso de RP e Deload simultaneos", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
       ativarDeload();
       // Blocos RP nao devem existir
       expect(screen.queryByText("Bloco 1")).not.toBeInTheDocument();
@@ -1088,7 +1111,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       ativarDeload();
       expect(screen.getByText(/apenas 1 série válida/i)).toBeInTheDocument();
 
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
       expect(screen.queryByText(/apenas 1 série válida/i)).not.toBeInTheDocument();
       expect(screen.getByText("Bloco 1")).toBeInTheDocument();
     });

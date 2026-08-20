@@ -187,22 +187,28 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
     });
   });
 
-  // ── Técnica RP ────────────────────────────────────────────────────────────
+  // ── Técnica Cluster Set ────────────────────────────────────────────────────
 
-  describe("Restauracao de tecnica RP", () => {
-    it("restaura estado RP confirmado ao reabrir", () => {
+  describe("Restauracao de tecnica Cluster Set", () => {
+    it("restaura estado Cluster Set confirmado (2 series) ao reabrir", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.click(screen.getByRole("button", { name: "Rest Pause" }));
+      fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
+      // Série 1
       fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "80" } });
       fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "5" } });
-      fireEvent.click(screen.getByText("Confirmar Técnica"));
+      fireEvent.click(screen.getByText(/Finalizar Série 1/i));
+      // Série 2
+      fireEvent.change(screen.getByLabelText(/Bloco 1 kg/i), { target: { value: "75" } });
+      fireEvent.change(screen.getByLabelText(/Bloco 1 reps/i), { target: { value: "4" } });
+      fireEvent.click(screen.getByText("Confirmar Cluster"));
 
       cleanup();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      expect(screen.getByText(/R1: 80kg × 5reps/i)).toBeInTheDocument();
+      expect(screen.getByText(/B1: 80kg × 5reps/i)).toBeInTheDocument();
+      expect(screen.getByText(/B1: 75kg × 4reps/i)).toBeInTheDocument();
     });
   });
 

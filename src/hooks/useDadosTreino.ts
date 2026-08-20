@@ -99,7 +99,9 @@ export function useDadosTreino(): DadosAgrupados {
     const logbook = JSON.parse(localStorage.getItem(storageKey("logbook")) || "{}") as Logbook;
     Object.entries(logbook).forEach(([exercicio, registros]) => {
       registros.forEach((reg) => {
-        const temClusterSeries = !!reg.clusterSeries && reg.clusterSeries.length > 0;
+        const temClusterSeries =
+          (!!reg.clusterSeries && reg.clusterSeries.length > 0) ||
+          (!!reg.clusterSeries2 && reg.clusterSeries2.length > 0);
         if (reg.topSetKg <= 0 && !temClusterSeries) return;
 
         const dataInfo = parseDataBR(reg.data);
@@ -110,9 +112,12 @@ export function useDadosTreino(): DadosAgrupados {
         let pesos: number[];
 
         if (temClusterSeries) {
-          // Modo RP: cada bloco do cluster é uma série válida; o Bloco 1
+          // Cluster Set: soma os blocos das 2 séries; o Bloco 1 da Série 1
           // (mais fresco) representa o esforço máximo da sessão.
-          const blocosValidos = reg.clusterSeries!.filter((b) => b.kg > 0 && b.reps > 0);
+          const blocosValidos = [
+            ...(reg.clusterSeries ?? []),
+            ...(reg.clusterSeries2 ?? []),
+          ].filter((b) => b.kg > 0 && b.reps > 0);
           blocosValidos.forEach((b) => (volumeLoad += b.kg * b.reps));
           topSet = blocosValidos[0]?.kg ?? 0;
           pesos = blocosValidos.map((b) => b.kg);

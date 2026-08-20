@@ -50,7 +50,12 @@ export interface RegistroExercicio {
   backoffFaixaMax: number;
 
   tecnica?: "RP" | null;
+  // Cluster Set: cada série cluster é um grupo de blocos (kg×reps). Série 1 fica
+  // em clusterSeries; a Série 2 em clusterSeries2 (registros antigos têm só a 1).
+  // O volume soma todos os blocos das duas; cada série não-vazia conta como 1
+  // série válida nos contadores.
   clusterSeries?: { kg: number; reps: number }[];
+  clusterSeries2?: { kg: number; reps: number }[];
 
   // Series count (read from import spreadsheet, persisted per registro)
   seriesValidas: 2 | 3; // 2 = Top Set + Back-off | 3 = + Série Extra
