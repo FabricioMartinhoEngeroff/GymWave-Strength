@@ -21,14 +21,14 @@ function selecionarSessao(nome: string) {
 }
 
 function confirmarTopSet(kg = "100", reps = "7") {
-  fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: kg } });
-  fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: reps } });
-  fireEvent.click(screen.getByText("Confirmar Top Set"));
+  fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: kg } });
+  fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: reps } });
+  fireEvent.click(screen.getByText("Confirmar Top Set 1"));
 }
 
 function confirmarBackoff(reps = "12") {
-  fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: reps } });
-  fireEvent.click(screen.getByText("Confirmar Back-off"));
+  fireEvent.change(screen.getByLabelText(/Top Set 2 reps/i), { target: { value: reps } });
+  fireEvent.click(screen.getByText("Confirmar Top Set 2"));
 }
 
 function pularParaUltimo(total = 11) {
@@ -92,7 +92,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
     it("grava rascunho ao editar peso do Top Set", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "90" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "90" } });
 
       const draft = getDraft();
       expect(draft).not.toBeNull();
@@ -111,7 +111,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("95");
     });
 
@@ -124,7 +124,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Top Set 2 kg/i)).toBeInTheDocument();
     });
 
     it("restaura confirmacao do Back-off", () => {
@@ -137,7 +137,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      expect(screen.getByText("Editar Back-off")).toBeInTheDocument();
+      expect(screen.getByText("Editar Top Set 2")).toBeInTheDocument();
     });
 
     it("restaura indice do exercicio atual", () => {
@@ -224,25 +224,25 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       render(<TreinoSessao />);
       selecionarSessao("Upper B");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("");
     });
 
     it("rascunho de duas sessoes coexistem", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "100" } });
       selecionarSessao("Upper B");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "60" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "60" } });
 
       cleanup();
       render(<TreinoSessao />);
 
       selecionarSessao("Upper A");
-      expect((screen.getByLabelText(/Top Set kg/i) as HTMLInputElement).value).toBe("100");
+      expect((screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement).value).toBe("100");
 
       selecionarSessao("Upper B");
-      expect((screen.getByLabelText(/Top Set kg/i) as HTMLInputElement).value).toBe("60");
+      expect((screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement).value).toBe("60");
     });
   });
 
@@ -267,7 +267,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       renderFresh();
       // Preenche rascunho de Upper B
       selecionarSessao("Upper B");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "60" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "60" } });
 
       // Salva treino de Upper A
       selecionarSessao("Upper A");
@@ -282,7 +282,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       render(<TreinoSessao />);
       selecionarSessao("Upper B");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("60");
     });
   });
@@ -297,7 +297,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
 
       // Deve funcionar normalmente como se nao houvesse rascunho
       expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("");
     });
 
@@ -307,7 +307,7 @@ describe("RascunhoLocalStorage — Persistência de rascunho no localStorage (RG
       selecionarSessao("Upper A");
 
       expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("");
     });
   });

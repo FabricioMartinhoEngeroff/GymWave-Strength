@@ -72,9 +72,9 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
       });
     });
 
-    it("backoffPct padrao eh 0.85 (85%)", () => {
+    it("backoffPct padrao eh 0.5 (50%)", () => {
       Object.values(SESSOES).flat().forEach((ex) => {
-        expect(ex.backoffPct).toBe(0.85);
+        expect(ex.backoffPct).toBe(0.5);
       });
     });
   });

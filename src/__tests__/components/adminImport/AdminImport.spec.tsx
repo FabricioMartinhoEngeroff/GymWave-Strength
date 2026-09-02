@@ -231,12 +231,12 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       expect(db["Supino reto barra"]["UA"]).toBeDefined();
     });
 
-    it("calcula backoff automaticamente quando nao fornecido", async () => {
+    it("Top Set 2 espelha o Top Set 1 quando backoff nao fornecido", async () => {
       await loadAndConfirm();
 
       const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
-      // Terra sumo: top_set_kg=160, backoff_kg vazio -> 160*0.85=136
-      expect(logbook["Terra sumô"][0].backoffKg).toBe(136);
+      // Terra sumo: top_set_kg=160, backoff_kg vazio -> Top Set 2 espelha = 160
+      expect(logbook["Terra sumô"][0].backoffKg).toBe(160);
     });
 
     it("salva seriesValidas=3 no logbook quando series_validas=3 na planilha", async () => {

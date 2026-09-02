@@ -148,7 +148,7 @@ function parseText(text: string): { sessions: ParsedSession[]; errors: string[] 
       grupo,
       faixaTopSet,
       faixaBackoff,
-      backoffPct: 0.85,
+      backoffPct: 0.5,
       seriesValidas,
       tecnica: null,
       cue: "",
@@ -217,7 +217,7 @@ export default function TextImport() {
           const topSetKg = (ex as ExercicioSessao & { topSetKg?: number }).topSetKg;
           if (topSetKg && topSetKg > 0) {
             const treinoId = TREINO_ID_MAP[sessao] ?? sessao.substring(0, 2).toUpperCase();
-            const boKg = Math.round(topSetKg * 0.85);
+            const boKg = topSetKg; // Top Set 2 espelha o Top Set 1 no plano importado
 
             if (!logbook[ex.nome]) logbook[ex.nome] = [];
             logbook[ex.nome].push({

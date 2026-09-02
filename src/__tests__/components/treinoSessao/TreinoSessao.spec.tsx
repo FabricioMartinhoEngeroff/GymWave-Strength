@@ -18,15 +18,15 @@ function selecionarSessao(nome: string) {
 
 // Helper: confirm Top Set for current exercise
 function confirmarTopSet(kg = "100", reps = "7") {
-  fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: kg } });
-  fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: reps } });
-  fireEvent.click(screen.getByText("Confirmar Top Set"));
+  fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: kg } });
+  fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: reps } });
+  fireEvent.click(screen.getByText("Confirmar Top Set 1"));
 }
 
 // Helper: confirm Back-off for current exercise
 function confirmarBackoff(reps = "12") {
-  fireEvent.change(screen.getByLabelText(/Back-off reps/i), { target: { value: reps } });
-  fireEvent.click(screen.getByText("Confirmar Back-off"));
+  fireEvent.change(screen.getByLabelText(/Top Set 2 reps/i), { target: { value: reps } });
+  fireEvent.click(screen.getByText("Confirmar Top Set 2"));
 }
 
 // Navigate to last exercise of Upper A (11 exercises) via Pular
@@ -103,15 +103,15 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("exibe bloco Top Set com campos kg e reps", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByText("Top Set")).toBeInTheDocument();
-      expect(screen.getByLabelText(/Top Set kg/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Top Set reps/i)).toBeInTheDocument();
+      expect(screen.getByText("Top Set 1")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Top Set 1 kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Top Set 1 reps/i)).toBeInTheDocument();
     });
 
     it("botao Confirmar Top Set desabilitado sem dados", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      const btn = screen.getByText("Confirmar Top Set");
+      const btn = screen.getByText("Confirmar Top Set 1");
       expect(btn).toBeDisabled();
     });
 
@@ -119,16 +119,16 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
       confirmarTopSet();
-      expect(screen.getByText("Confirmar Back-off")).toBeInTheDocument();
-      expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
+      expect(screen.getByText("Confirmar Top Set 2")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Top Set 2 kg/i)).toBeInTheDocument();
     });
 
-    it("backoff kg usa calculo 85% como fallback quando nao ha historico", () => {
+    it("Top Set 2 kg espelha o Top Set 1 como fallback quando nao ha historico", () => {
       renderFresh();
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
-      const boInput = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
-      expect(boInput.value).toBe("85");
+      const boInput = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
+      expect(boInput.value).toBe("100");
     });
 
     it("teto atingido mostra badge verde", () => {
@@ -182,9 +182,9 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       confirmarTopSet();
       confirmarBackoff();
-      expect(screen.getByText(/série extra/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Extra kg/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/Extra reps/i)).toBeInTheDocument();
+      expect(screen.getByText("Back-off (50%)")).toBeInTheDocument();
+      expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Back-off reps/i)).toBeInTheDocument();
     });
 
     it("badge respeita o plano mesmo quando o historico tem seriesValidas diferente", () => {
@@ -218,7 +218,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       confirmarTopSet();
       confirmarBackoff();
-      expect(screen.queryByText(/série extra/i)).not.toBeInTheDocument();
+      expect(screen.queryByText("Back-off (50%)")).not.toBeInTheDocument();
     });
 
     it("salva seriesValidas e extra no logbook ao salvar treino", () => {
@@ -315,7 +315,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput).not.toBeDisabled();
     });
 
@@ -333,7 +333,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByLabelText(/exercício anterior/i));
       expect(screen.getByText("1 / 11")).toBeInTheDocument();
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("100");
       expect(kgInput).not.toBeDisabled();
     });
@@ -348,7 +348,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByLabelText(/próximo exercício/i));
       fireEvent.click(screen.getByLabelText(/exercício anterior/i));
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       fireEvent.change(kgInput, { target: { value: "105" } });
       expect(kgInput.value).toBe("105");
     });
@@ -358,8 +358,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
 
-      fireEvent.click(screen.getByText("Editar Top Set"));
-      expect(screen.getByText("Confirmar Top Set")).toBeInTheDocument();
+      fireEvent.click(screen.getByText("Editar Top Set 1"));
+      expect(screen.getByText("Confirmar Top Set 1")).toBeInTheDocument();
     });
 
     it("indicador verde aparece no nome do exercicio quando confirmado", () => {
@@ -381,7 +381,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
 
       // Digita kg no Upper A sem confirmar
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "80" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "80" } });
 
       // Troca para Upper B
       selecionarSessao("Upper B");
@@ -390,7 +390,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       // Volta para Upper A
       selecionarSessao("Upper A");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("80");
     });
 
@@ -404,17 +404,17 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
 
       // Back-off ainda visivel (topSetConfirmed ainda true)
-      expect(screen.getByLabelText(/Back-off kg/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/Top Set 2 kg/i)).toBeInTheDocument();
     });
 
     it("rascunho de UB e independente de UA", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "80" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "80" } });
 
       selecionarSessao("Upper B");
       // UB começa limpo
-      const kgInputUB = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInputUB = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInputUB.value).toBe("");
     });
   });
@@ -449,7 +449,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i);
       expect(kgInput).toHaveAttribute("data-suggestion", "true");
     });
 
@@ -458,7 +458,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i);
       fireEvent.change(kgInput, { target: { value: "110" } });
       expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
     });
@@ -466,7 +466,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("sem historico, input nao tem data-suggestion", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i);
       expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
     });
 
@@ -477,7 +477,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       confirmarTopSet("100", "7");
 
-      const kgInput = screen.getByLabelText(/Top Set kg/i);
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i);
       expect(kgInput).not.toHaveAttribute("data-suggestion", "true");
     });
   });
@@ -537,7 +537,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       setupHistoricoCompleto();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
-      const repsInput = screen.getByLabelText(/Top Set reps/i) as HTMLInputElement;
+      const repsInput = screen.getByLabelText(/Top Set 1 reps/i) as HTMLInputElement;
       expect(repsInput.value).toBe("6");
     });
 
@@ -546,7 +546,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
-      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
       expect(boKg.value).toBe("80");
     });
 
@@ -555,7 +555,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
-      const boReps = screen.getByLabelText(/Back-off reps/i) as HTMLInputElement;
+      const boReps = screen.getByLabelText(/Top Set 2 reps/i) as HTMLInputElement;
       expect(boReps.value).toBe("10");
     });
 
@@ -564,7 +564,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7"); // 85% de 100 = 85, mas historico tem 80
-      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
       expect(boKg.value).toBe("80");
     });
 
@@ -581,8 +581,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
       confirmarBackoff("10");
-      const extraKg = screen.getByLabelText(/Extra kg/i) as HTMLInputElement;
-      const extraReps = screen.getByLabelText(/Extra reps/i) as HTMLInputElement;
+      const extraKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      const extraReps = screen.getByLabelText(/Back-off reps/i) as HTMLInputElement;
       expect(extraKg.value).toBe("75");
       expect(extraReps.value).toBe("14");
     });
@@ -590,7 +590,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
     it("top set reps nao e pre-preenchido quando nao ha historico", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      const repsInput = screen.getByLabelText(/Top Set reps/i) as HTMLInputElement;
+      const repsInput = screen.getByLabelText(/Top Set 1 reps/i) as HTMLInputElement;
       expect(repsInput.value).toBe("");
     });
   });
@@ -698,7 +698,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao onUnsavedChanges={onUnsavedChanges} />);
       selecionarSessao("Upper A");
 
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "100" } });
 
       expect(onUnsavedChanges).toHaveBeenCalledWith(true);
     });
@@ -730,7 +730,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "100" } });
 
       const calls = addEventSpy.mock.calls.filter(([event]) => event === "beforeunload");
       expect(calls.length).toBeGreaterThan(0);
@@ -773,8 +773,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: "7" } });
 
       expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
     });
@@ -786,8 +786,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
 
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "80" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "5" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "80" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: "5" } });
 
       expect(screen.queryByText(/Ritmo de Recorde Pessoal/i)).not.toBeInTheDocument();
     });
@@ -797,8 +797,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       renderFresh();
       selecionarSessao("Upper A");
 
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "8" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: "8" } });
 
       expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
     });
@@ -809,12 +809,12 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
 
       // Aciona o banner_pr
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "100" } });
-      fireEvent.change(screen.getByLabelText(/Top Set reps/i), { target: { value: "7" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "100" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: "7" } });
       expect(screen.getByText(/Ritmo de Recorde Pessoal/i)).toBeInTheDocument();
 
       // Apaga o campo de peso
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "" } });
       expect(screen.queryByText(/Ritmo de Recorde Pessoal/i)).not.toBeInTheDocument();
     });
   });
@@ -844,8 +844,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.getByText("Bloco 3")).toBeInTheDocument();
       expect(screen.getByText("Bloco 4")).toBeInTheDocument();
       expect(screen.queryByText("Bloco 5")).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/Top Set kg/i)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Top Set 1 kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Top Set 2 kg/i)).not.toBeInTheDocument();
     });
 
     it("exibe navegacao entre Serie 1 e Serie 2", () => {
@@ -911,7 +911,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.queryByText("Top Set")).not.toBeInTheDocument();
 
       fireEvent.click(screen.getByRole("button", { name: "Cluster Set" }));
-      expect(screen.getByText("Top Set")).toBeInTheDocument();
+      expect(screen.getByText("Top Set 1")).toBeInTheDocument();
     });
 
     it("salvar treino Cluster Set persiste as 2 series no logbook", () => {
@@ -1008,16 +1008,16 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       ativarDeload();
       confirmarTopSet("100", "7");
-      expect(screen.queryByText("Confirmar Back-off")).not.toBeInTheDocument();
-      expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByText("Confirmar Top Set 2")).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Top Set 2 kg/i)).not.toBeInTheDocument();
     });
 
     it("ao ativar Deload, campos Top Set digitados nao sao limpos", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      fireEvent.change(screen.getByLabelText(/Top Set kg/i), { target: { value: "90" } });
+      fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "90" } });
       ativarDeload();
-      const kgInput = screen.getByLabelText(/Top Set kg/i) as HTMLInputElement;
+      const kgInput = screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement;
       expect(kgInput.value).toBe("90");
     });
 
@@ -1025,9 +1025,9 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       setupHistoricoNormal();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
-      const kgBefore = (screen.getByLabelText(/Top Set kg/i) as HTMLInputElement).value;
+      const kgBefore = (screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement).value;
       ativarDeload();
-      const kgAfter = (screen.getByLabelText(/Top Set kg/i) as HTMLInputElement).value;
+      const kgAfter = (screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement).value;
       expect(kgAfter).toBe(kgBefore);
     });
 
@@ -1039,7 +1039,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
 
       ativarDeload();
       expect(screen.queryByText("Bloco 1")).not.toBeInTheDocument();
-      expect(screen.getByText("Top Set")).toBeInTheDocument();
+      expect(screen.getByText("Top Set 1")).toBeInTheDocument();
       expect(screen.queryByText(/apenas 1 série válida/i)).toBeInTheDocument();
     });
 
@@ -1060,7 +1060,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       ativarDeload();
       confirmarTopSet("100", "7");
       // Bloco Back-off nao deve aparecer
-      expect(screen.queryByLabelText(/Back-off kg/i)).not.toBeInTheDocument();
+      expect(screen.queryByLabelText(/Top Set 2 kg/i)).not.toBeInTheDocument();
     });
 
     // ── Desativação ───────────────────────────────────────────────────────
@@ -1073,14 +1073,14 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(screen.queryByText(/apenas 1 série válida/i)).not.toBeInTheDocument();
     });
 
-    it("ao desativar Deload sem historico, back-off e auto-preenchido com 85% do Top Set confirmado", () => {
+    it("ao desativar Deload sem historico, Top Set 2 e auto-preenchido espelhando o Top Set confirmado", () => {
       renderFresh();
       selecionarSessao("Upper A");
       ativarDeload();
       confirmarTopSet("100", "7");
       ativarDeload(); // desativa
-      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
-      expect(boKg.value).toBe("85");
+      const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
+      expect(boKg.value).toBe("100");
     });
 
     it("ao desativar Deload com historico, backoffKg do ultimo treino e restaurado", () => {
@@ -1090,7 +1090,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       ativarDeload();
       ativarDeload(); // desativa
       confirmarTopSet("100", "7");
-      const boKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
+      const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
       expect(boKg.value).toBe("82");
     });
 
@@ -1101,7 +1101,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       ativarDeload();
       ativarDeload(); // desativa
       confirmarTopSet("100", "7");
-      const boReps = screen.getByLabelText(/Back-off reps/i) as HTMLInputElement;
+      const boReps = screen.getByLabelText(/Top Set 2 reps/i) as HTMLInputElement;
       expect(boReps.value).toBe("11");
     });
 

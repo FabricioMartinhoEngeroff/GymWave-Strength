@@ -391,7 +391,7 @@ export default function AdminImport() {
         };
 
         if (!sessoesConfigMap[sessao]) sessoesConfigMap[sessao] = [];
-        const pct = parseFloat(String(row.backoff_pct ?? "85").replace('%', '')) / 100 || 0.85;
+        const pct = parseFloat(String(row.backoff_pct ?? "50").replace('%', '')) / 100 || 0.5;
         sessoesConfigMap[sessao].push({
           nome: row.exercicio,
           grupo: row.grupo || "Outro",
@@ -408,7 +408,7 @@ export default function AdminImport() {
         const topKg = parsePeso(row.top_set_kg);
         if (!topKg) return;
 
-        const boKg = parsePeso(row.backoff_kg) ?? Math.round(topKg * 0.85);
+        const boKg = parsePeso(row.backoff_kg) ?? topKg; // Top Set 2 espelha o Top Set 1 quando não informado
 
         const registro: RegistroExercicio = {
           exercicio: row.exercicio,

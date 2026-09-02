@@ -74,7 +74,7 @@ describe("TextImport", () => {
     expect(logbook["Mesa flexora"][0].topSetKg).toBe(30);
   });
 
-  it("calcula backoff automaticamente como 85% do top set", () => {
+  it("Top Set 2 espelha o Top Set 1 no plano importado", () => {
     localStorage.setItem("email", "treino@gmail.com");
     render(<TextImport />);
 
@@ -83,7 +83,7 @@ describe("TextImport", () => {
     fireEvent.click(screen.getByText("Salvar treino"));
 
     const logbook = JSON.parse(localStorage.getItem("amanda@treino.com_logbook") || "{}");
-    expect(logbook["Elevação pélvica"][0].backoffKg).toBe(51); // Math.round(60 * 0.85)
+    expect(logbook["Elevação pélvica"][0].backoffKg).toBe(60); // Top Set 2 espelha o Top Set 1 (60)
   });
 
   it("nao cria logbook entry para exercicios sem peso", () => {

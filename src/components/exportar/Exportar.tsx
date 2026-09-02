@@ -369,7 +369,7 @@ function exportCSV() {
   ) as Logbook;
 
   const rows: string[] = [
-    "data,exercicio,treino_id,top_set_kg,top_set_reps,backoff_kg,backoff_reps,series_validas,extra_kg,extra_reps",
+    "data,exercicio,treino_id,top_set_1_kg,top_set_1_reps,top_set_2_kg,top_set_2_reps,series_validas,back_off_kg,back_off_reps",
   ];
 
   Object.values(logbook).forEach((registros) => {
@@ -520,7 +520,7 @@ export default function Exportar() {
         grupo: row.musculo_primario || "Outro",
         faixaTopSet: [row.rep_min || 5, row.rep_max || 8],
         faixaBackoff: [row.rep_min || 8, row.rep_max || 10],
-        backoffPct: 0.85,
+        backoffPct: 0.5,
         seriesValidas: seriesCount,
         tecnica: null,
         cue: "",
@@ -556,7 +556,7 @@ export default function Exportar() {
           topSetFaixaMin: row.rep_min || 5,
           topSetFaixaMax: row.rep_max || 8,
           topSetBateuTeto: false,
-          backoffKg: Math.round(topKg * 0.85),
+          backoffKg: topKg, // Top Set 2 espelha o Top Set 1 no plano importado
           backoffReps: 0,
           backoffFaixaMin: row.rep_min || 8,
           backoffFaixaMax: row.rep_max || 10,

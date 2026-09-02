@@ -46,7 +46,12 @@ import { ExerciseGif } from "./ExerciseGif";
 /**
  * Per-exercise form state held in memory during a workout session.
  *
- * Suggestion pattern (applied to Top Set, Back-off and Série Extra):
+ * Modelo de séries v6 (os campos herdam nomes antigos por compatibilidade):
+ *   topSetKg/Reps  → Top Set 1
+ *   backoffKg/Reps → Top Set 2 (sempre; pesado, na faixa do Top Set)
+ *   extraKg/Reps   → Back-off (~50%, só quando seriesValidas === 3)
+ *
+ * Suggestion pattern (applied to Top Set 1, Top Set 2 and Back-off):
  *   - On session load, every block is pre-filled with the values from the
  *     previous workout (ultimoRegistro) — same weight AND reps.
  *   - The *IsSuggestion / *Suggestion flags drive the blue-border visual hint.
@@ -56,10 +61,10 @@ import { ExerciseGif } from "./ExerciseGif";
  *     overwriting a value the user already changed.
  *
  * Fallback when there is no previous record:
- *   - Top Set fields are empty (no suggestion).
- *   - Back-off kg is auto-calculated as topSetKg × backoffPct after Top Set
- *     is confirmed (the existing useEffect).
- *   - Extra kg mirrors backoffKg after Back-off is confirmed.
+ *   - Top Set 1 fields are empty (no suggestion).
+ *   - Top Set 2 kg mirrors Top Set 1 kg after Top Set 1 is confirmed.
+ *   - Back-off kg is auto-calculated as topSetKg × backoffPct (~50%) after
+ *     Top Set 2 is confirmed.
  */
 interface ExerciseState {
   // ── Input values (all strings so <input> stays controlled) ──────────────
@@ -436,14 +441,35 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setTecnicaWarning(false);
   }, [currentIdx, sessao]);
 
-  // Fallback: suggest backoff kg as topSetKg × backoffPct when there is no
+  // Fallback: suggest Top Set 2 kg mirroring Top Set 1 kg when there is no
   // previous record (backoffKg stayed empty after session load) and the user
-  // hasn't typed anything yet.  Skipped when backoffKg is already pre-filled
-  // from the previous workout.
+  // hasn't typed anything yet.  Skipped when it's already pre-filled from the
+  // previous workout.  (backoffKg slot = Top Set 2 no modelo v6.)
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
     if (!state?.topSetConfirmed || state.isDeload || state.backoffKg || state.backoffKgWasUserEdited) return;
+    const topKg = parseFloat(state.topSetKg);
+    if (!isNaN(topKg) && topKg > 0) {
+      setExerciseStates((prev) => ({
+        ...prev,
+        [currentEx.nome]: {
+          ...prev[currentEx.nome],
+          backoffKg: String(topKg),
+          backoffKgIsSuggestion: true,
+        },
+      }));
+    }
+  }, [currentEx, exerciseStates]);
+
+  // Fallback: suggest Back-off kg as topSetKg × backoffPct (~50%) when the
+  // back-off block first appears (3 válidas) and the user hasn't typed anything
+  // yet.  Skipped when it's already pre-filled from the previous workout.
+  // (extraKg slot = Back-off no modelo v6.)
+  useEffect(() => {
+    if (!currentEx) return;
+    const state = exerciseStates[currentEx.nome];
+    if (!state?.backoffConfirmed || state.extraKg !== "" || state.seriesValidas !== 3 || state.extraKgWasUserEdited) return;
     const topKg = parseFloat(state.topSetKg);
     if (!isNaN(topKg) && topKg > 0) {
       const suggested = Math.round(topKg * currentEx.backoffPct);
@@ -451,25 +477,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         ...prev,
         [currentEx.nome]: {
           ...prev[currentEx.nome],
-          backoffKg: String(suggested),
-          backoffKgIsSuggestion: true,
+          extraKg: String(suggested),
+          extraKgIsSuggestion: true,
         },
-      }));
-    }
-  }, [currentEx, exerciseStates]);
-
-  // Fallback: mirror backoffKg into extraKg when the extra block first
-  // appears and the user hasn't typed anything yet.  Skipped when extraKg is
-  // already pre-filled from the previous workout.
-  // Auto-fill extra kg from backoff when extra block appears (only if user hasn't manually edited)
-  useEffect(() => {
-    if (!currentEx) return;
-    const state = exerciseStates[currentEx.nome];
-    if (!state?.backoffConfirmed || state.extraKg !== "" || state.seriesValidas !== 3 || state.extraKgWasUserEdited) return;
-    if (state.backoffKg) {
-      setExerciseStates((prev) => ({
-        ...prev,
-        [currentEx.nome]: { ...prev[currentEx.nome], extraKg: state.backoffKg },
       }));
     }
   }, [currentEx, exerciseStates]);
@@ -860,9 +870,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                 )}
                 {!state?.skipped && state?.topSetConfirmed && (
                   <p style={{ margin: "2px 0 0", fontSize: 11, color: "#6b7280" }}>
-                    Top: {state.topSetKg}kg × {state.topSetReps}reps
-                    {state.backoffConfirmed && ` · Back-off: ${state.backoffKg}kg × ${state.backoffReps}reps`}
-                    {state.seriesValidas === 3 && state.extraKg && ` · Extra: ${state.extraKg}kg × ${state.extraReps}reps`}
+                    Top 1: {state.topSetKg}kg × {state.topSetReps}reps
+                    {state.backoffConfirmed && ` · Top 2: ${state.backoffKg}kg × ${state.backoffReps}reps`}
+                    {state.seriesValidas === 3 && state.extraKg && ` · Back-off: ${state.extraKg}kg × ${state.extraReps}reps`}
                     {state?.isDeload && <span style={{ color: "#dc2626" }}> · Deload</span>}
                   </p>
                 )}
@@ -1084,7 +1094,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </ExName>
                       <ExSub>{currentEx.grupo} · {currentEx.cue}</ExSub>
                       <ExSub>
-                        Top Set: {currentEx.faixaTopSet[0]}–{currentEx.faixaTopSet[1]} reps · Back-off: {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]} reps
+                        Top Sets: {currentEx.faixaTopSet[0]}–{currentEx.faixaTopSet[1]} reps
+                        {state.seriesValidas === 3 && ` · Back-off (${Math.round(currentEx.backoffPct * 100)}%): ${currentEx.faixaBackoff[0]}–${currentEx.faixaBackoff[1]} reps`}
                       </ExSub>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
@@ -1400,9 +1411,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                   {/* TOP SET / BACK-OFF / EXTRA — ocultos quando técnica está ativa */}
                   {!state.tecnica && (
                   <>
-                  {/* TOP SET block */}
+                  {/* TOP SET 1 block */}
                   <Card style={{ background: "#fafafa" }}>
-                    <Label>Top Set</Label>
+                    <Label>Top Set 1</Label>
                     <SeriesGrid>
                       <SerieRow>
                         <SerieLabel>Peso</SerieLabel>
@@ -1420,7 +1431,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           $invalid={topSetWarning && !(parseFloat(state.topSetKg) > 0)}
                           $isSuggestion={state.topSetKgIsSuggestion && !state.topSetConfirmed}
                           data-suggestion={state.topSetKgIsSuggestion && !state.topSetConfirmed ? "true" : undefined}
-                          aria-label={`Top Set kg ${currentEx.nome}`}
+                          aria-label={`Top Set 1 kg ${currentEx.nome}`}
                         />
                         <Unit>kg</Unit>
                       </SerieRow>
@@ -1435,7 +1446,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             updateState(currentEx.nome, { topSetReps: e.target.value });
                           }}
                           $invalid={topSetWarning && !(parseInt(state.topSetReps) > 0)}
-                          aria-label={`Top Set reps ${currentEx.nome}`}
+                          aria-label={`Top Set 1 reps ${currentEx.nome}`}
                         />
                         <Unit>reps</Unit>
                       </SerieRow>
@@ -1454,7 +1465,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             fontSize: 13, fontWeight: 600, cursor: canConfirmTopSet() ? "pointer" : "not-allowed",
                           }}
                         >
-                          Confirmar Top Set
+                          Confirmar Top Set 1
                         </button>
                         {topSetWarning && (
                           <div style={{
@@ -1462,7 +1473,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             padding: "9px 12px", fontSize: 12, color: "#c2410c", marginTop: 8,
                             display: "flex", alignItems: "center", gap: 6, fontWeight: 500,
                           }}>
-                            ⚠ Preencha o peso e as repetições do Top Set antes de confirmar.
+                            ⚠ Preencha o peso e as repetições do Top Set 1 antes de confirmar.
                           </div>
                         )}
                       </>
@@ -1514,16 +1525,16 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             fontSize: 12, cursor: "pointer",
                           }}
                         >
-                          Editar Top Set
+                          Editar Top Set 1
                         </button>
                       </>
                     )}
                   </Card>
 
-                  {/* BACK-OFF block (after top set confirmed, hidden in deload mode) */}
+                  {/* TOP SET 2 block (after Top Set 1 confirmed, hidden in deload mode) */}
                   {state.topSetConfirmed && !state.isDeload && (
                     <Card style={{ background: "#fafafa" }}>
-                      <Label>Back-off ({Math.round(currentEx.backoffPct * 100)}%)</Label>
+                      <Label>Top Set 2</Label>
                       <SeriesGrid>
                         <SerieRow>
                           <SerieLabel>Peso</SerieLabel>
@@ -1541,7 +1552,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             }}
                             $invalid={backoffWarning && !(parseFloat(state.backoffKg) > 0)}
                             $isSuggestion={state.backoffKgIsSuggestion && !state.backoffConfirmed}
-                            aria-label={`Back-off kg ${currentEx.nome}`}
+                            aria-label={`Top Set 2 kg ${currentEx.nome}`}
                           />
                           <Unit>kg</Unit>
                         </SerieRow>
@@ -1556,7 +1567,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               updateState(currentEx.nome, { backoffReps: e.target.value });
                             }}
                             $invalid={backoffWarning && !(parseInt(state.backoffReps) > 0)}
-                            aria-label={`Back-off reps ${currentEx.nome}`}
+                            aria-label={`Top Set 2 reps ${currentEx.nome}`}
                           />
                           <Unit>reps</Unit>
                         </SerieRow>
@@ -1573,7 +1584,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               fontSize: 13, fontWeight: 600, cursor: "pointer",
                             }}
                           >
-                            Confirmar Back-off
+                            Confirmar Top Set 2
                           </button>
                           {backoffWarning && (
                             <div style={{
@@ -1581,7 +1592,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               padding: "9px 12px", fontSize: 12, color: "#c2410c", marginTop: 8,
                               display: "flex", alignItems: "center", gap: 6, fontWeight: 500,
                             }}>
-                              ⚠ Preencha o peso e as repetições do Back-off antes de confirmar.
+                              ⚠ Preencha o peso e as repetições do Top Set 2 antes de confirmar.
                             </div>
                           )}
                         </>
@@ -1595,16 +1606,16 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             fontSize: 12, cursor: "pointer",
                           }}
                         >
-                          Editar Back-off
+                          Editar Top Set 2
                         </button>
                       )}
                     </Card>
                   )}
 
-                  {/* EXTRA block */}
+                  {/* BACK-OFF block (only when 3 válidas — carga leve ~50% até a falha) */}
                   {state.topSetConfirmed && state.backoffConfirmed && state.seriesValidas === 3 && (
                     <Card style={{ background: "#fafafa" }}>
-                      <Label>Série Extra (volume)</Label>
+                      <Label>Back-off ({Math.round(currentEx.backoffPct * 100)}%)</Label>
                       <SeriesGrid>
                         <SerieRow>
                           <SerieLabel>Peso</SerieLabel>
@@ -1612,9 +1623,10 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             type="number"
                             placeholder="kg"
                             value={state.extraKg}
-                            onChange={(e) => updateState(currentEx.nome, { extraKg: e.target.value, extraKgWasUserEdited: true })}
+                            onChange={(e) => updateState(currentEx.nome, { extraKg: e.target.value, extraKgIsSuggestion: false, extraKgWasUserEdited: true })}
                             $invalid={false}
-                            aria-label={`Extra kg ${currentEx.nome}`}
+                            $isSuggestion={state.extraKgIsSuggestion}
+                            aria-label={`Back-off kg ${currentEx.nome}`}
                           />
                           <Unit>kg</Unit>
                         </SerieRow>
@@ -1626,13 +1638,13 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             value={state.extraReps}
                             onChange={(e) => updateState(currentEx.nome, { extraReps: e.target.value })}
                             $invalid={false}
-                            aria-label={`Extra reps ${currentEx.nome}`}
+                            aria-label={`Back-off reps ${currentEx.nome}`}
                           />
                           <Unit>reps</Unit>
                         </SerieRow>
                       </SeriesGrid>
                       <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>
-                        Faixa: {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]} reps · não conta para teto
+                        Carga leve (~{Math.round(currentEx.backoffPct * 100)}% do Top Set) até a falha · {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]}+ reps · não conta para teto
                       </p>
                     </Card>
                   )}

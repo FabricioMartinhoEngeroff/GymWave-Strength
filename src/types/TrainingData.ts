@@ -36,14 +36,23 @@ export interface RegistroExercicio {
   data: string; // "DD/MM/YYYY"
   dataTs: number;
 
-  // Top Set
+  // ── Modelo de séries v6 ────────────────────────────────────────────────────
+  // Os 3 slots de carga abaixo mapeiam para os blocos da UI assim (sem migração
+  // de dados — nomes de campo mantidos por compatibilidade):
+  //   topSetKg/Reps  = Top Set 1
+  //   backoffKg/Reps = Top Set 2  (sempre presente; pesado, na faixa do Top Set)
+  //   extraKg/Reps   = Back-off   (~50% da carga, só quando seriesValidas === 3)
+  // O volume soma os 3 slots; a contagem de séries válidas conta cada slot
+  // preenchido, então 2 válidas = TS1+TS2 e 3 válidas = TS1+TS2+Back-off.
+
+  // Top Set 1
   topSetKg: number;
   topSetReps: number;
   topSetFaixaMin: number;
   topSetFaixaMax: number;
   topSetBateuTeto: boolean; // reps >= faixaMax -> sobe peso
 
-  // Back-off
+  // Top Set 2 (slot histórico "backoff")
   backoffKg: number;
   backoffReps: number;
   backoffFaixaMin: number;
@@ -58,9 +67,9 @@ export interface RegistroExercicio {
   clusterSeries2?: { kg: number; reps: number }[];
 
   // Series count (read from import spreadsheet, persisted per registro)
-  seriesValidas: 2 | 3; // 2 = Top Set + Back-off | 3 = + Série Extra
+  seriesValidas: 2 | 3; // 2 = 2 Top Sets | 3 = 2 Top Sets + Back-off
 
-  // Extra set (only present when seriesValidas === 3)
+  // Back-off leve (~50%) — slot histórico "extra", só presente quando seriesValidas === 3
   extraKg?: number;
   extraReps?: number;
 
