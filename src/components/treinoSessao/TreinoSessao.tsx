@@ -127,6 +127,35 @@ function daysSince(dateStr: string | undefined): number | null {
   return Math.floor((now - ts) / (1000 * 60 * 60 * 24));
 }
 
+/**
+ * Expande um registro do último treino na lista completa de séries feitas,
+ * na mesma ordem em que foram registradas (Top Set 1 → Top Set 2 → Back-off,
+ * ou os blocos das duas séries quando o exercício foi em Cluster Set).
+ */
+function seriesDoRegistro(r: RegistroExercicio): { label: string; kg: number; reps: number }[] {
+  const linhas: { label: string; kg: number; reps: number }[] = [];
+
+  if (r.tecnica === "RP") {
+    [r.clusterSeries, r.clusterSeries2].forEach((blocos, si) => {
+      (blocos ?? [])
+        .filter((b) => b.kg > 0 && b.reps > 0)
+        .forEach((b, i) => linhas.push({ label: `Cluster S${si + 1} · B${i + 1}`, kg: b.kg, reps: b.reps }));
+    });
+    return linhas;
+  }
+
+  if (r.topSetKg > 0 && r.topSetReps > 0) {
+    linhas.push({ label: r.isDeload ? "Top Set 1 (deload)" : "Top Set 1", kg: r.topSetKg, reps: r.topSetReps });
+  }
+  if (r.backoffKg > 0 && r.backoffReps > 0) {
+    linhas.push({ label: "Top Set 2", kg: r.backoffKg, reps: r.backoffReps });
+  }
+  if (r.extraKg && r.extraReps && r.extraKg > 0 && r.extraReps > 0) {
+    linhas.push({ label: "Back-off", kg: r.extraKg, reps: r.extraReps });
+  }
+  return linhas;
+}
+
 function getRotacaoId(sessao: SessaoTipo): string {
   const r = ROTACAO.find((rot) => rot.titulo === sessao);
   return r?.id ?? "";
@@ -750,60 +779,108 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     );
   }
 
-  function renderProgressBanner(ex: ExercicioSessao, prAtivo: boolean) {
-    if (prAtivo) {
-      return (
-        <div
-          data-testid="banner-pr"
-          style={{
-            background: "linear-gradient(135deg, #166534, #d97706)",
-            border: "1px solid #D4AF37",
-            borderRadius: 8,
-            padding: "8px 10px",
-            fontSize: 12,
-            color: "#fff",
-            marginBottom: 8,
-            fontWeight: 600,
-            animation: "pulse 1.4s infinite",
-          }}
-        >
-          🔥 Ritmo de Recorde Pessoal! Confirme para validar o PR.
-        </div>
-      );
-    }
+  /**
+   * Painel "Último treino": lista TODAS as séries do treino anterior deste
+   * exercício (Top Set 1, Top Set 2, Back-off — ou os blocos do Cluster Set),
+   * para decidir entre subir a carga ou manter e buscar mais reps.
+   */
+  function renderUltimoTreinoDetalhe(ultimo: RegistroExercicio) {
+    const linhas = seriesDoRegistro(ultimo);
+    if (linhas.length === 0) return null;
+    const volume = linhas.reduce((sum, l) => sum + l.kg * l.reps, 0);
 
+    return (
+      <div
+        data-testid="ultimo-treino-detalhe"
+        style={{
+          background: "#f0f9ff", border: "0.5px solid #bae6fd", borderRadius: 8,
+          padding: "8px 10px", marginBottom: 8,
+        }}
+      >
+        <div style={{
+          display: "flex", alignItems: "baseline", justifyContent: "space-between",
+          gap: 8, marginBottom: 4,
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#0369a1", letterSpacing: 0.3 }}>
+            ÚLTIMO TREINO
+          </span>
+          <span style={{ fontSize: 10, color: "#0284c7" }}>{ultimo.data}</span>
+        </div>
+
+        {linhas.map((l, i) => (
+          <div
+            key={`${l.label}-${i}`}
+            style={{
+              display: "flex", alignItems: "baseline", justifyContent: "space-between",
+              gap: 8, padding: "3px 0",
+              borderTop: i === 0 ? "none" : "0.5px solid #d8eefc",
+            }}
+          >
+            <span style={{ fontSize: 11, color: "#0369a1" }}>{l.label}</span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: "#075985", whiteSpace: "nowrap" }}>
+              {l.kg}kg × {l.reps} reps
+            </span>
+          </div>
+        ))}
+
+        <div style={{ fontSize: 10, color: "#0284c7", marginTop: 4 }}>
+          {linhas.length} série(s) · volume {volume} kg·reps
+        </div>
+
+        {ultimo.obs && (
+          <p style={{ fontSize: 11, color: "#0369a1", margin: "4px 0 0", fontStyle: "italic" }}>
+            “{ultimo.obs}”
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  function renderProgressBanner(ex: ExercicioSessao, prAtivo: boolean) {
     const deveSubir = exercicioDeveSubirPeso(ex.nome, treinoId);
     const ultimo = ultimoRegistro(ex.nome, treinoId);
 
-    if (!ultimo) {
-      return (
-        <div style={{
-          background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8,
-          padding: "8px 10px", fontSize: 12, color: "#1d4ed8", marginBottom: 8,
-        }}>
-          Primeiro registro — defina o peso
-        </div>
-      );
-    }
-
-    if (deveSubir) {
-      return (
-        <div style={{
-          background: "#fefce8", border: "1px solid #fde68a", borderRadius: 8,
-          padding: "8px 10px", fontSize: 12, color: "#92400e", marginBottom: 8,
-        }}>
-          SUBIR PESO HOJE (teto atingido: {ultimo.topSetKg}kg x {ultimo.topSetReps}reps)
-        </div>
-      );
-    }
-
     return (
-      <div style={{
-        background: "#f0f9ff", border: "0.5px solid #bae6fd", borderRadius: 8,
-        padding: "8px 10px", fontSize: 12, color: "#0369a1", marginBottom: 8,
-      }}>
-        Anterior: {ultimo.topSetKg}kg x {ultimo.topSetReps}reps
-      </div>
+      <>
+        {prAtivo && (
+          <div
+            data-testid="banner-pr"
+            style={{
+              background: "linear-gradient(135deg, #166534, #d97706)",
+              border: "1px solid #D4AF37",
+              borderRadius: 8,
+              padding: "8px 10px",
+              fontSize: 12,
+              color: "#fff",
+              marginBottom: 8,
+              fontWeight: 600,
+              animation: "pulse 1.4s infinite",
+            }}
+          >
+            🔥 Ritmo de Recorde Pessoal! Confirme para validar o PR.
+          </div>
+        )}
+
+        {!ultimo && (
+          <div style={{
+            background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: 8,
+            padding: "8px 10px", fontSize: 12, color: "#1d4ed8", marginBottom: 8,
+          }}>
+            Primeiro registro — defina o peso
+          </div>
+        )}
+
+        {ultimo && !prAtivo && deveSubir && (
+          <div style={{
+            background: "#fefce8", border: "1px solid #fde68a", borderRadius: 8,
+            padding: "8px 10px", fontSize: 12, color: "#92400e", marginBottom: 8,
+          }}>
+            SUBIR PESO HOJE (teto atingido: {ultimo.topSetKg}kg x {ultimo.topSetReps}reps)
+          </div>
+        )}
+
+        {ultimo && renderUltimoTreinoDetalhe(ultimo)}
+      </>
     );
   }
 
