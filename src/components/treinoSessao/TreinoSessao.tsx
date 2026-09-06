@@ -49,7 +49,7 @@ import { ExerciseGif } from "./ExerciseGif";
  * Modelo de séries v6 (os campos herdam nomes antigos por compatibilidade):
  *   topSetKg/Reps  → Top Set 1
  *   backoffKg/Reps → Top Set 2 (sempre; pesado, na faixa do Top Set)
- *   extraKg/Reps   → Back-off (~50%, só quando seriesValidas === 3)
+ *   extraKg/Reps   → Back-off (~90%, só quando seriesValidas === 3)
  *
  * Suggestion pattern (applied to Top Set 1, Top Set 2 and Back-off):
  *   - On session load, every block is pre-filled with the values from the
@@ -63,8 +63,7 @@ import { ExerciseGif } from "./ExerciseGif";
  * Fallback when there is no previous record:
  *   - Top Set 1 fields are empty (no suggestion).
  *   - Top Set 2 kg mirrors Top Set 1 kg after Top Set 1 is confirmed.
- *   - Back-off kg is auto-calculated as topSetKg × backoffPct (~50%) after
- *     Top Set 2 is confirmed.
+ *   - Back-off kg mirrors topSetKg × backoffPct (~90%) and follows Top Set 1.
  */
 interface ExerciseState {
   // ── Input values (all strings so <input> stays controlled) ──────────────
@@ -434,16 +433,18 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         state.topSetKgIsSuggestion = true;
         state.topSetReps = String(ultimo.topSetReps);
         state.topSetRepsSuggestion = true;
-        if (ultimo.backoffKg > 0) {
-          state.backoffKg = String(ultimo.backoffKg);
+        // Top Set 2 usa o mesmo peso do Top Set 1 (não o TS2 do treino passado).
+        if (suggestedKg > 0) {
+          state.backoffKg = String(suggestedKg);
           state.backoffKgIsSuggestion = true;
         }
         if (ultimo.backoffReps > 0) {
           state.backoffReps = String(ultimo.backoffReps);
           state.backoffRepsSuggestion = true;
         }
-        if (ultimo.extraKg && ultimo.extraKg > 0) {
-          state.extraKg = String(ultimo.extraKg);
+        // Back-off sai do Top Set 1 (~90%), não do back-off do treino passado.
+        if (state.seriesValidas === 3 && suggestedKg > 0) {
+          state.extraKg = String(Math.round(suggestedKg * ex.backoffPct));
           state.extraKgIsSuggestion = true;
         }
         if (ultimo.extraReps && ultimo.extraReps > 0) {
@@ -470,47 +471,51 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setTecnicaWarning(false);
   }, [currentIdx, sessao]);
 
-  // Fallback: suggest Top Set 2 kg mirroring Top Set 1 kg when there is no
-  // previous record (backoffKg stayed empty after session load) and the user
-  // hasn't typed anything yet.  Skipped when it's already pre-filled from the
-  // previous workout.  (backoffKg slot = Top Set 2 no modelo v6.)
+  // Top Set 2 usa sempre o mesmo peso do Top Set 1: o campo espelha o TS1 e
+  // acompanha qualquer troca de peso feita nele durante o treino.  O espelho
+  // trava assim que o usuário digita um valor próprio no TS2
+  // (backoffKgWasUserEdited) ou confirma o bloco.
+  // (backoffKg slot = Top Set 2 no modelo v6.)
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
-    if (!state?.topSetConfirmed || state.isDeload || state.backoffKg || state.backoffKgWasUserEdited) return;
+    if (!state || state.isDeload || state.tecnica) return;
+    if (state.backoffKgWasUserEdited || state.backoffConfirmed) return;
     const topKg = parseFloat(state.topSetKg);
-    if (!isNaN(topKg) && topKg > 0) {
-      setExerciseStates((prev) => ({
-        ...prev,
-        [currentEx.nome]: {
-          ...prev[currentEx.nome],
-          backoffKg: String(topKg),
-          backoffKgIsSuggestion: true,
-        },
-      }));
-    }
+    if (isNaN(topKg) || topKg <= 0) return;
+    if (state.backoffKg === String(topKg)) return;
+    setExerciseStates((prev) => ({
+      ...prev,
+      [currentEx.nome]: {
+        ...prev[currentEx.nome],
+        backoffKg: String(topKg),
+        backoffKgIsSuggestion: true,
+      },
+    }));
   }, [currentEx, exerciseStates]);
 
-  // Fallback: suggest Back-off kg as topSetKg × backoffPct (~50%) when the
-  // back-off block first appears (3 válidas) and the user hasn't typed anything
-  // yet.  Skipped when it's already pre-filled from the previous workout.
+  // Back-off = topSetKg × backoffPct (~90%): tira um pouco da carga dos Top
+  // Sets para uma série até a falha, com as mesmas reps ou mais.  Igual ao
+  // Top Set 2, o campo acompanha o peso do Top Set 1 e trava quando o usuário
+  // digita um valor próprio (extraKgWasUserEdited) ou não se aplica.
   // (extraKg slot = Back-off no modelo v6.)
   useEffect(() => {
     if (!currentEx) return;
     const state = exerciseStates[currentEx.nome];
-    if (!state?.backoffConfirmed || state.extraKg !== "" || state.seriesValidas !== 3 || state.extraKgWasUserEdited) return;
+    if (!state || state.seriesValidas !== 3 || state.isDeload || state.tecnica) return;
+    if (state.extraKgWasUserEdited) return;
     const topKg = parseFloat(state.topSetKg);
-    if (!isNaN(topKg) && topKg > 0) {
-      const suggested = Math.round(topKg * currentEx.backoffPct);
-      setExerciseStates((prev) => ({
-        ...prev,
-        [currentEx.nome]: {
-          ...prev[currentEx.nome],
-          extraKg: String(suggested),
-          extraKgIsSuggestion: true,
-        },
-      }));
-    }
+    if (isNaN(topKg) || topKg <= 0) return;
+    const suggested = String(Math.round(topKg * currentEx.backoffPct));
+    if (state.extraKg === suggested) return;
+    setExerciseStates((prev) => ({
+      ...prev,
+      [currentEx.nome]: {
+        ...prev[currentEx.nome],
+        extraKg: suggested,
+        extraKgIsSuggestion: true,
+      },
+    }));
   }, [currentEx, exerciseStates]);
 
   function updateState(nome: string, partial: Partial<ExerciseState>) {
@@ -1230,10 +1235,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               restored.topSetKgIsSuggestion = true;
                               restored.topSetReps = String(ultimo.topSetReps);
                               restored.topSetRepsSuggestion = true;
-                              if (ultimo.backoffKg > 0) {
-                                restored.backoffKg = String(ultimo.backoffKg);
-                                restored.backoffKgIsSuggestion = true;
-                              }
+                              // TS2 espelha o peso do TS1
+                              restored.backoffKg = String(suggestedKg);
+                              restored.backoffKgIsSuggestion = true;
                               if (ultimo.backoffReps > 0) {
                                 restored.backoffReps = String(ultimo.backoffReps);
                                 restored.backoffRepsSuggestion = true;
@@ -1262,7 +1266,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         $active={state.isDeload}
                         onClick={() => {
                           if (state.isDeload) {
-                            // Disable deload — restore back-off from last workout
+                            // Disable deload — TS2 volta a espelhar o TS1 (via
+                            // efeito) e as reps voltam do último treino
                             const ultimo = ultimoRegistro(currentEx.nome, treinoId);
                             const restored: Partial<ExerciseState> = {
                               isDeload: false,
@@ -1273,10 +1278,6 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                               backoffRepsSuggestion: false,
                               backoffKgWasUserEdited: false,
                             };
-                            if (ultimo && ultimo.backoffKg > 0) {
-                              restored.backoffKg = String(ultimo.backoffKg);
-                              restored.backoffKgIsSuggestion = true;
-                            }
                             if (ultimo && ultimo.backoffReps > 0) {
                               restored.backoffReps = String(ultimo.backoffReps);
                               restored.backoffRepsSuggestion = true;
@@ -1689,7 +1690,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     </Card>
                   )}
 
-                  {/* BACK-OFF block (only when 3 válidas — carga leve ~50% até a falha) */}
+                  {/* BACK-OFF block (only when 3 válidas — ~90% da carga, até a falha) */}
                   {state.topSetConfirmed && state.backoffConfirmed && state.seriesValidas === 3 && (
                     <Card style={{ background: "#fafafa" }}>
                       <Label>Back-off ({Math.round(currentEx.backoffPct * 100)}%)</Label>
@@ -1721,7 +1722,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         </SerieRow>
                       </SeriesGrid>
                       <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>
-                        Carga leve (~{Math.round(currentEx.backoffPct * 100)}% do Top Set) até a falha · {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]}+ reps · não conta para teto
+                        Tira ~{100 - Math.round(currentEx.backoffPct * 100)}% da carga do Top Set — mais técnica, mesmas reps ou mais, até a falha · {currentEx.faixaBackoff[0]}–{currentEx.faixaBackoff[1]}+ reps · não conta para teto
                       </p>
                     </Card>
                   )}

@@ -148,7 +148,7 @@ function parseText(text: string): { sessions: ParsedSession[]; errors: string[] 
       grupo,
       faixaTopSet,
       faixaBackoff,
-      backoffPct: 0.5,
+      backoffPct: 0.9,
       seriesValidas,
       tecnica: null,
       cue: "",

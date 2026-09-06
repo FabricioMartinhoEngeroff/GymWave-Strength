@@ -41,7 +41,7 @@ export interface RegistroExercicio {
   // de dados — nomes de campo mantidos por compatibilidade):
   //   topSetKg/Reps  = Top Set 1
   //   backoffKg/Reps = Top Set 2  (sempre presente; pesado, na faixa do Top Set)
-  //   extraKg/Reps   = Back-off   (~50% da carga, só quando seriesValidas === 3)
+  //   extraKg/Reps   = Back-off   (~90% da carga, só quando seriesValidas === 3)
   // O volume soma os 3 slots; a contagem de séries válidas conta cada slot
   // preenchido, então 2 válidas = TS1+TS2 e 3 válidas = TS1+TS2+Back-off.
 
@@ -69,7 +69,7 @@ export interface RegistroExercicio {
   // Series count (read from import spreadsheet, persisted per registro)
   seriesValidas: 2 | 3; // 2 = 2 Top Sets | 3 = 2 Top Sets + Back-off
 
-  // Back-off leve (~50%) — slot histórico "extra", só presente quando seriesValidas === 3
+  // Back-off (~90% da carga, até a falha) — slot histórico "extra", só quando seriesValidas === 3
   extraKg?: number;
   extraReps?: number;
 

@@ -5,7 +5,7 @@ export interface ExercicioSessao {
   grupo: string;
   faixaTopSet: [number, number];   // faixa de reps dos Top Sets (Top Set 1 e 2)
   faixaBackoff: [number, number];  // faixa de reps do Back-off (só quando 3 válidas)
-  backoffPct: number;              // carga do Back-off como fração do Top Set (ex: 0.50 = 50%)
+  backoffPct: number;              // carga do Back-off como fração do Top Set (ex: 0.90 = 90%)
   seriesValidas: 2 | 3;            // 2 = 2 Top Sets | 3 = 2 Top Sets + Back-off
   tecnica?: "RP" | null;
   cue: string;
@@ -14,14 +14,14 @@ export interface ExercicioSessao {
 // ── Presets v6 ───────────────────────────────────────────────────────────────
 // Modelo de séries:
 //   2 válidas → Top Set 1 + Top Set 2 (ambos pesados, na faixa do Top Set)
-//   3 válidas → Top Set 1 + Top Set 2 + Back-off leve (~50% da carga, até a falha)
+//   3 válidas → Top Set 1 + Top Set 2 + Back-off (~90% da carga, mesmas reps ou mais, até a falha)
 type Preset = Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct" | "seriesValidas">;
 
 // Multiarticulares pesados (terra, supino, agacho, barra fixa): faixa de força
 const COMPOSTO: Preset = {
   faixaTopSet: [5, 8],
   faixaBackoff: [8, 10],
-  backoffPct: 0.5,
+  backoffPct: 0.9,
   seriesValidas: 2,
 };
 
@@ -29,7 +29,7 @@ const COMPOSTO: Preset = {
 const ISOLADOR: Preset = {
   faixaTopSet: [8, 10],
   faixaBackoff: [10, 12],
-  backoffPct: 0.5,
+  backoffPct: 0.9,
   seriesValidas: 2,
 };
 

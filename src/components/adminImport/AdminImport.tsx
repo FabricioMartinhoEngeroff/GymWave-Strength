@@ -391,7 +391,7 @@ export default function AdminImport() {
         };
 
         if (!sessoesConfigMap[sessao]) sessoesConfigMap[sessao] = [];
-        const pct = parseFloat(String(row.backoff_pct ?? "50").replace('%', '')) / 100 || 0.5;
+        const pct = parseFloat(String(row.backoff_pct ?? "90").replace('%', '')) / 100 || 0.9;
         sessoesConfigMap[sessao].push({
           nome: row.exercicio,
           grupo: row.grupo || "Outro",

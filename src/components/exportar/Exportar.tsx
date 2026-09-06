@@ -520,7 +520,7 @@ export default function Exportar() {
         grupo: row.musculo_primario || "Outro",
         faixaTopSet: [row.rep_min || 5, row.rep_max || 8],
         faixaBackoff: [row.rep_min || 8, row.rep_max || 10],
-        backoffPct: 0.5,
+        backoffPct: 0.9,
         seriesValidas: seriesCount,
         tecnica: null,
         cue: "",

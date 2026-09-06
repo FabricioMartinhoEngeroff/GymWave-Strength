@@ -59,11 +59,11 @@ Todas as datas são armazenadas e exibidas no formato `DD/MM/AAAA` (pt-BR).
 
 ### Método de Treino
 
-O sistema implementa o método **Saizen / Heavy Duty**:
-- **Top Set:** série máxima com peso mais alto.
-- **Back-off:** série de volume com percentual reduzido do Top Set.
-- **Série Extra:** opcional, apenas para exercícios configurados com `seriesValidas = 3`.
-- **Teto de reps:** quando o atleta atinge o limite superior da faixa, o sistema sinaliza para subir o peso no próximo ciclo.
+O sistema implementa o modelo de séries **v6** (2 Top Sets + Back-off):
+- **Top Set 1:** primeira série pesada, na faixa de reps do exercício. É a série de referência para 1RM, PR e teto.
+- **Top Set 2:** segunda série pesada, **no mesmo peso do Top Set 1**, na mesma faixa de reps.
+- **Back-off:** série de volume, opcional — apenas para exercícios configurados com `seriesValidas = 3`. Tira ~10% da carga dos Top Sets (`backoffPct` = 0,9) e vai até a falha, com as mesmas repetições ou mais. Não conta para o teto.
+- **Teto de reps:** quando o atleta atinge o limite superior da faixa no Top Set 1, o sistema sinaliza para subir o peso no próximo ciclo (+1 kg abaixo de 40 kg, +2 kg acima).
 
 ### Mensagens Padrão (reutilizadas em múltiplas telas)
 
