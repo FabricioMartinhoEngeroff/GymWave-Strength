@@ -77,6 +77,10 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Rolar barra cabo":                 "Braço",
   "Rosca punho":                      "Braço",
   "Rosca punho cabo":                 "Braço",
+  "Extensão de punho":                "Braço",
+  "Flexão de punho":                  "Braço",
+  "Extensão de punho no cabo":        "Braço",
+  "Flexão de punho no cabo":          "Braço",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado":           "Core",

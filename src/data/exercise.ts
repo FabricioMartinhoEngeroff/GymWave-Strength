@@ -76,6 +76,10 @@ export const EXERCICIOS = [
   "Rolar barra cabo",
   "Rosca punho",
   "Rosca punho cabo",
+  "Extensão de punho",
+  "Flexão de punho",
+  "Extensão de punho no cabo",
+  "Flexão de punho no cabo",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado",

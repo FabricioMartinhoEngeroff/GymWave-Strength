@@ -73,6 +73,10 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "Antebraço rola palma":      "",
   "Rolar barra cabo":          "",
   "Rosca punho":               "RqeLliN-2Zo",
+  "Extensão de punho":         "0D3WdWjfHyI",
+  "Flexão de punho":           "0D3WdWjfHyI",
+  "Extensão de punho no cabo": "0D3WdWjfHyI",
+  "Flexão de punho no cabo":   "0D3WdWjfHyI",
 
   // ── Core ──────────────────────────────────────────────────────────────────
   "Abdômen cabo ajoelhado":    "Y23N2BNZHgE",
