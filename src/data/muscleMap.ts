@@ -14,6 +14,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Remada peito apoiado":             "Costas",
   "Remada baixa":    "Costas",
   "Remada unilateral apoiada":        "Costas",
+  "Remada articulada aberta com apoio peitoral": "Costas",
   "Remada cabo sentado triângulo":    "Costas",
   "Pull-around cabo":                 "Costas",
   "Barra fixa pronada":               "Costas",

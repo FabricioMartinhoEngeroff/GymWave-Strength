@@ -14,6 +14,7 @@ export const EXERCICIOS = [
   "Remada peito apoiado",
   "Remada baixa",
   "Remada unilateral apoiada",
+  "Remada articulada aberta com apoio peitoral",
   "Remada cabo sentado triângulo",
   "Pull-around cabo",
   "Barra fixa pronada",

@@ -18,6 +18,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "Remada peito apoiado":              "",
   "Remada baixa":     "e997VfKgOy0",
   "Remada unilateral apoiada":         "wvIZzV763vQ",
+  "Remada articulada aberta com apoio peitoral": "wbXUBwTcutE",
   "Desenvolvimento máquina":           "8L11uFDABos",
   "Extensão banco romano":             "58YmYtyt3nU",
 
