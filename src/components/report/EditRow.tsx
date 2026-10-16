@@ -113,7 +113,8 @@ export function EditRow({
       value={s.rep}
       onChange={(e) => {
         const arr = getSeries().map((x) => ({ ...x }));
-        arr[i].rep = e.target.value;
+        const alvo = arr[i];
+        if (alvo) alvo.rep = e.target.value;
         setLinhaEditada((p) => ({ ...p, series: arr }));
       }}
       isMobile={isMobile}
@@ -126,7 +127,8 @@ export function EditRow({
       value={s.peso}
       onChange={(e) => {
         const arr = getSeries().map((x) => ({ ...x }));
-        arr[i].peso = e.target.value;
+        const alvo = arr[i];
+        if (alvo) alvo.peso = e.target.value;
         setLinhaEditada((p) => ({ ...p, series: arr }));
       }}
       isMobile={isMobile}

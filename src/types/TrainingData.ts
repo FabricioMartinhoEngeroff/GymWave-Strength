@@ -28,6 +28,9 @@ export interface LinhaRelatorio {
   obs?: string;
 }
 
+/** 2 = TS1+TS2 | 3 = TS1+TS2+Back-off (~90%) | 4 = TS1+TS2+Série 3+Série 4 (sem redução). */
+export type SeriesValidas = 2 | 3 | 4;
+
 // ── New Saizen logbook types ────────────────────────────────────────────────
 
 export interface RegistroExercicio {
@@ -41,7 +44,9 @@ export interface RegistroExercicio {
   // de dados — nomes de campo mantidos por compatibilidade):
   //   topSetKg/Reps  = Top Set 1
   //   backoffKg/Reps = Top Set 2  (sempre presente; pesado, na faixa do Top Set)
-  //   extraKg/Reps   = Back-off   (~90% da carga, só quando seriesValidas === 3)
+  //   extraKg/Reps   = Back-off   (~90% da carga) quando seriesValidas === 3;
+  //                    Série 3 (mesma carga do último treino) quando seriesValidas === 4
+  //   serie4Kg/Reps  = Série 4    (só quando seriesValidas === 4)
   // O volume soma os 3 slots; a contagem de séries válidas conta cada slot
   // preenchido, então 2 válidas = TS1+TS2 e 3 válidas = TS1+TS2+Back-off.
 
@@ -67,11 +72,15 @@ export interface RegistroExercicio {
   clusterSeries2?: { kg: number; reps: number }[];
 
   // Series count (read from import spreadsheet, persisted per registro)
-  seriesValidas: 2 | 3; // 2 = 2 Top Sets | 3 = 2 Top Sets + Back-off
+  seriesValidas: SeriesValidas;
 
-  // Back-off (~90% da carga, até a falha) — slot histórico "extra", só quando seriesValidas === 3
+  // Slot histórico "extra": Back-off (~90%, até a falha) com 3 válidas; Série 3 com 4 válidas
   extraKg?: number;
   extraReps?: number;
+
+  // Série 4 — só quando seriesValidas === 4
+  serie4Kg?: number;
+  serie4Reps?: number;
 
   // Progression
   pesoAnterior?: number;

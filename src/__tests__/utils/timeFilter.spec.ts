@@ -4,7 +4,6 @@
  */
 import { describe, it, expect } from "vitest";
 import { getCutoffTs, TIME_INTERVAL_OPTIONS } from "../../utils/timeFilter";
-import type { TimeInterval } from "../../utils/timeFilter";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-06-10").getTime();

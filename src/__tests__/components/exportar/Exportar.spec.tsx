@@ -87,7 +87,7 @@ function makeFile(name: string, type = "text/csv"): File {
 }
 
 function openImportSection() {
-  fireEvent.click(screen.getByText(/importar planilha/i));
+  fireEvent.click(screen.getByText(/migração planilha de treino/i));
 }
 
 // ─── Tests ─────────────────────────────────────────────────────────────────────
@@ -122,9 +122,9 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       expect(screen.getByText(/exportar como json/i)).toBeInTheDocument();
     });
 
-    it("exibe botão de importar planilha", () => {
+    it("exibe botão de migração da planilha de treino", () => {
       render(<Exportar />);
-      expect(screen.getByText(/importar planilha/i)).toBeInTheDocument();
+      expect(screen.getByText(/migração planilha de treino/i)).toBeInTheDocument();
     });
 
     it("não exibe a drop zone antes de abrir o import", () => {
@@ -180,7 +180,7 @@ describe("Exportar — Tela de exportação e importação inline", () => {
   // ── 4. Toggle de importação ──────────────────────────────────────────────────
 
   describe("Toggle de importação", () => {
-    it("clicar em 'Importar planilha' exibe a drop zone", () => {
+    it("clicar em 'Migração planilha de treino' exibe a drop zone", () => {
       render(<Exportar />);
       openImportSection();
       expect(screen.getByText(/arraste e solte/i)).toBeInTheDocument();

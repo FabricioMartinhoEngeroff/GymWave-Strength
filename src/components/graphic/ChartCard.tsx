@@ -317,8 +317,8 @@ type Tendencia = { texto: string; tone: "up" | "down" | "flat" };
 function useTendencia(serie: PontoGrafico[]): Tendencia | null {
   return useMemo(() => {
     if (serie.length < 2) return null;
-    const atual = serie[serie.length - 1].topSet;
-    const anterior = serie[serie.length - 2].topSet;
+    const atual = serie[serie.length - 1]?.topSet ?? 0;
+    const anterior = serie[serie.length - 2]?.topSet ?? 0;
     const delta = atual - anterior;
 
     if (delta === 0) return { texto: "Estável", tone: "flat" };

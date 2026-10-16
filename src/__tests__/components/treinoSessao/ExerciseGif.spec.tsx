@@ -18,30 +18,25 @@ import { fetchExerciseGif } from "../../../services/exerciseDbService";
 describe("ExerciseGif", () => {
   beforeEach(() => {
     vi.mocked(fetchExerciseGif).mockReset();
+    vi.mocked(fetchExerciseGif).mockReturnValue(new Promise(() => {}));
   });
 
-  it("renderiza botao 'Ver demonstracao'", () => {
-    render(<ExerciseGif exerciseName="Supino reto barra" />);
+  // Exercício com vídeo usa o bloco inline — ver ExerciseGif.video.spec.tsx.
+
+  it("renderiza botao 'Ver demonstracao' para exercicio sem video", () => {
+    render(<ExerciseGif exerciseName="Exercicio sem video" />);
     expect(screen.getByText("Ver demonstração")).toBeInTheDocument();
   });
 
   it("nao exibe modal antes de clicar", () => {
-    render(<ExerciseGif exerciseName="Supino reto barra" />);
-    expect(screen.queryByText("Supino reto barra")).not.toBeInTheDocument();
+    render(<ExerciseGif exerciseName="Exercicio sem video" />);
+    expect(screen.queryByText("Exercicio sem video")).not.toBeInTheDocument();
   });
 
   it("abre modal ao clicar em Ver demonstracao", () => {
-    render(<ExerciseGif exerciseName="Supino reto barra" />);
+    render(<ExerciseGif exerciseName="Exercicio sem video" />);
     fireEvent.click(screen.getByText("Ver demonstração"));
-    expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
-  });
-
-  it("exibe iframe do YouTube quando exercicio tem video", () => {
-    render(<ExerciseGif exerciseName="Supino reto barra" />);
-    fireEvent.click(screen.getByText("Ver demonstração"));
-    const iframe = screen.getByTitle("Demonstração: Supino reto barra");
-    expect(iframe.tagName).toBe("IFRAME");
-    expect(iframe.getAttribute("src")).toContain("fakeYoutubeId123");
+    expect(screen.getByText("Exercicio sem video")).toBeInTheDocument();
   });
 
   it("carrega GIF da API quando exercicio nao tem video", async () => {
@@ -74,9 +69,9 @@ describe("ExerciseGif", () => {
   });
 
   it("fecha o modal ao clicar no overlay", () => {
-    render(<ExerciseGif exerciseName="Supino reto barra" />);
+    render(<ExerciseGif exerciseName="Exercicio sem video" />);
     fireEvent.click(screen.getByText("Ver demonstração"));
-    expect(screen.getByText("Supino reto barra")).toBeInTheDocument();
+    expect(screen.getByText("Exercicio sem video")).toBeInTheDocument();
 
     const overlay = screen.getByText("Toque fora para fechar").closest("div[style]")!.parentElement!;
     fireEvent.click(overlay);
@@ -84,7 +79,7 @@ describe("ExerciseGif", () => {
   });
 
   it("fecha o modal ao clicar no botao X", () => {
-    render(<ExerciseGif exerciseName="Supino reto barra" />);
+    render(<ExerciseGif exerciseName="Exercicio sem video" />);
     fireEvent.click(screen.getByText("Ver demonstração"));
     fireEvent.click(screen.getByText("✕"));
     expect(screen.queryByText("Toque fora para fechar")).not.toBeInTheDocument();

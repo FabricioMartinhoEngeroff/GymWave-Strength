@@ -168,7 +168,7 @@ export const GraphicsContainer: React.FC = () => {
       filtered = filtered.filter((d) => treinosSelecionados.includes(d.cicloId));
 
       if (intervalo !== "Tudo") {
-        const nowTs = filtered.length ? filtered[filtered.length - 1].dataTs : 0;
+        const nowTs = filtered[filtered.length - 1]?.dataTs ?? 0;
         const cutoff = getCutoffTs(intervalo, nowTs);
         filtered = filtered.filter((p) => p.dataTs >= cutoff);
       }

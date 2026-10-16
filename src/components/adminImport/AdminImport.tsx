@@ -1,9 +1,9 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { RegistroExercicio, PlanoTreino } from "../../types/TrainingData";
-import { salvarRegistro, storageKey, setCurrentUser } from "../../utils/storage";
-import { HARDCODED_USERS } from "../../data/users";
+import type { RegistroExercicio, PlanoTreino, SeriesValidas } from "../../types/TrainingData";
+import { normalizarSeriesValidas } from "../../utils/seriesValidas";
+import { salvarRegistro, storageKey, setCurrentUser, getCurrentUser } from "../../utils/storage";
 import TextImport from "./TextImport";
 import {
   Screen,
@@ -31,9 +31,6 @@ import {
   BtnPrimary,
   BtnDanger,
   BtnWarning,
-  UserSelectorRow,
-  UserSelectorLabel,
-  UserSelect,
 } from "./AdminImport.styles";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -74,8 +71,8 @@ const COLUMN_MAP: [RegExp, string][] = [
   // v4 logbook — colunas curtas com newline: "Top\nMín", "B-off\nMín" etc.
   [/^top\s+m[ií]n/i,          "faixa_top_min"],
   [/^top\s+m[aá]x/i,          "faixa_top_max"],
-  [/^b[.\-]off\s+m[ií]n/i,   "faixa_backoff_min"],
-  [/^b[.\-]off\s+m[aá]x/i,   "faixa_backoff_max"],
+  [/^b[.-]off\s+m[ií]n/i,   "faixa_backoff_min"],
+  [/^b[.-]off\s+m[aá]x/i,   "faixa_backoff_max"],
   // Faixa — formato "Faixa Top Mín" (legado) ou "Top Set Mín reps" (v2 planilha)
   [/faixa\s*top.*m[ií]n/i,    "faixa_top_min"],
   [/faixa\s*top.*m[aá]x/i,    "faixa_top_max"],
@@ -164,7 +161,7 @@ const NOME_MAP: Record<string, string> = {
 function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
   if (raw.length === 0) return raw;
   const keyMap: Record<string, string> = {};
-  Object.keys(raw[0]).forEach((key) => {
+  Object.keys(raw[0] ?? {}).forEach((key) => {
     const flat = key.replace(/\n/g, " ").trim();
     for (const [pattern, target] of COLUMN_MAP) {
       if (pattern.test(flat)) { keyMap[key] = target; break; }
@@ -238,7 +235,7 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
         faixa_backoff_max: Number(r.faixa_backoff_max ?? 15),
         top_set_kg: r.top_set_kg as string | number | undefined,
         backoff_kg: r.backoff_kg as string | number | undefined,
-        series_validas: Number(r.series_validas) === 3 ? 3 : 2,
+        series_validas: normalizarSeriesValidas(r.series_validas),
         tecnica: String(r.tecnica ?? ""),
         backoff_pct: String(r.backoff_pct ?? "85%"),
         cue: String(r.cue ?? ""),
@@ -267,8 +264,9 @@ function getTodayBR(): string {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminImport() {
-  const loggedInUser = localStorage.getItem("email") ?? "";
-  const [targetUser, setTargetUser] = useState(loggedInUser);
+  // A importação vale para a conta autenticada (escopo definido pelo AuthProvider).
+  const loggedInUser = getCurrentUser();
+  const targetUser = loggedInUser;
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -305,8 +303,8 @@ export default function AdminImport() {
       reader.onload = (e) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = xlsxToJson(ws);
+        const ws = wb.Sheets[wb.SheetNames[0] ?? ""];
+        const json = ws ? xlsxToJson(ws) : [];
         setRows(normalizeRows(mapColumns(json)));
       };
       reader.readAsArrayBuffer(file);
@@ -377,13 +375,13 @@ export default function AdminImport() {
       const sessoesConfigMap: Record<string, {
         nome: string; grupo: string;
         faixaTopSet: [number, number]; faixaBackoff: [number, number];
-        backoffPct: number; seriesValidas: 2 | 3;
+        backoffPct: number; seriesValidas: SeriesValidas;
         tecnica: "RP" | null; cue: string;
       }[]> = {};
 
       rows.forEach((row) => {
         const sessao = row.treino || row.treino_id || "Sem sessão";
-        const seriesCount = Math.max(1, Math.min(3, row.series_validas ?? 2)) as 2 | 3;
+        const seriesCount = normalizarSeriesValidas(row.series_validas);
         if (!planoNovo[sessao]) planoNovo[sessao] = {};
         planoNovo[sessao][row.exercicio] = {
           ordem: row.ordem,
@@ -424,7 +422,7 @@ export default function AdminImport() {
           backoffReps: 0,
           backoffFaixaMin: row.faixa_backoff_min,
           backoffFaixaMax: row.faixa_backoff_max,
-          seriesValidas: (row.series_validas === 3 ? 3 : 2) as 2 | 3,
+          seriesValidas: normalizarSeriesValidas(row.series_validas),
           pesoAnterior: undefined,
           repsAnterior: undefined,
           progrediu: false,
@@ -463,9 +461,8 @@ export default function AdminImport() {
   // ── Clear all ──────────────────────────────────────────────
 
   function limparTudo() {
-    const targetName = HARDCODED_USERS.find((u) => u.email === targetUser)?.name ?? targetUser;
     const ok = window.confirm(
-      `Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) de ${targetName}. Tem certeza?`
+      `Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) da sua conta. Tem certeza?`
     );
     if (!ok) return;
     withTargetUser(() => {
@@ -489,15 +486,6 @@ export default function AdminImport() {
         <Title>Importar dados</Title>
         <Subtitle>Carregue o logbook Saizen (.xlsx ou .csv) para popular o histórico</Subtitle>
       </Header>
-
-      <UserSelectorRow>
-        <UserSelectorLabel>Importar para:</UserSelectorLabel>
-        <UserSelect value={targetUser} onChange={(e) => setTargetUser(e.target.value)}>
-          {HARDCODED_USERS.map((u) => (
-            <option key={u.email} value={u.email}>{u.name} ({u.email})</option>
-          ))}
-        </UserSelect>
-      </UserSelectorRow>
 
       {/* Drop zone */}
       <DropZone

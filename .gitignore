@@ -26,3 +26,12 @@ dist-ssr
 # SSL certificates
 server.crt
 server.key
+
+# Segredos locais (mantém o exemplo versionado)
+.env*
+!.env.example
+
+# Histórico do editor
+.history/
+
+coverage/

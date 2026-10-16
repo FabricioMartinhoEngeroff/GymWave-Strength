@@ -145,7 +145,7 @@ export const PowerliftingChart: React.FC = () => {
   // Auto-select first exercise with data
   useEffect(() => {
     if (!exercicioSelecionado && exercicios.length > 0) {
-      setExercicioSelecionado(exercicios[0]);
+      setExercicioSelecionado(exercicios[0] ?? "");
     }
   }, [exercicios, exercicioSelecionado]);
 
@@ -156,7 +156,7 @@ export const PowerliftingChart: React.FC = () => {
   }, [exercicioSelecionado, logbook]);
 
   const nowTs = useMemo(
-    () => (allPoints.length ? allPoints[allPoints.length - 1].ts : 0),
+    () => (allPoints[allPoints.length - 1]?.ts ?? 0),
     [allPoints]
   );
   const cutoff = getCutoffTs(intervalo, nowTs);
@@ -172,8 +172,8 @@ export const PowerliftingChart: React.FC = () => {
   );
 
   // Stats card
-  const rm1Atual = filteredPoints.length > 0 ? filteredPoints[filteredPoints.length - 1].rm1 : null;
-  const rm1Anterior = filteredPoints.length > 1 ? filteredPoints[filteredPoints.length - 2].rm1 : null;
+  const rm1Atual = filteredPoints[filteredPoints.length - 1]?.rm1 ?? null;
+  const rm1Anterior = filteredPoints[filteredPoints.length - 2]?.rm1 ?? null;
   const variacao = rm1Atual !== null && rm1Anterior !== null ? rm1Atual - rm1Anterior : null;
   const sessoes = filteredPoints.length;
   const ultimoPrPonto = allPoints.reduce<ChartPoint | null>(

@@ -1,5 +1,6 @@
 import { MUSCLE_MAP } from "../data/muscleMap";
 import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
+import { volumeESeriesDoRegistro } from "./seriesValidas";
 import { storageKey } from "./storage";
 
 type ClusterSerie = { kg: number; reps: number }[] | undefined;
@@ -67,8 +68,8 @@ function parseDateBR(data: string): number | null {
 function calcVolumeEntry(pesos: string[], reps: string[]): number {
   let total = 0;
   for (let i = 0; i < pesos.length; i++) {
-    const p = parseFloat(pesos[i]) || 0;
-    const r = parseFloat(reps[i]) || 0;
+    const p = parseFloat(pesos[i] ?? "") || 0;
+    const r = parseFloat(reps[i] ?? "") || 0;
     total += p * r;
   }
   return total;
@@ -77,8 +78,8 @@ function calcVolumeEntry(pesos: string[], reps: string[]): number {
 function countValidSets(pesos: string[], reps: string[]): number {
   let count = 0;
   for (let i = 0; i < pesos.length; i++) {
-    const p = parseFloat(pesos[i]) || 0;
-    const r = parseFloat(reps[i]) || 0;
+    const p = parseFloat(pesos[i] ?? "") || 0;
+    const r = parseFloat(reps[i] ?? "") || 0;
     if (p > 0 && r > 0) count++;
   }
   return count;
@@ -151,11 +152,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
         vol = cluster.vol;
         sets = cluster.sets;
       } else {
-        vol = reg.topSetKg * reg.topSetReps + reg.backoffKg * reg.backoffReps +
-          ((reg.seriesValidas === 3 && reg.extraKg && reg.extraReps) ? reg.extraKg * reg.extraReps : 0);
-        if (reg.topSetKg > 0 && reg.topSetReps > 0) sets++;
-        if (reg.backoffKg > 0 && reg.backoffReps > 0) sets++;
-        if (reg.seriesValidas === 3 && reg.extraKg && reg.extraKg > 0 && reg.extraReps && reg.extraReps > 0) sets++;
+        ({ volume: vol, series: sets } = volumeESeriesDoRegistro(reg));
       }
       if (vol <= 0) return;
 
@@ -226,10 +223,14 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
 
   function addToSlot(musculo: string, ts: number, vol: number, sets: number) {
     for (let w = 0; w < weekSlots.length; w++) {
-      if (ts >= weekSlots[w].start && ts <= weekSlots[w].end) {
+      const slot = weekSlots[w];
+      if (slot && ts >= slot.start && ts <= slot.end) {
         ensure(musculo);
-        perWeek[musculo][w].volume += vol;
-        perWeek[musculo][w].series += sets;
+        const wd = perWeek[musculo]?.[w];
+        if (wd) {
+          wd.volume += vol;
+          wd.series += sets;
+        }
         return;
       }
     }
@@ -261,11 +262,7 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
         vol = cluster.vol;
         sets = cluster.sets;
       } else {
-        vol = reg.topSetKg * reg.topSetReps + reg.backoffKg * reg.backoffReps +
-          ((reg.seriesValidas === 3 && reg.extraKg && reg.extraReps) ? reg.extraKg * reg.extraReps : 0);
-        if (reg.topSetKg > 0 && reg.topSetReps > 0) sets++;
-        if (reg.backoffKg > 0 && reg.backoffReps > 0) sets++;
-        if (reg.seriesValidas === 3 && reg.extraKg && reg.extraKg > 0 && reg.extraReps && reg.extraReps > 0) sets++;
+        ({ volume: vol, series: sets } = volumeESeriesDoRegistro(reg));
       }
       if (vol <= 0) return;
       addToSlot(musculo, ts, vol, sets);
@@ -277,19 +274,19 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
     if (!wds.some((w) => w.volume > 0)) return;
 
     const semanas: WeekVolume[] = wds.map((wd, i) => ({
-      label: weekSlots[i].label,
+      label: weekSlots[i]?.label ?? "",
       volume: wd.volume,
       series: wd.series,
     }));
 
-    const newest = wds[wds.length - 1].volume;
-    const prev = wds.length >= 2 ? wds[wds.length - 2].volume : 0;
+    const newest = wds[wds.length - 1]?.volume ?? 0;
+    const prev = wds.length >= 2 ? (wds[wds.length - 2]?.volume ?? 0) : 0;
     const delta = prev > 0 ? Math.round(((newest - prev) / prev) * 100) : 0;
 
-    result.push({ musculo, semanas, delta, seriesAtual: wds[wds.length - 1].series });
+    result.push({ musculo, semanas, delta, seriesAtual: wds[wds.length - 1]?.series ?? 0 });
   });
 
-  return result.sort((a, b) => b.semanas[b.semanas.length - 1].volume - a.semanas[a.semanas.length - 1].volume);
+  return result.sort((a, b) => (b.semanas[b.semanas.length - 1]?.volume ?? 0) - (a.semanas[a.semanas.length - 1]?.volume ?? 0));
 }
 
 export function calcTotalVolumeWeek(): number {
@@ -325,7 +322,7 @@ export function calcStreakSemanas(): number {
 
   let streak = 1;
   for (let i = 1; i < weeks.length; i++) {
-    if (weeks[i - 1] - weeks[i] === WEEK_MS) {
+    if ((weeks[i - 1] ?? 0) - (weeks[i] ?? 0) === WEEK_MS) {
       streak++;
     } else {
       break;
@@ -398,8 +395,12 @@ export function calcQuedaCargaMusculo(
 
     if (currentPeriod.length === 0 || previousPeriod.length === 0) continue;
 
-    const tonnageAtual = currentPeriod[0].topSetKg * currentPeriod[0].topSetReps;
-    const tonnageAnterior = previousPeriod[0].topSetKg * previousPeriod[0].topSetReps;
+    const atual = currentPeriod[0];
+    const anterior = previousPeriod[0];
+    if (!atual || !anterior) continue;
+
+    const tonnageAtual = atual.topSetKg * atual.topSetReps;
+    const tonnageAnterior = anterior.topSetKg * anterior.topSetReps;
 
     if (tonnageAtual < tonnageAnterior) quedas++;
   }

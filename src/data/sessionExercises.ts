@@ -1,3 +1,5 @@
+import type { SeriesValidas } from "../types/TrainingData";
+
 export type SessaoTipo = "Upper A" | "Upper B" | "Lower A" | "Lower B";
 
 export interface ExercicioSessao {
@@ -6,7 +8,7 @@ export interface ExercicioSessao {
   faixaTopSet: [number, number];   // faixa de reps dos Top Sets (Top Set 1 e 2)
   faixaBackoff: [number, number];  // faixa de reps do Back-off (só quando 3 válidas)
   backoffPct: number;              // carga do Back-off como fração do Top Set (ex: 0.90 = 90%)
-  seriesValidas: 2 | 3;            // 2 = 2 Top Sets | 3 = 2 Top Sets + Back-off
+  seriesValidas: SeriesValidas;    // 2 = 2 Top Sets | 3 = + Back-off | 4 = + Série 3 e Série 4
   tecnica?: "RP" | null;
   cue: string;
 }

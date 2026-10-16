@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { ROTACAO } from "../../data/cycles";
 import { SESSOES, SESSOES_LABELS, type SessaoTipo, type ExercicioSessao } from "../../data/sessionExercises";
-import type { PlanoTreino, RegistroExercicio } from "../../types/TrainingData";
+import type { PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
+import { normalizarSeriesValidas, sugestaoSeriesExtras } from "../../utils/seriesValidas";
 import {
   salvarRegistro,
   ultimoRegistro,
@@ -24,6 +25,9 @@ import {
   Label,
   SessaoRow,
   CycleChip,
+  TecnicaCard,
+  TecnicaLabel,
+  TecnicaChip,
   ExerciseCard,
   ExHeader,
   ExName,
@@ -49,7 +53,11 @@ import { ExerciseGif } from "./ExerciseGif";
  * Modelo de séries v6 (os campos herdam nomes antigos por compatibilidade):
  *   topSetKg/Reps  → Top Set 1
  *   backoffKg/Reps → Top Set 2 (sempre; pesado, na faixa do Top Set)
- *   extraKg/Reps   → Back-off (~90%, só quando seriesValidas === 3)
+ *   extraKg/Reps   → Back-off (~90%) com 3 válidas | Série 3 com 4 válidas
+ *   serie4Kg/Reps  → Série 4 (só com 4 válidas)
+ *
+ * Com 4 válidas nenhuma série reduz carga: Série 3 e Série 4 repetem peso e
+ * reps do último treino (ou do Top Set 1, quando não há esse histórico).
  *
  * Suggestion pattern (applied to Top Set 1, Top Set 2 and Back-off):
  *   - On session load, every block is pre-filled with the values from the
@@ -73,9 +81,11 @@ interface ExerciseState {
   backoffReps: string;
   extraKg: string;
   extraReps: string;
+  serie4Kg: string;
+  serie4Reps: string;
 
   // ── Confirmation & technique ─────────────────────────────────────────────
-  seriesValidas: 2 | 3;
+  seriesValidas: SeriesValidas;
   topSetConfirmed: boolean;
   backoffConfirmed: boolean;
   tecnica: "RP" | null;
@@ -97,6 +107,8 @@ interface ExerciseState {
   backoffRepsSuggestion: boolean;   // reps pre-filled from previous workout
   extraKgIsSuggestion: boolean;     // kg pre-filled from previous workout
   extraRepsSuggestion: boolean;     // reps pre-filled from previous workout
+  serie4KgIsSuggestion: boolean;    // kg pre-filled from previous workout
+  serie4RepsSuggestion: boolean;    // reps pre-filled from previous workout
 
   // ── Edit guards (prevent auto-fill useEffects from overwriting) ──────────
   backoffKgWasUserEdited: boolean;
@@ -150,7 +162,10 @@ function seriesDoRegistro(r: RegistroExercicio): { label: string; kg: number; re
     linhas.push({ label: "Top Set 2", kg: r.backoffKg, reps: r.backoffReps });
   }
   if (r.extraKg && r.extraReps && r.extraKg > 0 && r.extraReps > 0) {
-    linhas.push({ label: "Back-off", kg: r.extraKg, reps: r.extraReps });
+    linhas.push({ label: r.seriesValidas === 4 ? "Série 3" : "Back-off", kg: r.extraKg, reps: r.extraReps });
+  }
+  if (r.seriesValidas === 4 && r.serie4Kg && r.serie4Reps && r.serie4Kg > 0 && r.serie4Reps > 0) {
+    linhas.push({ label: "Série 4", kg: r.serie4Kg, reps: r.serie4Reps });
   }
   return linhas;
 }
@@ -169,6 +184,8 @@ function emptyExerciseState(): ExerciseState {
     backoffReps: "",
     extraKg: "",
     extraReps: "",
+    serie4Kg: "",
+    serie4Reps: "",
     seriesValidas: 2,
     topSetConfirmed: false,
     backoffConfirmed: false,
@@ -187,6 +204,8 @@ function emptyExerciseState(): ExerciseState {
     extraKgIsSuggestion: false,
     extraRepsSuggestion: false,
     extraKgWasUserEdited: false,
+    serie4KgIsSuggestion: false,
+    serie4RepsSuggestion: false,
     prConfirmado: false,
     isDeload: false,
   };
@@ -246,11 +265,13 @@ function sanitizeExerciseState(raw: Partial<ExerciseState>): ExerciseState {
     backoffReps: raw.backoffReps ?? base.backoffReps,
     extraKg: raw.extraKg ?? base.extraKg,
     extraReps: raw.extraReps ?? base.extraReps,
+    serie4Kg: raw.serie4Kg ?? base.serie4Kg,
+    serie4Reps: raw.serie4Reps ?? base.serie4Reps,
     obs: raw.obs ?? base.obs,
     clusterSeries: Array.isArray(raw.clusterSeries) ? raw.clusterSeries : base.clusterSeries,
     clusterSeries2: Array.isArray(raw.clusterSeries2) ? raw.clusterSeries2 : base.clusterSeries2,
     clusterActiveSerie: raw.clusterActiveSerie === 2 ? 2 : 1,
-    seriesValidas: (raw.seriesValidas === 3 ? 3 : 2) as 2 | 3,
+    seriesValidas: normalizarSeriesValidas(raw.seriesValidas),
   };
 }
 
@@ -326,7 +347,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     const updated = base.map((ex) => {
       const p = sp[ex.nome];
       if (!p) return ex;
-      return { ...ex, seriesValidas: (p.series_validas === 3 ? 3 : 2) as 2 | 3 };
+      return { ...ex, seriesValidas: normalizarSeriesValidas(p.series_validas) };
     });
     updated.sort((a, b) => {
       const ao = sp[a.nome]?.ordem ?? Infinity;
@@ -442,15 +463,15 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
           state.backoffReps = String(ultimo.backoffReps);
           state.backoffRepsSuggestion = true;
         }
-        // Back-off sai do Top Set 1 (~90%), não do back-off do treino passado.
-        if (state.seriesValidas === 3 && suggestedKg > 0) {
-          state.extraKg = String(Math.round(suggestedKg * ex.backoffPct));
-          state.extraKgIsSuggestion = true;
-        }
-        if (ultimo.extraReps && ultimo.extraReps > 0) {
-          state.extraReps = String(ultimo.extraReps);
-          state.extraRepsSuggestion = true;
-        }
+        // 3 válidas: Back-off sai do Top Set 1 (~90%).  4 válidas: Série 3 e 4
+        // repetem o último treino, sem reduzir carga.
+        const extras = sugestaoSeriesExtras(ultimo, suggestedKg, state.seriesValidas, ex.backoffPct);
+        Object.assign(state, extras, {
+          extraKgIsSuggestion: extras.extraKg !== "",
+          extraRepsSuggestion: extras.extraReps !== "",
+          serie4KgIsSuggestion: extras.serie4Kg !== "",
+          serie4RepsSuggestion: extras.serie4Reps !== "",
+        });
       }
       states[ex.nome] = state;
     });
@@ -487,7 +508,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setExerciseStates((prev) => ({
       ...prev,
       [currentEx.nome]: {
-        ...prev[currentEx.nome],
+        ...(prev[currentEx.nome] as ExerciseState),
         backoffKg: String(topKg),
         backoffKgIsSuggestion: true,
       },
@@ -511,7 +532,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     setExerciseStates((prev) => ({
       ...prev,
       [currentEx.nome]: {
-        ...prev[currentEx.nome],
+        ...(prev[currentEx.nome] as ExerciseState),
         extraKg: suggested,
         extraKgIsSuggestion: true,
       },
@@ -521,7 +542,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   function updateState(nome: string, partial: Partial<ExerciseState>) {
     setExerciseStates((prev) => ({
       ...prev,
-      [nome]: { ...prev[nome], ...partial },
+      [nome]: { ...(prev[nome] as ExerciseState), ...partial },
     }));
   }
 
@@ -543,7 +564,15 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     const current1RM = kg > 0 && reps > 0 ? calcEpley(kg, reps) : 0;
     // prConfirmado somente quando supera PR historico existente (teto sem historico = "Teto atingido" normal)
     const prConfirmado = maxHistPr > 0 && current1RM > maxHistPr;
-    updateState(currentEx.nome, { topSetConfirmed: true, prConfirmado });
+    // 4 válidas sem histórico: Série 3 e 4 partem do Top Set 1 confirmado (mesma carga e reps).
+    const semHistorico4: Partial<ExerciseState> = {};
+    if (s?.seriesValidas === 4 && !s.isDeload && !s.tecnica) {
+      if (s.extraKg === "") Object.assign(semHistorico4, { extraKg: String(kg), extraKgIsSuggestion: true });
+      if (s.extraReps === "") Object.assign(semHistorico4, { extraReps: String(reps), extraRepsSuggestion: true });
+      if (s.serie4Kg === "") Object.assign(semHistorico4, { serie4Kg: String(kg), serie4KgIsSuggestion: true });
+      if (s.serie4Reps === "") Object.assign(semHistorico4, { serie4Reps: String(reps), serie4RepsSuggestion: true });
+    }
+    updateState(currentEx.nome, { topSetConfirmed: true, prConfirmado, ...semHistorico4 });
   }
 
   function confirmBackoff() {
@@ -676,8 +705,11 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         const boReps = parseInt(state.backoffReps) || 0;
         if (!isTecnicaMode && topKg <= 0) return;
 
-        const extraKg = state.seriesValidas === 3 ? (parseFloat(state.extraKg) || 0) : 0;
-        const extraReps = state.seriesValidas === 3 ? (parseInt(state.extraReps) || 0) : 0;
+        const temExtra = state.seriesValidas === 3 || state.seriesValidas === 4;
+        const extraKg = temExtra ? (parseFloat(state.extraKg) || 0) : 0;
+        const extraReps = temExtra ? (parseInt(state.extraReps) || 0) : 0;
+        const serie4Kg = state.seriesValidas === 4 ? (parseFloat(state.serie4Kg) || 0) : 0;
+        const serie4Reps = state.seriesValidas === 4 ? (parseInt(state.serie4Reps) || 0) : 0;
 
         const parseCluster = (blocos: { kg: string; reps: string }[]) =>
           blocos
@@ -707,6 +739,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
           seriesValidas: state.seriesValidas,
           extraKg: extraKg > 0 ? extraKg : undefined,
           extraReps: extraReps > 0 ? extraReps : undefined,
+          serie4Kg: serie4Kg > 0 ? serie4Kg : undefined,
+          serie4Reps: serie4Reps > 0 ? serie4Reps : undefined,
           tecnica: state.tecnica,
           clusterSeries: clusterData,
           clusterSeries2: clusterData2 && clusterData2.length > 0 ? clusterData2 : undefined,
@@ -725,12 +759,13 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
           : [];
         const legacyPesos = isTecnicaMode
           ? allClusterBlocks.map((b) => String(b.kg))
-          : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : [])];
+          : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : []), ...(serie4Kg > 0 ? [String(serie4Kg)] : [])];
         const legacyReps = isTecnicaMode
           ? allClusterBlocks.map((b) => String(b.reps))
-          : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : [])];
-        if (!dadosDb[ex.nome]) dadosDb[ex.nome] = {};
-        dadosDb[ex.nome][treinoId] = {
+          : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : []), ...(serie4Reps > 0 ? [String(serie4Reps)] : [])];
+        const dadosExercicio = dadosDb[ex.nome] ?? {};
+        dadosDb[ex.nome] = dadosExercicio;
+        dadosExercicio[treinoId] = {
           data,
           pesos: legacyPesos,
           reps: legacyReps,
@@ -757,6 +792,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
       setExerciseStates({});
       setCurrentIdx(0);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error("Erro ao salvar treino:", err);
       setSalvarErro("Não foi possível salvar o treino. Tente novamente.");
       setTimeout(() => setSalvarErro(null), 8000);
@@ -955,6 +991,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                     Top 1: {state.topSetKg}kg × {state.topSetReps}reps
                     {state.backoffConfirmed && ` · Top 2: ${state.backoffKg}kg × ${state.backoffReps}reps`}
                     {state.seriesValidas === 3 && state.extraKg && ` · Back-off: ${state.extraKg}kg × ${state.extraReps}reps`}
+                    {state.seriesValidas === 4 && state.extraKg && ` · Série 3: ${state.extraKg}kg × ${state.extraReps}reps`}
+                    {state.seriesValidas === 4 && state.serie4Kg && ` · Série 4: ${state.serie4Kg}kg × ${state.serie4Reps}reps`}
                     {state?.isDeload && <span style={{ color: "#dc2626" }}> · Deload</span>}
                   </p>
                 )}
@@ -1178,16 +1216,17 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       <ExSub>
                         Top Sets: {currentEx.faixaTopSet[0]}–{currentEx.faixaTopSet[1]} reps
                         {state.seriesValidas === 3 && ` · Back-off (${Math.round(currentEx.backoffPct * 100)}%): ${currentEx.faixaBackoff[0]}–${currentEx.faixaBackoff[1]} reps`}
+                        {state.seriesValidas === 4 && " · Séries 3 e 4: mesma carga e reps do último treino"}
                       </ExSub>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
                       <Badge>{treinoId}</Badge>
                       <span style={{
                         fontSize: 10, padding: "2px 6px", borderRadius: 6, fontWeight: 600, whiteSpace: "nowrap",
-                        background: state.seriesValidas === 3 ? "#dcfce7" : "#f3f4f6",
-                        color: state.seriesValidas === 3 ? "#166534" : "#6b7280",
+                        background: state.seriesValidas === 4 ? "#dbeafe" : state.seriesValidas === 3 ? "#dcfce7" : "#f3f4f6",
+                        color: state.seriesValidas === 4 ? "#1e40af" : state.seriesValidas === 3 ? "#166534" : "#6b7280",
                       }}>
-                        {state.seriesValidas === 3 ? "3 válidas" : "2 válidas"}
+                        {state.seriesValidas} válidas
                       </span>
                     </div>
                   </ExHeader>
@@ -1197,10 +1236,10 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                   {renderProgressBanner(currentEx, prAtivo)}
 
                   {/* Técnica — chips sempre visíveis, substitui Top Set/Back-off quando ativo */}
-                  <Card style={{ background: "#fafafa" }}>
-                    <Label>Técnica</Label>
+                  <TecnicaCard style={{ background: "#fafafa" }}>
+                    <TecnicaLabel>Técnicas</TecnicaLabel>
                     <div style={{ display: "flex", gap: 8, marginBottom: (state.tecnica || state.isDeload) ? 12 : 0 }}>
-                      <CycleChip
+                      <TecnicaChip
                         $active={state.tecnica === "RP"}
                         onClick={() => {
                           setTecnicaWarning(false);
@@ -1261,8 +1300,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         type="button"
                       >
                         Cluster Set
-                      </CycleChip>
-                      <CycleChip
+                      </TecnicaChip>
+                      <TecnicaChip
                         $active={state.isDeload}
                         onClick={() => {
                           if (state.isDeload) {
@@ -1304,7 +1343,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         type="button"
                       >
                         Deload
-                      </CycleChip>
+                      </TecnicaChip>
                     </div>
 
                     {state.isDeload && (
@@ -1367,7 +1406,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                                   value={bloco.kg}
                                   onChange={(e) => {
                                     const cs = [...activeBlocks];
-                                    cs[i] = { ...cs[i], kg: e.target.value };
+                                    cs[i] = { reps: "", ...cs[i], kg: e.target.value };
                                     setBlocks(cs);
                                   }}
                                   $invalid={false}
@@ -1383,7 +1422,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                                   value={bloco.reps}
                                   onChange={(e) => {
                                     const cs = [...activeBlocks];
-                                    cs[i] = { ...cs[i], reps: e.target.value };
+                                    cs[i] = { kg: "", ...cs[i], reps: e.target.value };
                                     setBlocks(cs);
                                   }}
                                   $invalid={false}
@@ -1484,7 +1523,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         </button>
                       </>
                     )}
-                  </Card>
+                  </TecnicaCard>
 
                   {/* TOP SET / BACK-OFF / EXTRA — ocultos quando técnica está ativa */}
                   {!state.tecnica && (
@@ -1726,6 +1765,49 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                       </p>
                     </Card>
                   )}
+
+                  {/* SÉRIE 3 e SÉRIE 4 (só com 4 válidas — mesma carga e reps do último treino, sem reduzir) */}
+                  {state.topSetConfirmed && state.backoffConfirmed && state.seriesValidas === 4 &&
+                    ([
+                      { n: 3, kg: "extraKg", reps: "extraReps", kgSug: "extraKgIsSuggestion", repsSug: "extraRepsSuggestion" },
+                      { n: 4, kg: "serie4Kg", reps: "serie4Reps", kgSug: "serie4KgIsSuggestion", repsSug: "serie4RepsSuggestion" },
+                    ] as const).map((serie) => (
+                      <Card key={serie.n} style={{ background: "#fafafa" }}>
+                        <Label>Série {serie.n}</Label>
+                        <SeriesGrid>
+                          <SerieRow>
+                            <SerieLabel>Peso</SerieLabel>
+                            <InputBox
+                              type="number"
+                              placeholder="kg"
+                              value={state[serie.kg]}
+                              onChange={(e) => updateState(currentEx.nome, { [serie.kg]: e.target.value, [serie.kgSug]: false })}
+                              $invalid={false}
+                              $isSuggestion={state[serie.kgSug]}
+                              aria-label={`Série ${serie.n} kg ${currentEx.nome}`}
+                            />
+                            <Unit>kg</Unit>
+                          </SerieRow>
+                          <SerieRow>
+                            <SerieLabel>Reps</SerieLabel>
+                            <InputSm
+                              type="number"
+                              placeholder="reps"
+                              value={state[serie.reps]}
+                              onChange={(e) => updateState(currentEx.nome, { [serie.reps]: e.target.value, [serie.repsSug]: false })}
+                              $invalid={false}
+                              aria-label={`Série ${serie.n} reps ${currentEx.nome}`}
+                            />
+                            <Unit>reps</Unit>
+                          </SerieRow>
+                        </SeriesGrid>
+                        {serie.n === 4 && (
+                          <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>
+                            Mesma carga e reps do último treino — nenhuma série reduz peso com 4 válidas
+                          </p>
+                        )}
+                      </Card>
+                    ))}
                   </>
                   )}
 
