@@ -7,13 +7,13 @@ describe("exerciseVideos", () => {
   });
 
   it("todos os valores sao strings", () => {
-    Object.entries(EXERCISE_VIDEOS).forEach(([nome, id]) => {
+    Object.entries(EXERCISE_VIDEOS).forEach(([, id]) => {
       expect(typeof id).toBe("string");
     });
   });
 
   it("IDs preenchidos nao contem URL completa (apenas o ID do video)", () => {
-    Object.entries(EXERCISE_VIDEOS).forEach(([nome, id]) => {
+    Object.entries(EXERCISE_VIDEOS).forEach(([, id]) => {
       if (id) {
         expect(id).not.toContain("youtube.com");
         expect(id).not.toContain("http");

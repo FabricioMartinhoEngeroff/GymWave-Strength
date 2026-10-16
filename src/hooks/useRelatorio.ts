@@ -61,21 +61,26 @@ export function useRelatorio() {
         i === idx ? ({ ...item, ...linhaEditada } as LinhaRelatorio) : item
       );
 
+      const linha = novas[idx];
+      if (!linha) return novas;
+
       const dados = carregarDados();
-      const ex = novas[idx].exercicio;
-      const cicloKey = resolveCicloKey(dados[ex], novas[idx]);
-      if (ex && cicloKey && dados[ex]?.[cicloKey]) {
-        dados[ex][cicloKey] = {
-          ...dados[ex][cicloKey],
-          data: novas[idx].data,
-          pesos: novas[idx].series.map((s) => s.peso),
-          reps: novas[idx].series.map((s) => s.rep),
-          obs: novas[idx].obs || "",
+      const ex = linha.exercicio;
+      const cicloKey = resolveCicloKey(dados[ex], linha);
+      const porCiclo = dados[ex];
+      const registro = cicloKey ? porCiclo?.[cicloKey] : undefined;
+      if (ex && cicloKey && porCiclo && registro) {
+        porCiclo[cicloKey] = {
+          ...registro,
+          data: linha.data,
+          pesos: linha.series.map((s) => s.peso),
+          reps: linha.series.map((s) => s.rep),
+          obs: linha.obs || "",
         };
         salvarDados(dados);
 
-        if (novas[idx].cicloKey !== cicloKey) {
-          novas[idx] = { ...novas[idx], cicloKey };
+        if (linha.cicloKey !== cicloKey) {
+          novas[idx] = { ...linha, cicloKey };
         }
       }
 
@@ -87,13 +92,15 @@ export function useRelatorio() {
     setLinhas((prev) => {
       const novas = [...prev];
       const lin = novas.splice(idx, 1)[0];
+      if (!lin) return novas;
 
       const dados = carregarDados();
       const ex = lin.exercicio;
       const cicloKey = resolveCicloKey(dados[ex], lin);
-      if (ex && cicloKey && dados[ex]?.[cicloKey]) {
-        delete dados[ex][cicloKey];
-        if (Object.keys(dados[lin.exercicio]).length === 0) {
+      const porCiclo = dados[ex];
+      if (ex && cicloKey && porCiclo?.[cicloKey]) {
+        delete porCiclo[cicloKey];
+        if (Object.keys(porCiclo).length === 0) {
           delete dados[lin.exercicio];
         }
         salvarDados(dados);

@@ -1,17 +1,18 @@
-import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
+import type { DadosTreino, Logbook, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
 
 // ─── User-scoped storage keys ─────────────────────────────────────────────────
 
-let _userId: string = localStorage.getItem("email") ?? "";
+// O usuário atual é definido só pelo AuthProvider (setCurrentUser), nunca lido do storage.
+let _userId = "";
 
 // Keys that hold real user data (not auth infrastructure)
 const USER_DATA_KEYS = ["logbook", "dadosTreino", "planoTreino", "sessoes_config"];
 
-// On first login after this change, migrate any pre-existing unscoped data
-// into the new user-scoped keys so no data is lost.
+// No primeiro login após a mudança, migra dados globais pré-existentes
+// para as chaves do usuário, para que nada se perca.
 function migrateUnscoped(userId: string) {
   USER_DATA_KEYS.forEach((base) => {
-    const scopedKey = `${userId}_${base}`;
+    const scopedKey = `gw:${userId}:${base}`;
     const old = localStorage.getItem(base);
     if (old && old !== "{}" && old !== "[]") {
       // Só migra se o destino ainda não existe
@@ -29,12 +30,25 @@ export function setCurrentUser(id: string | null) {
   if (_userId) migrateUnscoped(_userId);
 }
 
-export function storageKey(base: string): string {
-  return _userId ? `${_userId}_${base}` : base;
+export function getCurrentUser(): string {
+  return _userId;
 }
 
-// Run migration immediately for users who are already logged in on page load
-if (_userId) migrateUnscoped(_userId);
+export function storageKey(base: string): string {
+  return _userId ? `gw:${_userId}:${base}` : base;
+}
+
+// JSON corrompido (ou de tipo inesperado) vira objeto vazio em vez de lançar.
+function lerObjeto<T extends object>(key: string): T {
+  const raw = localStorage.getItem(key);
+  if (!raw) return {} as T;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? (parsed as T) : ({} as T);
+  } catch {
+    return {} as T;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -42,10 +56,12 @@ export const salvarDados = (dados: DadosTreino) => {
   const dadosFiltrados: DadosTreino = {};
 
   for (const exercicio in dados) {
-    dadosFiltrados[exercicio] = {};
+    const filtrado: Record<string, RegistroTreino> = {};
+    dadosFiltrados[exercicio] = filtrado;
 
     for (const ciclo in dados[exercicio]) {
-      const reg = dados[exercicio][ciclo];
+      const reg = dados[exercicio]?.[ciclo];
+      if (!reg) continue;
       const pesos = reg.pesos || [];
       const reps = reg.reps || [];
       const obs = reg.obs?.trim() || "";
@@ -56,7 +72,7 @@ export const salvarDados = (dados: DadosTreino) => {
         obs === "";
 
       if (!isVazio) {
-        dadosFiltrados[exercicio][ciclo] = reg;
+        filtrado[ciclo] = reg;
       }
     }
 
@@ -69,19 +85,11 @@ export const salvarDados = (dados: DadosTreino) => {
 };
 
 
-export const carregarDados = (): DadosTreino => {
-  const local = localStorage.getItem(storageKey("dadosTreino"));
-  if (local) {
-    return JSON.parse(local);
-  }
-  return {};
-};
+export const carregarDados = (): DadosTreino => lerObjeto<DadosTreino>(storageKey("dadosTreino"));
 
 
 function carregarLogbook(): Logbook {
-  const raw = localStorage.getItem(storageKey("logbook"));
-  if (raw) return JSON.parse(raw);
-  return {};
+  return lerObjeto<Logbook>(storageKey("logbook"));
 }
 
 function salvarLogbook(logbook: Logbook): void {
@@ -91,10 +99,9 @@ function salvarLogbook(logbook: Logbook): void {
 
 export function salvarRegistro(registro: RegistroExercicio): void {
   const logbook = carregarLogbook();
-  if (!logbook[registro.exercicio]) {
-    logbook[registro.exercicio] = [];
-  }
-  logbook[registro.exercicio].push(registro);
+  const lista = logbook[registro.exercicio] ?? [];
+  lista.push(registro);
+  logbook[registro.exercicio] = lista;
   salvarLogbook(logbook);
 }
 
@@ -116,7 +123,7 @@ export function existeTreinoNaData(treinoId: string, data: string): boolean {
 export function removerTreinoNaData(treinoId: string, data: string): void {
   const logbook = carregarLogbook();
   for (const exercicio in logbook) {
-    logbook[exercicio] = logbook[exercicio].filter(
+    logbook[exercicio] = (logbook[exercicio] ?? []).filter(
       (r) => !(r.treinoId === treinoId && r.data === data)
     );
   }

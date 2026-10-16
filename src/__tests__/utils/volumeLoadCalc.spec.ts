@@ -1233,3 +1233,23 @@ describe("VolumeLoadCalc", () => {
     });
   });
 });
+
+describe("VolumeLoadCalc — 4 séries válidas no logbook", () => {
+  beforeEach(() => localStorage.clear());
+
+  it("soma as 4 séries no volume e na contagem de séries", () => {
+    localStorage.setItem("logbook", JSON.stringify({
+      "Supino reto barra": [{
+        exercicio: "Supino reto barra", treinoId: "UA", data: "10/06/2026",
+        dataTs: new Date("2026-06-10T10:00:00").getTime(),
+        topSetKg: 100, topSetReps: 6, topSetFaixaMin: 5, topSetFaixaMax: 9, topSetBateuTeto: false,
+        backoffKg: 100, backoffReps: 5, backoffFaixaMin: 5, backoffFaixaMax: 9,
+        seriesValidas: 4, extraKg: 100, extraReps: 5, serie4Kg: 100, serie4Reps: 4,
+        progrediu: false,
+      }],
+    }));
+    const peito = calcVolumeLoad().find((r) => r.musculo === "Peitoral");
+    expect(peito?.volumeAtual).toBe(600 + 500 + 500 + 400);
+    expect(peito?.seriesAtual).toBe(4);
+  });
+});

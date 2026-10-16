@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { setCurrentUser, storageKey } from "../../utils/storage";
-import { HARDCODED_USERS } from "../../data/users";
+import { setCurrentUser, storageKey, getCurrentUser } from "../../utils/storage";
+import { normalizarSeriesValidas } from "../../utils/seriesValidas";
 import type { ExercicioSessao } from "../../data/sessionExercises";
+import type { SeriesValidas } from "../../types/TrainingData";
 import {
-  UserSelectorRow,
-  UserSelectorLabel,
-  UserSelect,
   BtnPrimary,
   BtnRow,
   ResultCard,
@@ -94,12 +92,12 @@ function parseText(text: string): { sessions: ParsedSession[]; errors: string[] 
   let current: ParsedSession | null = null;
 
   for (let i = 0; i < lines.length; i++) {
-    const raw = lines[i].trim();
+    const raw = (lines[i] ?? "").trim();
     if (!raw) continue;
 
     const headerMatch = raw.match(/^##\s+(.+)$/);
     if (headerMatch) {
-      current = { sessao: headerMatch[1].trim(), exercicios: [] };
+      current = { sessao: (headerMatch[1] ?? "").trim(), exercicios: [] };
       sessions.push(current);
       continue;
     }
@@ -115,12 +113,12 @@ function parseText(text: string): { sessions: ParsedSession[]; errors: string[] 
       continue;
     }
 
-    const nome = parts[0];
+    const nome = parts[0] ?? "";
     const grupo = parts[1] || "Outro";
 
     let faixaTopSet: [number, number] = [8, 10];
     let faixaBackoff: [number, number] = [10, 12];
-    let seriesValidas: 2 | 3 = 2;
+    let seriesValidas: SeriesValidas = 2;
     let topSetKg: number | null = null;
 
     if (parts[2]) {
@@ -140,7 +138,7 @@ function parseText(text: string): { sessions: ParsedSession[]; errors: string[] 
 
     if (parts[5]) {
       const serMatch = parts[5].match(/(\d)/);
-      if (serMatch) seriesValidas = Number(serMatch[1]) === 3 ? 3 : 2;
+      if (serMatch) seriesValidas = normalizarSeriesValidas(serMatch[1]);
     }
 
     const ex: ExercicioSessao = {
@@ -169,8 +167,9 @@ const TREINO_ID_MAP: Record<string, string> = {
 };
 
 export default function TextImport() {
-  const loggedInUser = localStorage.getItem("email") ?? "";
-  const [targetUser, setTargetUser] = useState(loggedInUser);
+  // O treino é salvo na conta autenticada (escopo definido pelo AuthProvider).
+  const loggedInUser = getCurrentUser();
+  const targetUser = loggedInUser;
   const [text, setText] = useState("");
   const [result, setResult] = useState<{ sessoes: number; exercicios: number } | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
@@ -202,13 +201,15 @@ export default function TextImport() {
 
       sessions.forEach(({ sessao, exercicios }) => {
         sessoesConfig[sessao] = exercicios.map((ex) => {
-          const { topSetKg: _, ...rest } = ex as ExercicioSessao & { topSetKg?: number };
+          const rest: ExercicioSessao & { topSetKg?: number } = { ...ex };
+          delete rest.topSetKg;
           return rest;
         });
-        if (!planoNovo[sessao]) planoNovo[sessao] = {};
+        const planoSessao = planoNovo[sessao] ?? {};
+        planoNovo[sessao] = planoSessao;
 
         exercicios.forEach((ex, idx) => {
-          planoNovo[sessao][ex.nome] = {
+          planoSessao[ex.nome] = {
             ordem: idx + 1,
             series_validas: ex.seriesValidas,
           };
@@ -267,16 +268,7 @@ export default function TextImport() {
   return (
     <Wrapper>
       <SectionTitle>Importar treino via texto</SectionTitle>
-      <SectionSub>Cole o treino no formato abaixo e salve para o usuário escolhido</SectionSub>
-
-      <UserSelectorRow>
-        <UserSelectorLabel>Salvar para:</UserSelectorLabel>
-        <UserSelect value={targetUser} onChange={(e) => setTargetUser(e.target.value)}>
-          {HARDCODED_USERS.map((u) => (
-            <option key={u.email} value={u.email}>{u.name} ({u.email})</option>
-          ))}
-        </UserSelect>
-      </UserSelectorRow>
+      <SectionSub>Cole o treino no formato abaixo e salve na sua conta</SectionSub>
 
       <HelpText>
         <summary>Ver formato esperado</summary>
@@ -304,7 +296,7 @@ Nome | Grupo | Top min-max | Backoff min-max | Peso kg (opcional) | Séries (opc
       {result && (
         <ResultCard>
           <ResultTitle>
-            Treino salvo para {HARDCODED_USERS.find((u) => u.email === targetUser)?.name}
+            Treino salvo
           </ResultTitle>
           <ResultRow>{result.sessoes} sessão(ões) com {result.exercicios} exercícios</ResultRow>
         </ResultCard>

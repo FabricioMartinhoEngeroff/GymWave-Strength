@@ -90,6 +90,20 @@ export const CycleChip = styled.button<CycleChipProps>`
   }
 `;
 
+/* ── Bloco Técnica (compacto: só a altura é menor) ───────────── */
+
+export const TecnicaCard = styled(Card)`
+  padding: 10px 14px;
+`;
+
+export const TecnicaLabel = styled(Label)`
+  margin-bottom: 6px;
+`;
+
+export const TecnicaChip = styled(CycleChip)`
+  padding: 6px 6px;
+`;
+
 /* ── Session selector ────────────────────────────────────────── */
 
 export const SessaoRow = styled.div`

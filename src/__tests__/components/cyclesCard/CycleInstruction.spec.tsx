@@ -66,7 +66,7 @@ describe("CycleInstruction", () => {
 
   it("respeita o escopo do usuario para instrucoesVistas", () => {
     setCurrentUser("treino@gmail.com");
-    localStorage.setItem("treino@gmail.com_instrucoesVistas", "true");
+    localStorage.setItem("gw:treino@gmail.com:instrucoesVistas", "true");
     render(<CycleInstruction />);
     expect(screen.queryByText(/registre primeiro/i)).not.toBeInTheDocument();
   });

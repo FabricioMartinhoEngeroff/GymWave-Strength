@@ -69,11 +69,13 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
     );
 
     if (pesoTotal === 0 && repsLimpos.every((r) => !r) && !obsLimpo) {
+      // eslint-disable-next-line no-restricted-globals
       alert("Preencha ao menos um peso, repetição ou observação.");
       return;
     }
 
     if (!exercicioSelecionado) {
+      // eslint-disable-next-line no-restricted-globals
       alert("Por favor, selecione um exercício.");
       return;
     }

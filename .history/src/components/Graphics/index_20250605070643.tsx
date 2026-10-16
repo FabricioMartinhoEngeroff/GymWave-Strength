@@ -1,1 +1,0 @@
-export { GraphicsContainer as default } from "./GraphicsContainer";

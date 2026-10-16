@@ -24,7 +24,7 @@ import { CheckCircle } from "phosphor-react";
 
 
 import { EXERCICIOS } from "../../data/exercise";
-import { ROTACAO } from "../../data/cycles";
+import { ROTACAO, type TreinoRotacao } from "../../data/cycles";
 import type { RegistroTreino } from "../../types/TrainingData";
 import { useMemo, useState } from "react";
 
@@ -33,10 +33,13 @@ interface CycleCardProps {
   onSave: (registro: RegistroTreino & { ciclo: string }) => void;
 }
 
-export default function CycleCard({ value, onSave }: CycleCardProps) {
-  const [cicloSelecionado, setCicloSelecionado] = useState<string>(ROTACAO[0].id);
+// ROTACAO é uma lista fixa e não vazia.
+const CICLO_PADRAO = ROTACAO[0] as TreinoRotacao;
 
-  const cicloInfo = ROTACAO.find((c) => c.id === cicloSelecionado) || ROTACAO[0];
+export default function CycleCard({ value, onSave }: CycleCardProps) {
+  const [cicloSelecionado, setCicloSelecionado] = useState<string>(CICLO_PADRAO.id);
+
+  const cicloInfo = ROTACAO.find((c) => c.id === cicloSelecionado) ?? CICLO_PADRAO;
 
   const {
     pesos,
@@ -103,7 +106,7 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
     value: r.id,
   }))}
   selected={[cicloSelecionado]}
-  onChange={([value]) => setCicloSelecionado(value)}
+  onChange={([value]) => setCicloSelecionado(value ?? CICLO_PADRAO.id)}
 />
 
       <p>Escolha seu exercício:</p>

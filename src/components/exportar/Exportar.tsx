@@ -2,8 +2,10 @@ import { useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio } from "../../types/TrainingData";
+import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
 import { storageKey, salvarRegistro } from "../../utils/storage";
+import { montarBackup } from "../../utils/backupJson";
+import ImportarBackupJson from "./ImportarBackupJson";
 import {
   DropZone,
   DropIcon,
@@ -218,7 +220,7 @@ const NOME_MAP: Record<string, string> = {
 function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
   if (raw.length === 0) return raw;
   const keyMap: Record<string, string> = {};
-  Object.keys(raw[0]).forEach((key) => {
+  Object.keys(raw[0] ?? {}).forEach((key) => {
     const flat = key.replace(/[\r\n]+/g, " ").trim();
     for (const [pattern, target] of COLUMN_MAP) {
       if (pattern.test(flat)) { keyMap[key] = target; break; }
@@ -255,7 +257,7 @@ function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
 function parseSeries(val: unknown): number | undefined {
   if (val === undefined || val === null || val === "") return undefined;
   const n = Number(val);
-  return isNaN(n) ? undefined : Math.max(1, Math.min(3, n));
+  return isNaN(n) ? undefined : Math.max(1, Math.min(4, n));
 }
 
 const SESSION_ORDER: Record<string, number> = {
@@ -353,8 +355,7 @@ function useStats() {
 }
 
 function exportJSON() {
-  const data = localStorage.getItem(storageKey("dadosTreino")) || "{}";
-  const blob = new Blob([data], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(montarBackup())], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -369,7 +370,7 @@ function exportCSV() {
   ) as Logbook;
 
   const rows: string[] = [
-    "data,exercicio,treino_id,top_set_1_kg,top_set_1_reps,top_set_2_kg,top_set_2_reps,series_validas,back_off_kg,back_off_reps",
+    "data,exercicio,treino_id,top_set_1_kg,top_set_1_reps,top_set_2_kg,top_set_2_reps,series_validas,back_off_kg,back_off_reps,serie_4_kg,serie_4_reps",
   ];
 
   Object.values(logbook).forEach((registros) => {
@@ -381,6 +382,7 @@ function exportCSV() {
           reg.backoffKg, reg.backoffReps,
           reg.seriesValidas ?? 2,
           reg.extraKg ?? "", reg.extraReps ?? "",
+          reg.serie4Kg ?? "", reg.serie4Reps ?? "",
         ]
           .map((v) => `"${String(v).replace(/"/g, '""')}"`)
           .join(",")
@@ -404,6 +406,7 @@ export default function Exportar() {
 
   // Import state
   const [showImport, setShowImport] = useState(false);
+  const [showJsonImport, setShowJsonImport] = useState(false);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -432,8 +435,8 @@ export default function Exportar() {
       reader.onload = (e) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const json = xlsxToJson(ws);
+        const ws = wb.Sheets[wb.SheetNames[0] ?? ""];
+        const json = ws ? xlsxToJson(ws) : [];
         setRows(normalizeRows(mapColumns(json)));
       };
       reader.readAsArrayBuffer(file);
@@ -491,7 +494,7 @@ export default function Exportar() {
     const sessoesConfigMap: Record<string, {
       nome: string; grupo: string;
       faixaTopSet: [number, number]; faixaBackoff: [number, number];
-      backoffPct: number; seriesValidas: 2 | 3;
+      backoffPct: number; seriesValidas: SeriesValidas;
       tecnica: "RP" | null; cue: string;
     }[]> = {};
     const porSessao: Record<string, number> = {};
@@ -501,7 +504,7 @@ export default function Exportar() {
     const todayTs = Date.now();
 
     rows.forEach((row) => {
-      const seriesCount = Math.max(1, Math.min(3, row.series_validas)) as 2 | 3;
+      const seriesCount = Math.max(1, Math.min(4, row.series_validas)) as SeriesValidas;
       const sessao = row.sessao || "Sem sessão";
 
       if (!planoNovo[sessao]) planoNovo[sessao] = {};
@@ -614,7 +617,7 @@ export default function Exportar() {
 
         <ExpBtn onClick={() => { setShowImport((v) => !v); setResult(null); setRows([]); setFileName(null); }}>
           <BtnIcon $color="#2563eb">⬆</BtnIcon>
-          {showImport ? "Fechar importação" : "Importar planilha"}
+          {showImport ? "Fechar importação" : "Migração planilha de treino"}
         </ExpBtn>
 
         {showImport && (
@@ -720,6 +723,17 @@ export default function Exportar() {
                 Confirmar importação
               </BtnPrimary>
             </BtnRow>
+          </ImportSection>
+        )}
+
+        <ExpBtn onClick={() => setShowJsonImport((v) => !v)}>
+          <BtnIcon $color="#7c3aed">⬆</BtnIcon>
+          {showJsonImport ? "Fechar migração JSON" : "Migração dos dados JSON dos treinos"}
+        </ExpBtn>
+
+        {showJsonImport && (
+          <ImportSection>
+            <ImportarBackupJson />
           </ImportSection>
         )}
       </Content>

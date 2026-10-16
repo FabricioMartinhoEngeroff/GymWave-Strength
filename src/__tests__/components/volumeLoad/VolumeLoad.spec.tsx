@@ -188,25 +188,25 @@ describe("VolumeLoad — Componente de volume por musculo", () => {
     it("clicar '3 sem' muda subtitulo para range de 3 semanas", () => {
       render(<VolumeLoad />);
       fireEvent.click(screen.getByText("3 sem"));
-      expect(screen.getByText("Últimas 3 semanas vs 3 semanas anteriores")).toBeInTheDocument();
+      expect(screen.getByText("Comparativo semanal — últimas 3 semanas")).toBeInTheDocument();
     });
 
     it("clicar '2 sem' muda subtitulo para range de 2 semanas", () => {
       render(<VolumeLoad />);
       fireEvent.click(screen.getByText("2 sem"));
-      expect(screen.getByText("Últimas 2 semanas vs 2 semanas anteriores")).toBeInTheDocument();
+      expect(screen.getByText("Comparativo semanal — últimas 2 semanas")).toBeInTheDocument();
     });
 
     it("clicar '6 sem' muda subtitulo para range de 6 semanas", () => {
       render(<VolumeLoad />);
       fireEvent.click(screen.getByText("6 sem"));
-      expect(screen.getByText("Últimas 6 semanas vs 6 semanas anteriores")).toBeInTheDocument();
+      expect(screen.getByText("Comparativo semanal — últimas 6 semanas")).toBeInTheDocument();
     });
 
     it("clicar '1 sem' após '4 sem' restaura subtitulo de 1 semana", () => {
       render(<VolumeLoad />);
       fireEvent.click(screen.getByText("4 sem"));
-      expect(screen.getByText("Últimas 4 semanas vs 4 semanas anteriores")).toBeInTheDocument();
+      expect(screen.getByText("Comparativo semanal — últimas 4 semanas")).toBeInTheDocument();
       fireEvent.click(screen.getByText("1 sem"));
       expect(screen.getByText("Semana atual vs semana anterior")).toBeInTheDocument();
     });

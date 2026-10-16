@@ -237,10 +237,10 @@ function seriesLabel(series: number): string {
 const WEEK_PALETTE = ["#dbeafe", "#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#2563eb"];
 
 function getWeekColors(count: number): string[] {
-  if (count <= 1) return [WEEK_PALETTE[5]];
+  if (count <= 1) return [WEEK_PALETTE[5] ?? ""];
   return Array.from({ length: count }, (_, i) => {
     const idx = Math.round((i / (count - 1)) * 5);
-    return WEEK_PALETTE[idx];
+    return WEEK_PALETTE[idx] ?? "";
   });
 }
 
@@ -273,14 +273,14 @@ export default function VolumeLoad() {
     : Math.max(...withData.map((d) => Math.max(d.volumeAtual, d.volumeAnterior)), 1);
 
   const totalAtual = isPerWeek
-    ? dadosPerWeek.reduce((s, d) => s + d.semanas[d.semanas.length - 1].volume, 0)
+    ? dadosPerWeek.reduce((s, d) => s + (d.semanas[d.semanas.length - 1]?.volume ?? 0), 0)
     : dados.reduce((s, d) => s + d.volumeAtual, 0);
 
   const totalDelta = (() => {
     if (isPerWeek) {
-      const newest = dadosPerWeek.reduce((s, d) => s + d.semanas[d.semanas.length - 1].volume, 0);
+      const newest = dadosPerWeek.reduce((s, d) => s + (d.semanas[d.semanas.length - 1]?.volume ?? 0), 0);
       const prev = dadosPerWeek.reduce(
-        (s, d) => s + (d.semanas.length >= 2 ? d.semanas[d.semanas.length - 2].volume : 0), 0
+        (s, d) => s + (d.semanas[d.semanas.length - 2]?.volume ?? 0), 0
       );
       return prev > 0 ? Math.round(((newest - prev) / prev) * 100) : 0;
     }
@@ -406,7 +406,7 @@ export default function VolumeLoad() {
                       <VlBarBg>
                         <VlBarFill
                           $pct={maxVol > 0 ? Math.round((sem.volume / maxVol) * 100) : 0}
-                          $color={weekColors[i]}
+                          $color={weekColors[i] ?? ""}
                         />
                       </VlBarBg>
                       <VlNum>{fmt(sem.volume)}</VlNum>

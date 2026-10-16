@@ -20,10 +20,17 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-hooks/set-state-in-effect': 'off',
+      'no-console': 'error',
+      'no-restricted-globals': ['error', { name: 'alert', message: 'Use um componente de UI em vez de alert.' }],
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },
       ],
     },
+  },
+  {
+    // O logger é o único módulo autorizado a usar console.
+    files: ['src/components/login/security/logger.ts', 'src/__tests__/**'],
+    rules: { 'no-console': 'off' },
   },
 )

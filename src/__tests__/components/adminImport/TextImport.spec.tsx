@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TextImport from "../../../components/adminImport/TextImport";
 import { setCurrentUser } from "../../../utils/storage";
@@ -23,14 +23,6 @@ describe("TextImport", () => {
     expect(screen.getByTestId("text-import-input")).toBeInTheDocument();
   });
 
-  it("exibe seletor de usuario com todos os usuarios", () => {
-    render(<TextImport />);
-    expect(screen.getByText("Salvar para:")).toBeInTheDocument();
-    const select = screen.getByRole("combobox");
-    const options = select.querySelectorAll("option");
-    expect(options.length).toBe(2);
-  });
-
   it("botao Salvar treino comeca desabilitado com textarea vazio", () => {
     render(<TextImport />);
     const btn = screen.getByText("Salvar treino").closest("button");
@@ -45,15 +37,14 @@ describe("TextImport", () => {
     expect(btn).not.toBeDisabled();
   });
 
-  it("salva sessoes_config para o usuario selecionado", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+  it("salva sessoes_config na conta autenticada", () => {
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const config = JSON.parse(localStorage.getItem("amanda@treino.com_sessoes_config") || "{}");
+    const config = JSON.parse(localStorage.getItem("gw:u1:sessoes_config") || "{}");
     expect(config["Lower A"]).toBeDefined();
     expect(config["Upper A"]).toBeDefined();
     expect(config["Lower A"]).toHaveLength(2);
@@ -61,67 +52,52 @@ describe("TextImport", () => {
   });
 
   it("salva logbook com pesos quando fornecidos", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("amanda@treino.com_logbook") || "{}");
+    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
     expect(logbook["Elevação pélvica"]).toBeDefined();
     expect(logbook["Elevação pélvica"][0].topSetKg).toBe(60);
     expect(logbook["Mesa flexora"][0].topSetKg).toBe(30);
   });
 
   it("Top Set 2 espelha o Top Set 1 no plano importado", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("amanda@treino.com_logbook") || "{}");
+    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
     expect(logbook["Elevação pélvica"][0].backoffKg).toBe(60); // Top Set 2 espelha o Top Set 1 (60)
   });
 
   it("nao cria logbook entry para exercicios sem peso", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("amanda@treino.com_logbook") || "{}");
+    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
     expect(logbook["Elevação lateral livre"]).toBeUndefined();
   });
 
   it("salva planoTreino com ordem e series corretas", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const plano = JSON.parse(localStorage.getItem("amanda@treino.com_planoTreino") || "{}");
+    const plano = JSON.parse(localStorage.getItem("gw:u1:planoTreino") || "{}");
     expect(plano["Lower A"]["Elevação pélvica"].ordem).toBe(1);
     expect(plano["Lower A"]["Elevação pélvica"].series_validas).toBe(3);
     expect(plano["Lower A"]["Mesa flexora"].ordem).toBe(2);
     expect(plano["Lower A"]["Mesa flexora"].series_validas).toBe(2);
-  });
-
-  it("nao salva dados sob o prefixo do admin", () => {
-    localStorage.setItem("email", "treino@gmail.com");
-    render(<TextImport />);
-
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
-    fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
-    fireEvent.click(screen.getByText("Salvar treino"));
-
-    expect(localStorage.getItem("treino@gmail.com_sessoes_config")).toBeNull();
   });
 
   it("exibe resultado apos salvar com sucesso", () => {
@@ -150,33 +126,31 @@ describe("TextImport", () => {
   });
 
   it("parseia faixas de reps corretamente", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const config = JSON.parse(localStorage.getItem("amanda@treino.com_sessoes_config") || "{}");
+    const config = JSON.parse(localStorage.getItem("gw:u1:sessoes_config") || "{}");
     expect(config["Lower A"][0].faixaTopSet).toEqual([8, 12]);
     expect(config["Lower A"][0].faixaBackoff).toEqual([10, 15]);
   });
 
   it("salva seriesValidas 3 quando especificado", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     render(<TextImport />);
 
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "amanda@treino.com" } });
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const config = JSON.parse(localStorage.getItem("amanda@treino.com_sessoes_config") || "{}");
+    const config = JSON.parse(localStorage.getItem("gw:u1:sessoes_config") || "{}");
     expect(config["Lower A"][0].seriesValidas).toBe(3);
     expect(config["Lower A"][1].seriesValidas).toBe(2);
   });
 
-  it("salva para o admin quando selecionado", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+  it("salva na conta do admin", () => {
+    setCurrentUser("u1");
     render(<TextImport />);
 
     fireEvent.change(screen.getByTestId("text-import-input"), {
@@ -184,7 +158,7 @@ describe("TextImport", () => {
     });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const config = JSON.parse(localStorage.getItem("treino@gmail.com_sessoes_config") || "{}");
+    const config = JSON.parse(localStorage.getItem("gw:u1:sessoes_config") || "{}");
     expect(config["Lower A"]).toBeDefined();
     expect(config["Lower A"][0].nome).toBe("Agachamento livre");
   });
@@ -197,9 +171,9 @@ describe("TextImport", () => {
   });
 
   it("substitui sessoes_config antigo completamente ao reimportar", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     localStorage.setItem(
-      "treino@gmail.com_sessoes_config",
+      "gw:u1:sessoes_config",
       JSON.stringify({ "Braço": [{ nome: "Rosca direta", grupo: "Bíceps" }] })
     );
     render(<TextImport />);
@@ -209,15 +183,15 @@ describe("TextImport", () => {
     });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const config = JSON.parse(localStorage.getItem("treino@gmail.com_sessoes_config") || "{}");
+    const config = JSON.parse(localStorage.getItem("gw:u1:sessoes_config") || "{}");
     expect(config["Lower A"]).toBeDefined();
     expect(config["Braço"]).toBeUndefined();
   });
 
   it("substitui planoTreino antigo completamente ao reimportar", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     localStorage.setItem(
-      "treino@gmail.com_planoTreino",
+      "gw:u1:planoTreino",
       JSON.stringify({ "Braço": { "Rosca direta": { ordem: 1, series_validas: 2 } } })
     );
     render(<TextImport />);
@@ -227,15 +201,15 @@ describe("TextImport", () => {
     });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const plano = JSON.parse(localStorage.getItem("treino@gmail.com_planoTreino") || "{}");
+    const plano = JSON.parse(localStorage.getItem("gw:u1:planoTreino") || "{}");
     expect(plano["Lower A"]).toBeDefined();
     expect(plano["Braço"]).toBeUndefined();
   });
 
   it("mantem logbook existente ao reimportar novo treino", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     localStorage.setItem(
-      "treino@gmail.com_logbook",
+      "gw:u1:logbook",
       JSON.stringify({ "Rosca direta": [{ topSetKg: 30, data: "01/07/2026" }] })
     );
     render(<TextImport />);
@@ -245,15 +219,15 @@ describe("TextImport", () => {
     });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("treino@gmail.com_logbook") || "{}");
+    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
     expect(logbook["Rosca direta"][0].topSetKg).toBe(30);
     expect(logbook["Agachamento"]).toBeDefined();
   });
 
   it("mantem dadosTreino existente ao reimportar novo treino", () => {
-    localStorage.setItem("email", "treino@gmail.com");
+    setCurrentUser("u1");
     localStorage.setItem(
-      "treino@gmail.com_dadosTreino",
+      "gw:u1:dadosTreino",
       JSON.stringify({ "Rosca direta": { C1: { pesos: ["30"] } } })
     );
     render(<TextImport />);
@@ -263,7 +237,7 @@ describe("TextImport", () => {
     });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const db = JSON.parse(localStorage.getItem("treino@gmail.com_dadosTreino") || "{}");
+    const db = JSON.parse(localStorage.getItem("gw:u1:dadosTreino") || "{}");
     expect(db["Rosca direta"]["C1"].pesos[0]).toBe("30");
     expect(db["Agachamento"]).toBeDefined();
   });

@@ -8,8 +8,7 @@ import Exportar from "./components/exportar/Exportar";
 import BottomNav, { type Tab } from "./components/layout/BottomNav";
 import { GraphicsContainer } from "./components/graphic/GraphicsContainer";
 import ReportPage from "./components/report";
-import { HARDCODED_USERS } from "./data/users";
-import { setCurrentUser } from "./utils/storage";
+import { useAuth } from "./components/login/context/useAuth";
 
 const Shell = styled.div`
   display: flex;
@@ -70,8 +69,7 @@ export default function App() {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const navigate = useNavigate();
 
-  const email = localStorage.getItem("email") ?? "";
-  const currentUser = HARDCODED_USERS.find((u) => u.email === email);
+  const { user, signOut } = useAuth();
 
   const handleTabChange = useCallback(
     (newTab: Tab) => {
@@ -83,17 +81,15 @@ export default function App() {
     [unsavedChanges]
   );
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("email");
-    setCurrentUser(null);
-    navigate("/");
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/", { replace: true });
   };
 
   return (
     <Shell>
       <TopBar>
-        <UserLabel>Olá, {currentUser?.name ?? "Usuário"}</UserLabel>
+        <UserLabel>Olá, {user?.name || "Usuário"}</UserLabel>
         <LogoutBtn onClick={handleLogout}>
           <LogOut size={14} />
           Sair

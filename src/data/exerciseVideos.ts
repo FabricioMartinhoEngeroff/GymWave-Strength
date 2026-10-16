@@ -30,7 +30,7 @@ export const EXERCISE_VIDEOS: Record<string, string> = {
   "Agachamento livre":         "zgk71dUUt0Y",
   "Cadeira extensora":         "tcdgal1epsI",
   "Afundo no Smith":           "DiYEb4E4pko",
-  "Afundo búlgaro livre":      "DiYEb4E4pko",
+  "Afundo búlgaro livre":      "hY1mAqbXhvQ",
 
   // ── Posterior/Glúteo ──────────────────────────────────────────────────────
   "Terra sumô":                        "vvtJCxBgEys",
