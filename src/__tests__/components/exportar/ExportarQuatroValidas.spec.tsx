@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import Exportar from "../../../components/exportar/Exportar";
+import { carregarLogbookCompleto } from "../../../utils/storage";
 
 const ROWS = [
   { sessao: "Upper A", ordem: 1, exercicio: "Supino Reto", musculo_primario: "peitoral", series_validas: 4, rep_min: 5, rep_max: 8, peso_C1_kg: 100 },
@@ -61,7 +62,7 @@ describe("Migração planilha de treino — 4 séries válidas", () => {
     await importar();
     const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
     expect(db["Supino Reto"].C1.pesos).toEqual(["100", "100", "100", "100"]);
-    const reg = JSON.parse(localStorage.getItem("logbook") || "{}")["Supino Reto"][0];
+    const reg = carregarLogbookCompleto()["Supino Reto"][0];
     expect(reg.seriesValidas).toBe(4);
   });
 });

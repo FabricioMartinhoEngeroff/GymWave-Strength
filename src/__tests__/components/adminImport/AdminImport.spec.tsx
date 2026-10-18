@@ -5,6 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import AdminImport from "../../../components/adminImport/AdminImport";
+import { carregarLogbookCompleto, salvarRegistro } from "../../../utils/storage";
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
 
@@ -218,7 +219,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     it("salva dados no logbook apos confirmar", async () => {
       await loadAndConfirm();
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook["Supino reto barra"]).toBeDefined();
       expect(logbook["Supino reto barra"][0].topSetKg).toBe(100);
     });
@@ -234,7 +235,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     it("Top Set 2 espelha o Top Set 1 quando backoff nao fornecido", async () => {
       await loadAndConfirm();
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       // Terra sumo: top_set_kg=160, backoff_kg vazio -> Top Set 2 espelha = 160
       expect(logbook["Terra sumô"][0].backoffKg).toBe(160);
     });
@@ -242,14 +243,14 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     it("salva seriesValidas=3 no logbook quando series_validas=3 na planilha", async () => {
       await loadAndConfirm();
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook["Supino reto barra"][0].seriesValidas).toBe(3);
     });
 
     it("salva seriesValidas=2 no logbook quando series_validas=2 na planilha", async () => {
       await loadAndConfirm();
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook["Terra sumô"][0].seriesValidas).toBe(2);
     });
 
@@ -361,7 +362,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
       await loadAndConfirm();
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook["Rosca direta"]).toBeDefined();
       expect(logbook["Rosca direta"][0].topSetKg).toBe(30);
       expect(logbook["Supino reto barra"]).toBeDefined();
@@ -418,10 +419,15 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     }
 
     it("salva backup antes de importar", async () => {
-      localStorage.setItem("logbook", JSON.stringify({ "Agachamento livre": [] }));
+      salvarRegistro({
+        exercicio: "Agachamento livre", treinoId: "LA", data: "01/09/2026", dataTs: 0,
+        topSetKg: 120, topSetReps: 5, topSetFaixaMin: 5, topSetFaixaMax: 8, topSetBateuTeto: false,
+        backoffKg: 120, backoffReps: 5, backoffFaixaMin: 8, backoffFaixaMax: 10,
+        seriesValidas: 2, progrediu: false,
+      });
       await importarDados();
-      const backup = localStorage.getItem("logbook_backup");
-      expect(backup).not.toBeNull();
+      const backup = JSON.parse(localStorage.getItem("registros_backup") || "[]");
+      expect(backup.map((r: { exercicio: string }) => r.exercicio)).toEqual(["agachamento_livre"]);
     });
 
     it("exibe botao Desfazer importacao apos confirmar", async () => {
@@ -430,13 +436,18 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     });
 
     it("restaura dados do backup ao clicar em desfazer", async () => {
-      localStorage.setItem("logbook", JSON.stringify({ "Agachamento livre": [] }));
+      salvarRegistro({
+        exercicio: "Agachamento livre", treinoId: "LA", data: "01/09/2026", dataTs: 0,
+        topSetKg: 120, topSetReps: 5, topSetFaixaMin: 5, topSetFaixaMax: 8, topSetBateuTeto: false,
+        backoffKg: 120, backoffReps: 5, backoffFaixaMin: 8, backoffFaixaMax: 10,
+        seriesValidas: 2, progrediu: false,
+      });
       localStorage.setItem("dadosTreino", JSON.stringify({ "Agachamento livre": {} }));
       localStorage.setItem("planoTreino", JSON.stringify({ "Upper A": { "Agachamento livre": { ordem: 1, series_validas: 2 } } }));
       await importarDados();
       vi.spyOn(window, "confirm").mockReturnValue(true);
       fireEvent.click(screen.getByText(/desfazer importação/i));
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook).toHaveProperty("Agachamento livre");
       const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
       expect(plano["Upper A"]["Agachamento livre"]).toBeDefined();
@@ -458,6 +469,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       render(<AdminImport />);
       fireEvent.click(screen.getByText("Limpar tudo"));
       expect(localStorage.getItem("logbook")).toBeNull();
+      expect(localStorage.getItem("registros")).toBeNull();
       expect(localStorage.getItem("dadosTreino")).toBeNull();
     });
   });

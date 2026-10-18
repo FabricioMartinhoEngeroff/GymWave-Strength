@@ -1119,19 +1119,23 @@ describe("VolumeLoadCalc", () => {
     });
 
     it("sequência de estagnação é quebrada por sessão com progrediu=true", () => {
-      // Apenas 3 sessões consecutivas estagnadas — insuficiente
+      // Apenas 3 sessões consecutivas estagnadas — insuficiente.
+      // progrediu é deduzido (carga do Top Set acima da do treino anterior), então
+      // a progressão de 20/05 vem de um treino mais leve em 13/05.
       setLogbook({
         "Supino reto barra": [
           makeEntry("Supino reto barra", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
           makeEntry("Supino reto barra", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
           makeEntry("Supino reto barra", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
           makeEntry("Supino reto barra", "2026-05-20", { progrediu: true,  topSetBateuTeto: false }), // quebra sequência
+          makeEntry("Supino reto barra", "2026-05-13", { topSetKg: 95, progrediu: false, topSetBateuTeto: false }),
         ],
         "Crossover braço estendido": [
           makeEntry("Crossover braço estendido", "2026-06-10", { progrediu: false, topSetBateuTeto: false }),
           makeEntry("Crossover braço estendido", "2026-06-03", { progrediu: false, topSetBateuTeto: false }),
           makeEntry("Crossover braço estendido", "2026-05-27", { progrediu: false, topSetBateuTeto: false }),
           makeEntry("Crossover braço estendido", "2026-05-20", { progrediu: true,  topSetBateuTeto: false }),
+          makeEntry("Crossover braço estendido", "2026-05-13", { topSetKg: 95, progrediu: false, topSetBateuTeto: false }),
         ],
       });
       expect(calcEstagnadoMusculo("Peitoral")).toBe(false);

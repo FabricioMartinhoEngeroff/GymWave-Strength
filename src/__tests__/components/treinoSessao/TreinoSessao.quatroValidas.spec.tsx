@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { carregarLogbookCompleto } from "../../../utils/storage";
 
 const EX = "Supino reto barra";
 
@@ -130,7 +131,7 @@ describe("TreinoSessao — 4 séries válidas", () => {
     fireEvent.click(screen.getByText("Ver Resumo"));
     fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-    const reg = JSON.parse(localStorage.getItem("logbook") || "{}")[EX][0];
+    const reg = carregarLogbookCompleto()[EX][0];
     expect(reg.seriesValidas).toBe(4);
     expect(reg.extraKg).toBe(100);
     expect(reg.extraReps).toBe(5);

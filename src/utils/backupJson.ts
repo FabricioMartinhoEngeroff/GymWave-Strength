@@ -1,22 +1,23 @@
 import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
-import { storageKey } from "./storage";
+import { comIdUnico, logbookParaRegistros, nomeExercicio, sanitizarRegistros, type Registro } from "./registros";
+import { carregarRegistros, fotografarRegistros, restaurarRegistros, salvarRegistros, storageKey } from "./storage";
 
 // ─── Formato do backup ────────────────────────────────────────────────────────
-// v2 guarda tudo que é dado do usuário. Backups antigos (v1) são só o objeto
-// dadosTreino cru — por isso a importação aceita os dois formatos.
+// v3 guarda o histórico como lista de registros (ver registros.ts). A importação
+// também aceita o v2 (histórico no objeto "logbook") e o v1 (só o dadosTreino cru).
 
 export const BACKUP_APP = "gymwave";
-export const BACKUP_VERSAO = 2;
+export const BACKUP_VERSAO = 3;
 
-const CHAVES_BACKUP = ["dadosTreino", "logbook", "planoTreino", "sessoes_config"] as const;
+const CHAVES_BACKUP = ["dadosTreino", "planoTreino", "sessoes_config"] as const;
 type ChaveBackup = (typeof CHAVES_BACKUP)[number];
 
 export interface BackupGymwave {
   app: typeof BACKUP_APP;
   versao: number;
   exportadoEm: string;
+  registros: Registro[];
   dadosTreino: DadosTreino;
-  logbook: Logbook;
   planoTreino: PlanoTreino;
   sessoes_config: Record<string, unknown[]>;
 }
@@ -24,7 +25,7 @@ export interface BackupGymwave {
 export interface BackupLido {
   formato: "completo" | "legado";
   dadosTreino: DadosTreino;
-  logbook: Logbook;
+  registros: Registro[];
   planoTreino: PlanoTreino | null;
   sessoes_config: Record<string, unknown[]> | null;
 }
@@ -111,7 +112,8 @@ function ehBackupLegado(v: Record<string, unknown>): boolean {
   return ciclos.length > 0 && ciclos.every((c) => ehObjeto(c) && Object.values(c).every(ehRegistroTreino));
 }
 
-const idRegistro = (r: RegistroExercicio) => `${r.exercicio}|${r.treinoId}|${r.data}`;
+// Mesmo exercício, sessão e dia = mesmo treino (o id pode ter sufixo diferente).
+const chaveTreino = (r: Registro) => `${r.exercicio}|${r.sessao}|${r.data}`;
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 
@@ -120,8 +122,8 @@ export function montarBackup(agora = new Date()): BackupGymwave {
     app: BACKUP_APP,
     versao: BACKUP_VERSAO,
     exportadoEm: agora.toISOString(),
+    registros: carregarRegistros(),
     dadosTreino: lerChave<DadosTreino>("dadosTreino", {}),
-    logbook: lerChave<Logbook>("logbook", {}),
     planoTreino: lerChave<PlanoTreino>("planoTreino", {}),
     sessoes_config: lerChave<Record<string, unknown[]>>("sessoes_config", {}),
   };
@@ -141,7 +143,7 @@ export function lerBackup(texto: string): BackupLido {
     return {
       formato: "completo",
       dadosTreino: sanitizarDadosTreino(json.dadosTreino),
-      logbook: sanitizarLogbook(json.logbook),
+      registros: [...sanitizarRegistros(json.registros), ...logbookParaRegistros(sanitizarLogbook(json.logbook))],
       planoTreino: ehObjeto(json.planoTreino) && Object.keys(json.planoTreino).length > 0
         ? (json.planoTreino as PlanoTreino)
         : null,
@@ -155,7 +157,7 @@ export function lerBackup(texto: string): BackupLido {
     return {
       formato: "legado",
       dadosTreino: sanitizarDadosTreino(json),
-      logbook: {},
+      registros: [],
       planoTreino: null,
       sessoes_config: null,
     };
@@ -165,11 +167,11 @@ export function lerBackup(texto: string): BackupLido {
 }
 
 export function resumirBackup(b: BackupLido): ResumoBackup {
-  const nomes = new Set([...Object.keys(b.dadosTreino), ...Object.keys(b.logbook)]);
+  const nomes = new Set([...Object.keys(b.dadosTreino), ...b.registros.map((r) => nomeExercicio(r.exercicio, r.nome))]);
   return {
     exercicios: nomes.size,
     registrosDados: Object.values(b.dadosTreino).reduce((n, c) => n + Object.keys(c).length, 0),
-    registrosLogbook: Object.values(b.logbook).reduce((n, l) => n + l.length, 0),
+    registrosLogbook: b.registros.length,
     temPlano: b.planoTreino !== null,
   };
 }
@@ -183,6 +185,7 @@ export function aplicarBackup(b: BackupLido): ResultadoImportacao {
   for (const base of CHAVES_BACKUP) {
     localStorage.setItem(storageKey(`${base}_backup`), localStorage.getItem(storageKey(base)) || "{}");
   }
+  fotografarRegistros();
 
   const dados = lerChave<DadosTreino>("dadosTreino", {});
   let dadosAdicionados = 0;
@@ -200,31 +203,29 @@ export function aplicarBackup(b: BackupLido): ResultadoImportacao {
     dados[exercicio] = atual;
   }
 
-  const logbook = lerChave<Logbook>("logbook", {});
+  const registros = carregarRegistros();
+  const ids = new Set(registros.map((r) => r.id));
+  const existentes = new Set(registros.map(chaveTreino));
   let logbookAdicionados = 0;
   let logbookDuplicados = 0;
-  for (const [exercicio, registros] of Object.entries(b.logbook)) {
-    const lista = logbook[exercicio] ?? [];
-    const existentes = new Set(lista.map(idRegistro));
-    for (const reg of registros) {
-      if (existentes.has(idRegistro(reg))) {
-        logbookDuplicados++;
-        continue;
-      }
-      lista.push(reg);
-      existentes.add(idRegistro(reg));
-      logbookAdicionados++;
+  for (const reg of b.registros) {
+    if (existentes.has(chaveTreino(reg))) {
+      logbookDuplicados++;
+      continue;
     }
-    lista.sort((x, y) => (x.dataTs ?? 0) - (y.dataTs ?? 0));
-    logbook[exercicio] = lista;
+    registros.push(comIdUnico(reg, ids));
+    existentes.add(chaveTreino(reg));
+    logbookAdicionados++;
   }
+  // sort estável: registros do mesmo dia mantêm a ordem
+  registros.sort((x, y) => (x.data < y.data ? -1 : x.data > y.data ? 1 : 0));
 
   const vazio = (base: ChaveBackup) => Object.keys(lerChave<object>(base, {})).length === 0;
   const planoRestaurado = b.planoTreino !== null && vazio("planoTreino");
   const sessoesRestauradas = b.sessoes_config !== null && vazio("sessoes_config");
 
   localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dados));
-  localStorage.setItem(storageKey("logbook"), JSON.stringify(logbook));
+  salvarRegistros(registros);
   if (planoRestaurado) localStorage.setItem(storageKey("planoTreino"), JSON.stringify(b.planoTreino));
   if (sessoesRestauradas) localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(b.sessoes_config));
 
@@ -236,4 +237,5 @@ export function desfazerBackup(): void {
     const salvo = localStorage.getItem(storageKey(`${base}_backup`));
     if (salvo !== null) localStorage.setItem(storageKey(base), salvo);
   }
+  restaurarRegistros();
 }

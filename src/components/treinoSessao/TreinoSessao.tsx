@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useRef } from "react";
 import { ROTACAO } from "../../data/cycles";
-import { SESSOES, SESSOES_LABELS, type SessaoTipo, type ExercicioSessao } from "../../data/sessionExercises";
+import { SESSOES, type SessaoTipo, type ExercicioSessao } from "../../data/sessionExercises";
+import { idDaSessao, listarSessoes } from "../../utils/planilhaSessoes";
 import type { PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
 import { normalizarSeriesValidas, sugestaoSeriesExtras } from "../../utils/seriesValidas";
 import {
@@ -170,9 +171,24 @@ function seriesDoRegistro(r: RegistroExercicio): { label: string; kg: number; re
   return linhas;
 }
 
-function getRotacaoId(sessao: SessaoTipo): string {
-  const r = ROTACAO.find((rot) => rot.titulo === sessao);
-  return r?.id ?? "";
+// Sessões fixas usam o id da rotação (UA, LB…); sessões da planilha, o id do rótulo ("S1 Seg · Pull" → S1SEG).
+function getRotacaoId(sessao: string): string {
+  return idDaSessao(sessao);
+}
+
+function lerSessoesConfig(): Record<string, ExercicioSessao[]> {
+  try {
+    const raw = localStorage.getItem(storageKey("sessoes_config"));
+    const v: unknown = raw ? JSON.parse(raw) : {};
+    return typeof v === "object" && v !== null && !Array.isArray(v) ? (v as Record<string, ExercicioSessao[]>) : {};
+  } catch {
+    return {};
+  }
+}
+
+/** Blocos vazios do Cluster Set (padrão 4; o plano pode pedir mais, ex.: 24 reps em blocos de 4 → 6). */
+function blocosVazios(n = 4): { kg: string; reps: string }[] {
+  return Array.from({ length: n }, () => ({ kg: "", reps: "" }));
 }
 
 /** Returns a blank ExerciseState with all suggestion flags off. */
@@ -220,7 +236,7 @@ interface DraftPayload {
   currentIdx: number;
 }
 
-type DraftStore = Partial<Record<SessaoTipo, DraftPayload>>;
+type DraftStore = Partial<Record<string, DraftPayload>>;
 
 function loadDraftStore(): DraftStore {
   try {
@@ -238,13 +254,13 @@ function saveDraftStore(store: DraftStore) {
   localStorage.setItem(DRAFT_KEY(), JSON.stringify(store));
 }
 
-function saveDraft(sessao: SessaoTipo, states: Record<string, ExerciseState>, idx: number) {
+function saveDraft(sessao: string, states: Record<string, ExerciseState>, idx: number) {
   const store = loadDraftStore();
   store[sessao] = { states, currentIdx: idx };
   saveDraftStore(store);
 }
 
-function clearDraft(sessao: SessaoTipo) {
+function clearDraft(sessao: string) {
   const store = loadDraftStore();
   delete store[sessao];
   if (Object.keys(store).length === 0) {
@@ -275,7 +291,7 @@ function sanitizeExerciseState(raw: Partial<ExerciseState>): ExerciseState {
   };
 }
 
-function loadDraft(sessao: SessaoTipo): DraftPayload | null {
+function loadDraft(sessao: string): DraftPayload | null {
   const store = loadDraftStore();
   const payload = store[sessao];
   if (!payload || typeof payload !== "object") return null;
@@ -290,10 +306,12 @@ function loadDraft(sessao: SessaoTipo): DraftPayload | null {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {}) {
-  const [sessao, setSessao] = useState<SessaoTipo | null>(null);
+  const [sessao, setSessao] = useState<string | null>(null);
   const [data, setData] = useState(getTodayBR());
   const [currentIdx, setCurrentIdx] = useState(0);
   const [exerciseStates, setExerciseStates] = useState<Record<string, ExerciseState>>({});
+  // As 4 sessões fixas, ou as sessões da planilha importada (ex.: protocolo de 6 dias).
+  const sessoesDisponiveis = useMemo(() => listarSessoes(lerSessoesConfig()), []);
   const [salvo, setSalvo] = useState(false);
   const [salvarErro, setSalvarErro] = useState<string | null>(null);
   const [confirmarSubstituir, setConfirmarSubstituir] = useState(false);
@@ -310,14 +328,14 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
   currentIdxRef.current = currentIdx;
 
   // Draft storage (in-memory only, per session type)
-  const rascunhosRef = useRef<Partial<Record<SessaoTipo, Record<string, ExerciseState>>>>({});
-  const prevSessaoRef = useRef<SessaoTipo | null>(null);
+  const rascunhosRef = useRef<Partial<Record<string, Record<string, ExerciseState>>>>({});
+  const prevSessaoRef = useRef<string | null>(null);
 
   const sessaoRef = useRef(sessao);
   sessaoRef.current = sessao;
 
   // Track which session the current exerciseStates belong to
-  const statesSessaoRef = useRef<SessaoTipo | null>(null);
+  const statesSessaoRef = useRef<string | null>(null);
 
   // Persist draft to localStorage whenever exerciseStates or currentIdx change
   useEffect(() => {
@@ -338,9 +356,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
   const exercicios = useMemo(() => {
     if (!sessao) return [] as ExercicioSessao[];
-    const configRaw = localStorage.getItem(storageKey("sessoes_config"));
-    const sessoesConfig: Record<string, ExercicioSessao[]> = configRaw ? JSON.parse(configRaw) : {};
-    const base = sessoesConfig[sessao] ? [...sessoesConfig[sessao]] : [...SESSOES[sessao]];
+    const sessoesConfig = lerSessoesConfig();
+    const base = sessoesConfig[sessao] ? [...sessoesConfig[sessao]] : [...(SESSOES[sessao as SessaoTipo] ?? [])];
     const plano: PlanoTreino = JSON.parse(localStorage.getItem(storageKey("planoTreino")) || "{}");
     const sp = plano[sessao];
     if (!sp) return base;
@@ -611,8 +628,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     if (!currentEx) return false;
     const s = exerciseStates[currentEx.nome];
     if (!s || !s.tecnica) return false;
-    // Cluster Set tem sempre 2 séries: ambas precisam de ao menos um bloco válido.
-    return serieClusterTemBloco(s.clusterSeries) && serieClusterTemBloco(s.clusterSeries2);
+    // Cluster Set tem 2 séries (1 quando o exercício tem 1 válida); cada uma precisa de um bloco válido.
+    return serieClusterTemBloco(s.clusterSeries) && (s.seriesValidas === 1 || serieClusterTemBloco(s.clusterSeries2));
   }
 
   /** Avança da Série 1 para a Série 2 (exige ao menos um bloco válido na Série 1). */
@@ -642,7 +659,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     if (!state) return false;
     if (state.skipped) return true;
     if (state.tecnica) return state.tecnicaConfirmed;
-    if (state.isDeload) return state.topSetConfirmed;
+    if (state.isDeload || state.seriesValidas === 1) return state.topSetConfirmed;
     return state.topSetConfirmed && state.backoffConfirmed;
   }
 
@@ -701,8 +718,10 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
         const topKg = parseFloat(state.topSetKg) || 0;
         const topReps = parseInt(state.topSetReps) || 0;
-        const boKg = parseFloat(state.backoffKg) || 0;
-        const boReps = parseInt(state.backoffReps) || 0;
+        // Com 1 válida não há Top Set 2 (o campo escondido ainda espelha o peso do TS1).
+        const temTopSet2 = state.seriesValidas !== 1;
+        const boKg = temTopSet2 ? (parseFloat(state.backoffKg) || 0) : 0;
+        const boReps = temTopSet2 ? (parseInt(state.backoffReps) || 0) : 0;
         if (!isTecnicaMode && topKg <= 0) return;
 
         const temExtra = state.seriesValidas === 3 || state.seriesValidas === 4;
@@ -759,10 +778,10 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
           : [];
         const legacyPesos = isTecnicaMode
           ? allClusterBlocks.map((b) => String(b.kg))
-          : [String(topKg), String(boKg), ...(extraKg > 0 ? [String(extraKg)] : []), ...(serie4Kg > 0 ? [String(serie4Kg)] : [])];
+          : [String(topKg), ...(temTopSet2 ? [String(boKg)] : []), ...(extraKg > 0 ? [String(extraKg)] : []), ...(serie4Kg > 0 ? [String(serie4Kg)] : [])];
         const legacyReps = isTecnicaMode
           ? allClusterBlocks.map((b) => String(b.reps))
-          : [String(topReps), String(boReps), ...(extraReps > 0 ? [String(extraReps)] : []), ...(serie4Reps > 0 ? [String(serie4Reps)] : [])];
+          : [String(topReps), ...(temTopSet2 ? [String(boReps)] : []), ...(extraReps > 0 ? [String(extraReps)] : []), ...(serie4Reps > 0 ? [String(serie4Reps)] : [])];
         const dadosExercicio = dadosDb[ex.nome] ?? {};
         dadosDb[ex.nome] = dadosExercicio;
         dadosExercicio[treinoId] = {
@@ -815,7 +834,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
     const rotacao = ROTACAO.find((r) => r.id === treinoId);
     return (
       <p style={{ fontSize: 11, color: "#6b7280", margin: "4px 0 0" }}>
-        {days} dias desde {rotacao?.titulo ?? treinoId}
+        {days} dias desde {rotacao?.titulo ?? sessao}
       </p>
     );
   }
@@ -1072,7 +1091,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
         <Card>
           <Label>Treino</Label>
           <SessaoRow>
-            {SESSOES_LABELS.map((s) => (
+            {sessoesDisponiveis.map((s) => (
               <CycleChip
                 key={s}
                 $active={sessao === s}
@@ -1226,7 +1245,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         background: state.seriesValidas === 4 ? "#dbeafe" : state.seriesValidas === 3 ? "#dcfce7" : "#f3f4f6",
                         color: state.seriesValidas === 4 ? "#1e40af" : state.seriesValidas === 3 ? "#166534" : "#6b7280",
                       }}>
-                        {state.seriesValidas} válidas
+                        {state.seriesValidas} {state.seriesValidas === 1 ? "válida" : "válidas"}
                       </span>
                     </div>
                   </ExHeader>
@@ -1287,8 +1306,8 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             updateState(currentEx.nome, {
                               tecnica: "RP",
                               isDeload: false,
-                              clusterSeries: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
-                              clusterSeries2: [{ kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }, { kg: "", reps: "" }],
+                              clusterSeries: blocosVazios(currentEx.clusterBlocos),
+                              clusterSeries2: state.seriesValidas === 1 ? [] : blocosVazios(currentEx.clusterBlocos),
                               clusterActiveSerie: 1,
                               topSetKg: "", topSetReps: "", backoffKg: "", backoffReps: "",
                               topSetConfirmed: false, backoffConfirmed: false,
@@ -1354,6 +1373,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
 
                     {state.tecnica && !state.tecnicaConfirmed && (() => {
                       const serie = state.clusterActiveSerie;
+                      const umaSerie = state.seriesValidas === 1;
                       const activeKey = serie === 1 ? "clusterSeries" : "clusterSeries2";
                       const activeBlocks = serie === 1 ? state.clusterSeries : state.clusterSeries2;
                       const setBlocks = (blocos: { kg: string; reps: string }[]) =>
@@ -1362,9 +1382,9 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                         (sum, b) => sum + (parseFloat(b.kg) || 0) * (parseInt(b.reps) || 0), 0);
                       return (
                       <>
-                        {/* Navegação entre as 2 séries cluster */}
+                        {/* Navegação entre as 2 séries cluster (não aparece com 1 válida) */}
                         <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-                          {[1, 2].map((n) => (
+                          {(umaSerie ? [] : [1, 2]).map((n) => (
                             <button
                               key={n}
                               type="button"
@@ -1443,7 +1463,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           )}
                         </p>
 
-                        {serie === 1 ? (
+                        {serie === 1 && !umaSerie ? (
                           <button
                             type="button"
                             onClick={finalizarSerieCluster1}
@@ -1456,6 +1476,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                           </button>
                         ) : (
                           <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                            {!umaSerie && (
                             <button
                               type="button"
                               onClick={() => {
@@ -1469,6 +1490,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             >
                               ← Série 1
                             </button>
+                            )}
                             <button
                               type="button"
                               onClick={confirmTecnica}
@@ -1649,7 +1671,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                   </Card>
 
                   {/* TOP SET 2 block (after Top Set 1 confirmed, hidden in deload mode) */}
-                  {state.topSetConfirmed && !state.isDeload && (
+                  {state.topSetConfirmed && !state.isDeload && state.seriesValidas !== 1 && (
                     <Card style={{ background: "#fafafa" }}>
                       <Label>Top Set 2</Label>
                       <SeriesGrid>
@@ -1841,7 +1863,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                             if (!state.tecnicaConfirmed) { setTecnicaWarning(true); return; }
                           } else {
                             if (!state.topSetConfirmed) { setTopSetWarning(true); return; }
-                            if (!state.isDeload && !state.backoffConfirmed) { setBackoffWarning(true); return; }
+                            if (!state.isDeload && state.seriesValidas !== 1 && !state.backoffConfirmed) { setBackoffWarning(true); return; }
                           }
                           nextExercise();
                         }}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import type { DadosTreino, RegistroTreino, Logbook } from "../types/TrainingData";
+import type { DadosTreino, RegistroTreino } from "../types/TrainingData";
 import { volumeESeriesDoRegistro } from "../utils/seriesValidas";
-import { storageKey } from "../utils/storage";
+import { carregarLogbookCompleto, storageKey } from "../utils/storage";
 
 export interface RegistroGraficoRaw {
   data: string; // "DD/MM/YYYY"
@@ -97,7 +97,7 @@ export function useDadosTreino(): DadosAgrupados {
     });
 
     // Read from new logbook
-    const logbook = JSON.parse(localStorage.getItem(storageKey("logbook")) || "{}") as Logbook;
+    const logbook = carregarLogbookCompleto();
     Object.entries(logbook).forEach(([exercicio, registros]) => {
       registros.forEach((reg) => {
         const temClusterSeries =

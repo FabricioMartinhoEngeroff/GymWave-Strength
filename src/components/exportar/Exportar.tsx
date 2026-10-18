@@ -2,8 +2,11 @@ import { useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
-import { storageKey, salvarRegistro } from "../../utils/storage";
+import type { DadosTreino, PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
+import { carregarRegistros, fotografarRegistros, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
+import { exportarCSV } from "../../utils/registros";
+import { blocosCluster, mesclarRepetidos, prefixoAba, rotuloSessao } from "../../utils/planilhaSessoes";
+import { nomeCanonico } from "../../data/exerciseAliases";
 import { montarBackup } from "../../utils/backupJson";
 import ImportarBackupJson from "./ImportarBackupJson";
 import {
@@ -122,6 +125,7 @@ const ImportSection = styled.div`
 
 interface ImportRow {
   sessao: string;
+  cue: string;
   ordem: number;
   exercicio: string;
   musculo_primario: string;
@@ -152,6 +156,8 @@ const CICLO_COLS: { col: keyof ImportRow; cicloId: string }[] = [
 ];
 
 const COLUMN_MAP: [RegExp, string][] = [
+  [/^id$/i,                   "id_sessao"],  // Logbook: "ID" (UA, SEG…)
+  [/cue|foco/i,               "cue"],        // Logbook: "Cue / foco"
   [/sess[aã]o/i,              "sessao"],
   [/^treino$/i,               "sessao"],   // v4 logbook usa "Treino" em vez de "Sessão"
   [/^ord[.\s]/i,              "ordem"],   // "Ord." antes do padrão genérico
@@ -233,17 +239,19 @@ function mapColumns(raw: Record<string, unknown>[]): Record<string, unknown>[] {
   });
 }
 
-function xlsxToJson(ws: XLSX.WorkSheet): Record<string, unknown>[] {
+/** Com `exigirCabecalho`, aba sem cabeçalho de exercícios (ex.: "Guia") devolve null. */
+function xlsxToJson(ws: XLSX.WorkSheet, exigirCabecalho = false): Record<string, unknown>[] | null {
   const arrays = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
-  let headerIdx = 0;
-  for (let i = 0; i < Math.min(6, arrays.length); i++) {
-    const row = arrays[i] as string[];
-    if (row.some((cell) => /sess[aã]o|exerc[ií]cio/i.test(String(cell ?? "")))) {
-      headerIdx = i;
-      break;
-    }
+  // Cabeçalho = linha com uma célula que É "Exercício"/"Sessão" (notas acima dele,
+  // como "Antes do 1º exercício…", só citam a palavra); senão, a 1ª que a contém.
+  const primeiras = arrays.slice(0, 6).map((r) => ((r ?? []) as unknown[]).map((c) => String(c ?? "").trim()));
+  let headerIdx = primeiras.findIndex((row) => row.some((cell) => /^(sess[aã]o|exerc[ií]cio)$/i.test(cell)));
+  if (headerIdx < 0) headerIdx = primeiras.findIndex((row) => row.some((cell) => /sess[aã]o|exerc[ií]cio/i.test(cell)));
+  if (headerIdx < 0) {
+    if (exigirCabecalho) return null;
+    headerIdx = 0;
   }
-  const headers = arrays[headerIdx] as string[];
+  const headers = (arrays[headerIdx] ?? []) as string[];
   return arrays
     .slice(headerIdx + 1)
     .filter((row) => (row as unknown[]).filter((c) => c !== "" && c != null).length > 2)
@@ -264,14 +272,16 @@ const SESSION_ORDER: Record<string, number> = {
   "Upper A": 0, "Upper B": 1, "Lower A": 2, "Lower B": 3, "Braço": 4,
 };
 
-function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
+/** `prefixoSemana` vem da aba ("S1") quando a planilha tem uma aba por semana. */
+function normalizeRows(raw: Record<string, unknown>[], prefixoSemana: string | null = null): ImportRow[] {
   return raw
     .map((r) => {
       const nomeRaw = String(r.exercicio ?? "").trim();
       return {
-      sessao: String(r.sessao ?? ""),
+      sessao: rotuloSessao(String(r.sessao ?? ""), String(r.id_sessao ?? ""), prefixoSemana),
+      cue: String(r.cue ?? "").trim(),
       ordem: Number(r.ordem ?? 0),
-      exercicio: NOME_MAP[nomeRaw] ?? nomeRaw,
+      exercicio: nomeCanonico(NOME_MAP[nomeRaw] ?? nomeRaw),
       musculo_primario: String(r.musculo_primario ?? ""),
       series_validas: parseSeries(r.series_validas) ?? 3,
       series_C1_validas: parseSeries(r.series_C1_validas),
@@ -285,13 +295,22 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
       peso_C3_kg: r.peso_C3_kg as string | number | undefined,
       peso_C4_kg: r.peso_C4_kg as string | number | undefined,
     };})
-    .filter((r) => r.exercicio !== "")
-    .sort((a, b) => {
-      const sa = SESSION_ORDER[a.sessao] ?? 99;
-      const sb = SESSION_ORDER[b.sessao] ?? 99;
-      if (sa !== sb) return sa - sb;
-      return a.ordem - b.ordem;
-    });
+    .filter((r) => r.exercicio !== "");
+}
+
+/** Junta exercícios repetidos no mesmo dia e ordena: sessões padrão primeiro, depois na ordem da planilha. */
+function organizarRows(rows: ImportRow[]): ImportRow[] {
+  const ordemSessao = new Map<string, number>();
+  rows.forEach((r) => { if (!ordemSessao.has(r.sessao)) ordemSessao.set(r.sessao, ordemSessao.size); });
+  return mesclarRepetidos(rows).sort((a, b) => {
+    const sa = SESSION_ORDER[a.sessao] ?? 99;
+    const sb = SESSION_ORDER[b.sessao] ?? 99;
+    if (sa !== sb) return sa - sb;
+    const pa = ordemSessao.get(a.sessao)!;
+    const pb = ordemSessao.get(b.sessao)!;
+    if (pa !== pb) return pa - pb;
+    return a.ordem - b.ordem;
+  });
 }
 
 function parsePeso(val: unknown): string | null {
@@ -365,32 +384,10 @@ function exportJSON() {
 }
 
 function exportCSV() {
-  const logbook = JSON.parse(
-    localStorage.getItem(storageKey("logbook")) || "{}"
-  ) as Logbook;
+  // Uma linha por série (data, sessão, exercício, kg, reps…): abre direto em planilha.
+  const csv = exportarCSV(carregarRegistros());
 
-  const rows: string[] = [
-    "data,exercicio,treino_id,top_set_1_kg,top_set_1_reps,top_set_2_kg,top_set_2_reps,series_validas,back_off_kg,back_off_reps,serie_4_kg,serie_4_reps",
-  ];
-
-  Object.values(logbook).forEach((registros) => {
-    registros.forEach((reg) => {
-      rows.push(
-        [
-          reg.data, reg.exercicio, reg.treinoId,
-          reg.topSetKg, reg.topSetReps,
-          reg.backoffKg, reg.backoffReps,
-          reg.seriesValidas ?? 2,
-          reg.extraKg ?? "", reg.extraReps ?? "",
-          reg.serie4Kg ?? "", reg.serie4Reps ?? "",
-        ]
-          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-          .join(",")
-      );
-    });
-  });
-
-  const blob = new Blob([rows.join("\n")], { type: "text/csv" });
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -427,7 +424,7 @@ export default function Exportar() {
           header: true,
           skipEmptyLines: true,
         });
-        setRows(normalizeRows(mapColumns(parsed.data)));
+        setRows(organizarRows(normalizeRows(mapColumns(parsed.data))));
       };
       reader.readAsText(file, "UTF-8");
     } else {
@@ -435,9 +432,16 @@ export default function Exportar() {
       reader.onload = (e) => {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0] ?? ""];
-        const json = ws ? xlsxToJson(ws) : [];
-        setRows(normalizeRows(mapColumns(json)));
+        // Protocolo com uma aba por semana: lê todas as abas com cabeçalho de exercícios.
+        const varias = wb.SheetNames.length > 1;
+        const abas = wb.SheetNames.flatMap((nome) => {
+          const ws = wb.Sheets[nome];
+          const json = ws ? xlsxToJson(ws, varias) : null;
+          return json ? [{ nome, json }] : [];
+        });
+        const prefixar = abas.length > 1;
+        setRows(organizarRows(abas.flatMap(({ nome, json }) =>
+          normalizeRows(mapColumns(json), prefixar ? (prefixoAba(nome) ?? nome) : null))));
       };
       reader.readAsArrayBuffer(file);
     }
@@ -477,8 +481,7 @@ export default function Exportar() {
     if (planoBackup) localStorage.setItem(storageKey("planoTreino"), planoBackup);
     const sessoesBackup = localStorage.getItem(storageKey("sessoes_config_backup"));
     if (sessoesBackup) localStorage.setItem(storageKey("sessoes_config"), sessoesBackup);
-    const logbookBackup = localStorage.getItem(storageKey("logbook_backup"));
-    if (logbookBackup) localStorage.setItem(storageKey("logbook"), logbookBackup);
+    restaurarRegistros();
     setResult(null);
     setCanUndo(false);
   }
@@ -487,7 +490,7 @@ export default function Exportar() {
     localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
     localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
     localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
-    localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
+    fotografarRegistros();
 
     const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
     const planoNovo: PlanoTreino = {};
@@ -495,7 +498,7 @@ export default function Exportar() {
       nome: string; grupo: string;
       faixaTopSet: [number, number]; faixaBackoff: [number, number];
       backoffPct: number; seriesValidas: SeriesValidas;
-      tecnica: "RP" | null; cue: string;
+      tecnica: "RP" | null; cue: string; clusterBlocos?: number;
     }[]> = {};
     const porSessao: Record<string, number> = {};
     let total = 0;
@@ -526,7 +529,8 @@ export default function Exportar() {
         backoffPct: 0.9,
         seriesValidas: seriesCount,
         tecnica: null,
-        cue: "",
+        cue: row.cue,
+        ...(blocosCluster(row.cue) && { clusterBlocos: blocosCluster(row.cue) }),
       });
 
       CICLO_COLS.forEach(({ col, cicloId }) => {

@@ -6,6 +6,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { carregarLogbookCompleto, carregarRegistros, salvarRegistro } from "../../../utils/storage";
 
 function renderFresh() {
   localStorage.clear();
@@ -233,7 +234,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook["Abdômen cabo ajoelhado"][0].seriesValidas).toBe(2);
     });
   });
@@ -284,12 +285,43 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       expect(logbook["Abdômen cabo ajoelhado"]).toBeDefined();
       expect(logbook["Abdômen cabo ajoelhado"][0].topSetKg).toBe(50);
 
       const db = JSON.parse(localStorage.getItem("dadosTreino") || "{}");
       expect(db["Abdômen cabo ajoelhado"]).toBeDefined();
+    });
+
+    it("salvar treino grava um registro novo no formato v3, sem apagar o treino anterior", () => {
+      salvarRegistro({
+        exercicio: "Abdômen cabo ajoelhado", treinoId: "UA", data: "01/01/2020", dataTs: 0,
+        topSetKg: 45, topSetReps: 10, topSetFaixaMin: 8, topSetFaixaMax: 10, topSetBateuTeto: false,
+        backoffKg: 45, backoffReps: 10, backoffFaixaMin: 10, backoffFaixaMax: 12,
+        seriesValidas: 2, progrediu: false,
+      });
+
+      render(<TreinoSessao />); // sem renderFresh: ele limparia o treino anterior
+      selecionarSessao("Upper A");
+      pularParaUltimo();
+      confirmarTopSet("50", "12");
+      confirmarBackoff("18");
+      fireEvent.click(screen.getByText("Ver Resumo"));
+      fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
+
+      const lista = carregarRegistros().filter((r) => r.exercicio === "abdomen_cabo_ajoelhado");
+      expect(lista).toHaveLength(2);
+      expect(lista[0]!.data).toBe("2020-01-01");
+      expect(lista[1]).toMatchObject({
+        sessao: "UA",
+        exercicio: "abdomen_cabo_ajoelhado",
+        series: [
+          { tipo: "top1", kg: 50, reps: 12 },
+          { tipo: "top2", kg: 50, reps: 18 },
+        ],
+      });
+      expect(lista[1]!.data).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(carregarLogbookCompleto()["Abdômen cabo ajoelhado"]![1]!.progrediu).toBe(true);
     });
 
     it("apos salvar exibe toast e resumo", () => {
@@ -982,7 +1014,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") ?? "{}");
+      const logbook = carregarLogbookCompleto();
       const registro = logbook["Supino reto barra"]?.[0];
       expect(registro?.tecnica).toBe("RP");
       expect(registro?.clusterSeries).toHaveLength(3);
@@ -1208,7 +1240,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       const registro = logbook["Abdômen cabo ajoelhado"]?.[0];
       expect(registro?.isDeload).toBe(true);
     });
@@ -1222,7 +1254,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       const registro = logbook["Abdômen cabo ajoelhado"]?.[0];
       expect(registro?.backoffKg).toBe(0);
       expect(registro?.backoffReps).toBe(0);
@@ -1237,7 +1269,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       const registro = logbook["Abdômen cabo ajoelhado"]?.[0];
       expect(registro?.topSetKg).toBe(60);
       expect(registro?.topSetReps).toBe(8);
@@ -1259,11 +1291,11 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
-      const logbook = JSON.parse(localStorage.getItem("logbook") || "{}");
+      const logbook = carregarLogbookCompleto();
       // Supino (com deload) deve ter isDeload=true
       expect(logbook["Supino reto barra"]?.[0]?.isDeload).toBe(true);
       // Abdomen (sem deload) deve ter isDeload=false
-      expect(logbook["Abdômen cabo ajoelhado"]?.[0]?.isDeload).toBe(false);
+      expect(logbook["Abdômen cabo ajoelhado"]?.[0]?.isDeload).toBeFalsy();
     });
 
     // ── Tela de revisão ───────────────────────────────────────────────────

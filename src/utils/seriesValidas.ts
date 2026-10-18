@@ -1,14 +1,15 @@
 import type { RegistroExercicio, SeriesValidas } from "../types/TrainingData";
 
 // ─── Modelo de séries válidas ─────────────────────────────────────────────────
+//   1 → só Top Set 1 (protocolos de 1 série até a falha)
 //   2 → Top Set 1 + Top Set 2
 //   3 → Top Set 1 + Top Set 2 + Back-off (~90% da carga, slot "extra")
 //   4 → Top Set 1 + Top Set 2 + Série 3 (slot "extra") + Série 4 — sem redução de carga
 
-/** Converte o valor vindo de planilha, plano ou rascunho; qualquer coisa fora de 3/4 vira 2. */
+/** Converte o valor vindo de planilha, plano ou rascunho; qualquer coisa fora de 1/3/4 vira 2. */
 export function normalizarSeriesValidas(v: unknown): SeriesValidas {
   const n = typeof v === "string" ? Number(v.trim()) : v;
-  return n === 3 || n === 4 ? n : 2;
+  return n === 1 || n === 3 || n === 4 ? n : 2;
 }
 
 export interface SugestaoSeriesExtras {

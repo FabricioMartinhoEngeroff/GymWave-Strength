@@ -3,7 +3,15 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino, SeriesValidas } from "../../types/TrainingData";
 import { normalizarSeriesValidas } from "../../utils/seriesValidas";
-import { salvarRegistro, storageKey, setCurrentUser, getCurrentUser } from "../../utils/storage";
+import {
+  fotografarRegistros,
+  getCurrentUser,
+  limparRegistros,
+  restaurarRegistros,
+  salvarRegistro,
+  setCurrentUser,
+  storageKey,
+} from "../../utils/storage";
 import TextImport from "./TextImport";
 import {
   Screen,
@@ -344,8 +352,7 @@ export default function AdminImport() {
     const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
     if (!ok) return;
     withTargetUser(() => {
-      const backup = localStorage.getItem(storageKey("logbook_backup"));
-      if (backup) localStorage.setItem(storageKey("logbook"), backup);
+      restaurarRegistros();
       const backupLegacy = localStorage.getItem(storageKey("dadosTreino_backup"));
       if (backupLegacy) localStorage.setItem(storageKey("dadosTreino"), backupLegacy);
       const backupPlano = localStorage.getItem(storageKey("planoTreino_backup"));
@@ -359,7 +366,7 @@ export default function AdminImport() {
 
   function confirmarImport() {
     const { total, porTreino } = withTargetUser(() => {
-      localStorage.setItem(storageKey("logbook_backup"), localStorage.getItem(storageKey("logbook")) || "{}");
+      fotografarRegistros();
       localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
       localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
       localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
@@ -467,7 +474,7 @@ export default function AdminImport() {
     if (!ok) return;
     withTargetUser(() => {
       localStorage.removeItem(storageKey("dadosTreino"));
-      localStorage.removeItem(storageKey("logbook"));
+      limparRegistros();
     });
     setResult(null);
     setRows([]);

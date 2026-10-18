@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { fetchExerciseGif } from "../../services/exerciseDbService";
-import { EXERCISE_VIDEOS } from "../../data/exerciseVideos";
+import { videoDoExercicio } from "../../data/exerciseAliases";
 
 type GifState = "idle" | "loading" | "loaded" | "error";
 
@@ -11,7 +11,7 @@ export function ExerciseGif({ exerciseName }: { exerciseName: string }) {
   // Guarda o nome do exercício que está tocando: ao trocar de exercício o bloco volta à miniatura.
   const [tocandoEm, setTocandoEm] = useState<string | null>(null);
 
-  const youtubeId = EXERCISE_VIDEOS[exerciseName] || "";
+  const youtubeId = videoDoExercicio(exerciseName);
   const hasVideo = youtubeId.length > 0;
   const tocando = hasVideo && tocandoEm === exerciseName;
 

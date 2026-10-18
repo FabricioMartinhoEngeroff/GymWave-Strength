@@ -7,6 +7,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import * as XLSX from "xlsx";
 import Exportar from "../../../components/exportar/Exportar";
+import { salvarRegistro } from "../../../utils/storage";
 
 // ─── Mock data ─────────────────────────────────────────────────────────────────
 
@@ -509,6 +510,70 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       expect(db["Supino Reto"]["C1"].pesos[0]).toBe("120");
       expect(screen.getByText(/1 adicionado/i)).toBeInTheDocument();
       expect(screen.getByText(/3 preservados/i)).toBeInTheDocument();
+    });
+  });
+
+  describe("Exportação didática", () => {
+    function capturarDownload(acao: () => void): { conteudo: string; nome: string } {
+      const capturado = { conteudo: "", nome: "" };
+      vi.stubGlobal("Blob", class {
+        constructor(partes: string[]) { capturado.conteudo = partes.join(""); }
+      });
+      vi.stubGlobal("URL", { createObjectURL: () => "blob:x", revokeObjectURL: () => {} });
+      const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+        capturado.nome = this.download;
+      });
+      try {
+        acao();
+      } finally {
+        click.mockRestore();
+        vi.unstubAllGlobals();
+      }
+      return capturado;
+    }
+
+    beforeEach(() => {
+      salvarRegistro({
+        exercicio: "Supino reto barra", treinoId: "UA", data: "13/10/2026", dataTs: 0,
+        topSetKg: 85, topSetReps: 7, topSetFaixaMin: 5, topSetFaixaMax: 8, topSetBateuTeto: false,
+        backoffKg: 85, backoffReps: 7, backoffFaixaMin: 8, backoffFaixaMax: 10,
+        seriesValidas: 3, extraKg: 75, extraReps: 10, progrediu: false, obs: "top tava leve",
+      });
+    });
+
+    it("CSV tem uma linha por série", () => {
+      render(<Exportar />);
+      const { conteudo, nome } = capturarDownload(() => fireEvent.click(screen.getByText("Exportar como CSV")));
+      expect(nome).toMatch(/\.csv$/);
+      expect(conteudo.split("\n")).toEqual([
+        "data,sessao,exercicio,serie,tipo,kg,reps,obs",
+        '2026-10-13,UA,Supino reto barra,1,top1,85,7,"top tava leve"',
+        '2026-10-13,UA,Supino reto barra,2,top2,85,7,"top tava leve"',
+        '2026-10-13,UA,Supino reto barra,3,backoff,75,10,"top tava leve"',
+      ]);
+    });
+
+    it("JSON traz a lista de registros no formato v3", () => {
+      render(<Exportar />);
+      const { conteudo } = capturarDownload(() => fireEvent.click(screen.getByText("Exportar como JSON")));
+      const backup = JSON.parse(conteudo);
+      expect(backup.versao).toBe(3);
+      expect(backup.registros).toEqual([
+        {
+          id: "2026-10-13_UA_supino_reto_barra",
+          data: "2026-10-13",
+          sessao: "UA",
+          exercicio: "supino_reto_barra",
+          series: [
+            { tipo: "top1", kg: 85, reps: 7 },
+            { tipo: "top2", kg: 85, reps: 7 },
+            { tipo: "backoff", kg: 75, reps: 10 },
+          ],
+          faixa: [5, 8],
+          faixaBackoff: [8, 10],
+          obs: "top tava leve",
+        },
+      ]);
     });
   });
 });

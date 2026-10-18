@@ -28,8 +28,8 @@ export interface LinhaRelatorio {
   obs?: string;
 }
 
-/** 2 = TS1+TS2 | 3 = TS1+TS2+Back-off (~90%) | 4 = TS1+TS2+Série 3+Série 4 (sem redução). */
-export type SeriesValidas = 2 | 3 | 4;
+/** 1 = só TS1 | 2 = TS1+TS2 | 3 = TS1+TS2+Back-off (~90%) | 4 = TS1+TS2+Série 3+Série 4 (sem redução). */
+export type SeriesValidas = 1 | 2 | 3 | 4;
 
 // ── New Saizen logbook types ────────────────────────────────────────────────
 
@@ -91,8 +91,8 @@ export interface RegistroExercicio {
   obs?: string;
 }
 
-// localStorage key: "logbook"
-// structure: { [exercicio]: RegistroExercicio[] }
+// Visão agrupada por exercício usada pelo app. No localStorage o histórico fica
+// na chave "registros" (lista plana, ver utils/registros.ts); o Logbook é montado dela.
 export type Logbook = Record<string, RegistroExercicio[]>;
 
 // ── Legacy plan type (kept for backward compatibility) ──────────────────────

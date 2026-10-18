@@ -36,9 +36,9 @@ function registro(over: Partial<RegistroExercicio> = {}): RegistroExercicio {
 
 describe("normalizarSeriesValidas", () => {
   it.each([
-    [2, 2], [3, 3], [4, 4],
-    ["3", 3], ["4", 4], [" 4 ", 4],
-    [1, 2], [5, 2], [0, 2], ["", 2], [undefined, 2], [null, 2], ["abc", 2], [3.5, 2],
+    [1, 1], [2, 2], [3, 3], [4, 4],
+    ["1", 1], ["3", 3], ["4", 4], [" 4 ", 4],
+    [5, 2], [0, 2], ["", 2], [undefined, 2], [null, 2], ["abc", 2], [3.5, 2],
   ])("%j → %i", (entrada, esperado) => {
     expect(normalizarSeriesValidas(entrada)).toBe(esperado);
   });

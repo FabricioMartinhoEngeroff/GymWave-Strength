@@ -1,6 +1,7 @@
 /**
  * backupJson → utils
- * Exportação completa (v2) e migração de backup JSON (v2 e legado v1 = dadosTreino cru),
+ * Exportação completa (v3, histórico como lista de registros) e migração de backup JSON
+ * (v3, v2 com "logbook" e legado v1 = dadosTreino cru),
  * mesclando sem apagar dados existentes e permitindo desfazer.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -11,7 +12,8 @@ import {
   montarBackup,
   resumirBackup,
 } from "../../utils/backupJson";
-import { setCurrentUser } from "../../utils/storage";
+import { carregarLogbookCompleto, carregarRegistros, setCurrentUser } from "../../utils/storage";
+import { paraRegistro } from "../../utils/registros";
 import type { RegistroExercicio } from "../../types/TrainingData";
 
 const LEGADO = {
@@ -59,7 +61,7 @@ describe("backupJson", () => {
       const b = lerBackup(JSON.stringify(LEGADO));
       expect(b.formato).toBe("legado");
       expect(Object.keys(b.dadosTreino)).toEqual(["Agachamento", "Afundo búlgaro livre"]);
-      expect(b.logbook).toEqual({});
+      expect(b.registros).toEqual([]);
       expect(b.planoTreino).toBeNull();
     });
 
@@ -78,6 +80,19 @@ describe("backupJson", () => {
       expect(resumirBackup(b)).toEqual({ exercicios: 3, registrosDados: 3, registrosLogbook: 1, temPlano: true });
     });
 
+    it("converte o logbook de um backup v2 para registros", () => {
+      const b = lerBackup(JSON.stringify({ app: "gymwave", versao: 2, logbook: { "Supino reto barra": [registro()] } }));
+      expect(b.registros).toEqual([paraRegistro(registro())]);
+    });
+
+    it("reconhece o backup v3 (lista de registros)", () => {
+      const reg = paraRegistro(registro());
+      const b = lerBackup(JSON.stringify({ app: "gymwave", versao: 3, registros: [reg, { id: "x", data: "sem data" }] }));
+      expect(b.formato).toBe("completo");
+      expect(b.registros).toEqual([reg]);
+      expect(resumirBackup(b).registrosLogbook).toBe(1);
+    });
+
     it("rejeita texto que não é JSON", () => {
       expect(() => lerBackup("não é json")).toThrow(/JSON válido/);
     });
@@ -92,7 +107,7 @@ describe("backupJson", () => {
       const texto = `{"app":"gymwave","versao":2,"dadosTreino":{"__proto__":{"C1":{"data":"1/1/2026"}},"Remo":{"C1":{"sem":"data"}}},"logbook":{"X":[{"exercicio":"X"}]}}`;
       const b = lerBackup(texto);
       expect(b.dadosTreino).toEqual({});
-      expect(b.logbook).toEqual({});
+      expect(b.registros).toEqual([]);
       expect(({} as Record<string, unknown>).C1).toBeUndefined();
     });
   });
@@ -135,7 +150,7 @@ describe("backupJson", () => {
 
       expect(r.logbookAdicionados).toBe(1);
       expect(r.logbookDuplicados).toBe(1);
-      expect(ler("logbook")["Supino reto barra"].map((x: RegistroExercicio) => x.data)).toEqual(["01/09/2026", "01/10/2026"]);
+      expect(carregarLogbookCompleto()["Supino reto barra"]!.map((x: RegistroExercicio) => x.data)).toEqual(["01/09/2026", "01/10/2026"]);
     });
 
     it("restaura plano e sessões só quando ainda não existem", () => {
@@ -163,12 +178,12 @@ describe("backupJson", () => {
       desfazerBackup();
 
       expect(ler("dadosTreino")).toEqual(local);
-      expect(ler("logbook")).toEqual({});
+      expect(carregarRegistros()).toEqual([]);
     });
   });
 
   describe("montarBackup", () => {
-    it("exporta todos os dados do usuário no formato v2", () => {
+    it("exporta todos os dados do usuário no formato v3", () => {
       localStorage.setItem("dadosTreino", JSON.stringify(LEGADO));
       localStorage.setItem("logbook", JSON.stringify({ "Supino reto barra": [registro()] }));
       localStorage.setItem("planoTreino", JSON.stringify({ "Upper A": {} }));
@@ -176,10 +191,11 @@ describe("backupJson", () => {
       const b = montarBackup(new Date("2026-10-16T12:00:00.000Z"));
 
       expect(b.app).toBe("gymwave");
-      expect(b.versao).toBe(2);
+      expect(b.versao).toBe(3);
       expect(b.exportadoEm).toBe("2026-10-16T12:00:00.000Z");
       expect(b.dadosTreino).toEqual(LEGADO);
-      expect(b.logbook["Supino reto barra"]).toHaveLength(1);
+      expect(b.registros).toEqual([paraRegistro(registro())]);
+      expect(b).not.toHaveProperty("logbook");
       expect(b.sessoes_config).toEqual({});
     });
 
@@ -193,7 +209,7 @@ describe("backupJson", () => {
       aplicarBackup(lerBackup(texto));
 
       expect(ler("gw:novo:dadosTreino")).toEqual(LEGADO);
-      expect(ler("gw:novo:logbook")["Supino reto barra"]).toHaveLength(1);
+      expect(carregarLogbookCompleto()["Supino reto barra"]).toHaveLength(1);
     });
   });
 });

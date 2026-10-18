@@ -1,7 +1,7 @@
 import { MUSCLE_MAP } from "../data/muscleMap";
-import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
+import type { DadosTreino, RegistroExercicio } from "../types/TrainingData";
 import { volumeESeriesDoRegistro } from "./seriesValidas";
-import { storageKey } from "./storage";
+import { carregarLogbookCompleto, storageKey } from "./storage";
 
 type ClusterSerie = { kg: number; reps: number }[] | undefined;
 
@@ -90,9 +90,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
     localStorage.getItem(storageKey("dadosTreino")) || "{}"
   ) as DadosTreino;
 
-  const logbook = JSON.parse(
-    localStorage.getItem(storageKey("logbook")) || "{}"
-  ) as Logbook;
+  const logbook = carregarLogbookCompleto();
 
   let current: { start: number; end: number };
   let previous: { start: number; end: number };
@@ -201,9 +199,7 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
     localStorage.getItem(storageKey("dadosTreino")) || "{}"
   ) as DadosTreino;
 
-  const logbook = JSON.parse(
-    localStorage.getItem(storageKey("logbook")) || "{}"
-  ) as Logbook;
+  const logbook = carregarLogbookCompleto();
 
   const weekSlots: { start: number; end: number; label: string }[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
@@ -304,9 +300,7 @@ function getMondayOf(ts: number): number {
 }
 
 export function calcStreakSemanas(): number {
-  const logbook = JSON.parse(
-    localStorage.getItem(storageKey("logbook")) || "{}"
-  ) as Logbook;
+  const logbook = carregarLogbookCompleto();
 
   const weekSet = new Set<number>();
   Object.values(logbook).forEach((registros) => {
@@ -333,9 +327,7 @@ export function calcStreakSemanas(): number {
 }
 
 export function calcEstagnadoMusculo(musculo: string): boolean {
-  const logbook = JSON.parse(
-    localStorage.getItem(storageKey("logbook")) || "{}"
-  ) as Logbook;
+  const logbook = carregarLogbookCompleto();
 
   const exerciciosDoGrupo = Object.keys(MUSCLE_MAP).filter(
     (ex) => MUSCLE_MAP[ex] === musculo
@@ -368,9 +360,7 @@ export function calcQuedaCargaMusculo(
   musculo: string,
   granularity: "week" | "month" = "week"
 ): boolean {
-  const logbook = JSON.parse(
-    localStorage.getItem(storageKey("logbook")) || "{}"
-  ) as Logbook;
+  const logbook = carregarLogbookCompleto();
 
   const current = granularity === "month" ? getMonthBounds(0) : getISOWeekBounds(0);
   const previous = granularity === "month" ? getMonthBounds(1) : getISOWeekBounds(1);

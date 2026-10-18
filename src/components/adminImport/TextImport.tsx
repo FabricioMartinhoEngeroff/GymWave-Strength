@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { setCurrentUser, storageKey, getCurrentUser } from "../../utils/storage";
+import {
+  carregarLogbookCompleto,
+  getCurrentUser,
+  salvarLogbookCompleto,
+  setCurrentUser,
+  storageKey,
+} from "../../utils/storage";
 import { normalizarSeriesValidas } from "../../utils/seriesValidas";
 import type { ExercicioSessao } from "../../data/sessionExercises";
 import type { SeriesValidas } from "../../types/TrainingData";
@@ -191,7 +197,7 @@ export default function TextImport() {
     setCurrentUser(targetUser);
     try {
       const sessoesConfig: Record<string, ExercicioSessao[]> = {};
-      const logbook = JSON.parse(localStorage.getItem(storageKey("logbook")) || "{}");
+      const logbook = carregarLogbookCompleto();
       const dadosTreino = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
       const planoNovo: Record<string, Record<string, { ordem: number; series_validas: number }>> = {};
       let totalEx = 0;
@@ -220,8 +226,7 @@ export default function TextImport() {
             const treinoId = TREINO_ID_MAP[sessao] ?? sessao.substring(0, 2).toUpperCase();
             const boKg = topSetKg; // Top Set 2 espelha o Top Set 1 no plano importado
 
-            if (!logbook[ex.nome]) logbook[ex.nome] = [];
-            logbook[ex.nome].push({
+            (logbook[ex.nome] ??= []).push({
               exercicio: ex.nome,
               treinoId,
               data: today,
@@ -253,7 +258,7 @@ export default function TextImport() {
       });
 
       localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfig));
-      localStorage.setItem(storageKey("logbook"), JSON.stringify(logbook));
+      salvarLogbookCompleto(logbook);
       localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosTreino));
       localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
       localStorage.removeItem(storageKey("rascunho_treino"));

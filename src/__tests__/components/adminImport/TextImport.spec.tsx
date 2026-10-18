@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TextImport from "../../../components/adminImport/TextImport";
-import { setCurrentUser } from "../../../utils/storage";
+import { carregarLogbookCompleto, setCurrentUser } from "../../../utils/storage";
 
 const TREINO_AMANDA = `## Lower A
 Elevação pélvica | Glúteo | 8-12 | 10-15 | 60kg | 3
@@ -58,7 +58,7 @@ describe("TextImport", () => {
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
+    const logbook = carregarLogbookCompleto();
     expect(logbook["Elevação pélvica"]).toBeDefined();
     expect(logbook["Elevação pélvica"][0].topSetKg).toBe(60);
     expect(logbook["Mesa flexora"][0].topSetKg).toBe(30);
@@ -71,7 +71,7 @@ describe("TextImport", () => {
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
+    const logbook = carregarLogbookCompleto();
     expect(logbook["Elevação pélvica"][0].backoffKg).toBe(60); // Top Set 2 espelha o Top Set 1 (60)
   });
 
@@ -82,7 +82,7 @@ describe("TextImport", () => {
     fireEvent.change(screen.getByTestId("text-import-input"), { target: { value: TREINO_AMANDA } });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
+    const logbook = carregarLogbookCompleto();
     expect(logbook["Elevação lateral livre"]).toBeUndefined();
   });
 
@@ -219,7 +219,7 @@ describe("TextImport", () => {
     });
     fireEvent.click(screen.getByText("Salvar treino"));
 
-    const logbook = JSON.parse(localStorage.getItem("gw:u1:logbook") || "{}");
+    const logbook = carregarLogbookCompleto();
     expect(logbook["Rosca direta"][0].topSetKg).toBe(30);
     expect(logbook["Agachamento"]).toBeDefined();
   });

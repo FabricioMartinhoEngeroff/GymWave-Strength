@@ -138,9 +138,10 @@ describe("Storage — Persistencia no localStorage", () => {
     });
 
     it("retorna o registro mais recente do treino especifico", () => {
-      salvarRegistro(makeRegistro({ dataTs: 1000, topSetKg: 95 }));
-      salvarRegistro(makeRegistro({ dataTs: 3000, topSetKg: 100 }));
-      salvarRegistro(makeRegistro({ dataTs: 2000, topSetKg: 97 }));
+      // A data é a fonte da verdade (dataTs é derivado dela no formato v3).
+      salvarRegistro(makeRegistro({ data: "01/06/2026", topSetKg: 95 }));
+      salvarRegistro(makeRegistro({ data: "03/06/2026", topSetKg: 100 }));
+      salvarRegistro(makeRegistro({ data: "02/06/2026", topSetKg: 97 }));
       const ultimo = ultimoRegistro("Supino reto barra", "UA");
       expect(ultimo?.topSetKg).toBe(100);
     });
@@ -263,7 +264,7 @@ describe("Storage — Persistencia no localStorage", () => {
       expect(bc?.clusterSeries).toHaveLength(4);
     });
 
-    it("RP com blocos parciais salva todos os blocos inclusive os vazios", () => {
+    it("RP com blocos parciais descarta os blocos vazios (série não feita não existe)", () => {
       salvarRegistro(makeRegistro({
         tecnica: "RP",
         topSetKg: 0,
@@ -278,8 +279,10 @@ describe("Storage — Persistencia no localStorage", () => {
         ],
       }));
       const historico = carregarHistorico("Supino reto barra");
-      expect(historico[0].clusterSeries).toHaveLength(4);
-      expect(historico[0].clusterSeries![2]).toEqual({ kg: 0, reps: 0 });
+      expect(historico[0].clusterSeries).toEqual([
+        { kg: 80, reps: 10 },
+        { kg: 80, reps: 8 },
+      ]);
     });
   });
 });
