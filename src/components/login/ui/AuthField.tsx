@@ -45,13 +45,21 @@ const Box = styled.div<{ $hasError: boolean }>`
   }
 `;
 
+// Anula o `button { width: 100% }` global do index.css, que espremia o input até largura zero.
 const ToggleButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
   padding: 0;
+  margin: 0;
+  width: auto;
+  flex-shrink: 0;
   display: flex;
   color: #0066cc;
+
+  &:hover {
+    background: none;
+  }
 `;
 
 const FieldError = styled.p`

@@ -159,3 +159,12 @@ describe("G10 — código-fonte do throttle (movido de security/)", () => {
     expect(offenders(sourceOf(/loginThrottle/), /localStorage|sessionStorage/)).toEqual([]);
   });
 });
+describe("Layout — botão de mostrar senha", () => {
+  it("anula o width: 100% global de button (senão o input fica com largura zero)", () => {
+    const authField = readText("src/components/login/ui/AuthField.tsx");
+    const toggle = authField.match(/const ToggleButton = styled\.button`([^`]*)`/)?.[1] ?? "";
+    expect(readText("src/index.css")).toMatch(/button\s*\{[^}]*width:\s*100%/);
+    expect(toggle).toMatch(/width:\s*auto/);
+    expect(toggle).toMatch(/margin:\s*0/);
+  });
+});
