@@ -18,7 +18,11 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 
 ## 3. Regras Gerais
 
-- **RG1** – O cálculo é feito automaticamente com base nos dados do `localStorage` (`logbook`).
+- **RG1** – O cálculo é feito automaticamente com base no histórico do usuário: os `registros` (lidos como logbook, ver EF_02 RG19) e o histórico antigo em `dadosTreino`.
+- **RG1.1** – **Cada treino conta uma vez só.** "Salvar treino" grava o mesmo treino em `registros` e no resumo `dadosTreino`. Uma entrada do `dadosTreino` só entra no volume quando **não existe** registro do mesmo exercício, sessão e data. Assim, o histórico antigo, que só existe em `dadosTreino`, continua contando.
+  - *Motivo:* antes os dois eram somados, e a semana do treino mais recente saía em dobro. Exemplo: 1 repetição a mais no ombro (400 → 410 kg·reps, +3%) aparecia como 400 → 820 (+105%), o que distorcia a comparação entre semanas.
+- **RG1.2** – **Semana = segunda a domingo.** Todos os treinos salvos na semana (ex.: os 4 treinos Upper/Lower) somam no volume e nas séries do grupo muscular de cada exercício.
+- **RG1.3** – **Grupo muscular tolerante à escrita:** o grupo é buscado no mapa muscular (`src/data/muscleMap.ts`, função `grupoMuscular`) ignorando maiúsculas, acentos, espaços e hífens ("Pull down" = "Pull-down", "Tríceps francês" = "Tríceps Francês"). Vale para o volume e para os badges `[estagnado]` e `[↓ carga]`. Exercício que não está no mapa não entra no volume; para incluí-lo, basta cadastrá-lo no mapa.
 - **RG2** – A tela compara o período atual com o período anterior por grupo muscular. O período é definido pelo toggle de granularidade (semana ou mês).
 - **RG3** – Volume Load = soma de (peso × repetições) de todas as séries do músculo no período selecionado.
 - **RG4** – O sistema classifica o número de séries semanais por músculo em quatro categorias, calibradas para o método Saizen/Heavy Duty:

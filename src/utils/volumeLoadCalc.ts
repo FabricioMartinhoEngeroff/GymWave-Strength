@@ -1,6 +1,7 @@
-import { MUSCLE_MAP } from "../data/muscleMap";
-import type { DadosTreino, RegistroExercicio } from "../types/TrainingData";
+import { grupoMuscular } from "../data/muscleMap";
+import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
 import { volumeESeriesDoRegistro } from "./seriesValidas";
+import { slugExercicio } from "./registros";
 import { carregarLogbookCompleto, storageKey } from "./storage";
 
 type ClusterSerie = { kg: number; reps: number }[] | undefined;
@@ -26,6 +27,19 @@ function clusterVolAndSets(reg: RegistroExercicio): { vol: number; sets: number 
     if (serieTemBloco) sets++;
   });
   return { vol, sets };
+}
+
+// Salvar treino grava o mesmo treino em "registros" (lido como logbook) e no resumo
+// "dadosTreino". Para não somar duas vezes, a entrada do dadosTreino só conta quando
+// não há registro do mesmo exercício, sessão e data (histórico antigo, só legado).
+const chaveTreino = (exercicio: string, sessao: string, data: string) =>
+  `${slugExercicio(exercicio)}|${sessao}|${data}`;
+
+function treinosDoLogbook(logbook: Logbook): Set<string> {
+  const chaves = new Set<string>();
+  Object.entries(logbook).forEach(([exercicio, registros]) =>
+    registros.forEach((reg) => chaves.add(chaveTreino(exercicio, reg.treinoId, reg.data))));
+  return chaves;
 }
 
 export interface VolumeMusculo {
@@ -91,6 +105,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
   ) as DadosTreino;
 
   const logbook = carregarLogbookCompleto();
+  const jaNoLogbook = treinosDoLogbook(logbook);
 
   let current: { start: number; end: number };
   let previous: { start: number; end: number };
@@ -114,11 +129,12 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
 
   // Process legacy dadosTreino
   Object.entries(db).forEach(([exercicio, ciclos]) => {
-    const musculo = MUSCLE_MAP[exercicio];
+    const musculo = grupoMuscular(exercicio);
     if (!musculo) return;
 
-    Object.values(ciclos).forEach((reg) => {
+    Object.entries(ciclos).forEach(([sessao, reg]) => {
       if (!reg.data || !reg.pesos) return;
+      if (jaNoLogbook.has(chaveTreino(exercicio, sessao, reg.data))) return;
       const ts = parseDateBR(reg.data);
       if (!ts) return;
       const vol = calcVolumeEntry(reg.pesos || [], reg.reps || []);
@@ -135,7 +151,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
 
   // Process logbook (new format)
   Object.entries(logbook).forEach(([exercicio, registros]) => {
-    const musculo = MUSCLE_MAP[exercicio];
+    const musculo = grupoMuscular(exercicio);
     if (!musculo) return;
 
     registros.forEach((reg) => {
@@ -200,6 +216,7 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
   ) as DadosTreino;
 
   const logbook = carregarLogbookCompleto();
+  const jaNoLogbook = treinosDoLogbook(logbook);
 
   const weekSlots: { start: number; end: number; label: string }[] = [];
   for (let i = weeks - 1; i >= 0; i--) {
@@ -233,10 +250,11 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
   }
 
   Object.entries(db).forEach(([exercicio, ciclos]) => {
-    const musculo = MUSCLE_MAP[exercicio];
+    const musculo = grupoMuscular(exercicio);
     if (!musculo) return;
-    Object.values(ciclos).forEach((reg) => {
+    Object.entries(ciclos).forEach(([sessao, reg]) => {
       if (!reg.data || !reg.pesos) return;
+      if (jaNoLogbook.has(chaveTreino(exercicio, sessao, reg.data))) return;
       const ts = parseDateBR(reg.data);
       if (!ts) return;
       const vol = calcVolumeEntry(reg.pesos || [], reg.reps || []);
@@ -246,7 +264,7 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
   });
 
   Object.entries(logbook).forEach(([exercicio, registros]) => {
-    const musculo = MUSCLE_MAP[exercicio];
+    const musculo = grupoMuscular(exercicio);
     if (!musculo) return;
     registros.forEach((reg) => {
       const ts = reg.dataTs;
@@ -329,9 +347,7 @@ export function calcStreakSemanas(): number {
 export function calcEstagnadoMusculo(musculo: string): boolean {
   const logbook = carregarLogbookCompleto();
 
-  const exerciciosDoGrupo = Object.keys(MUSCLE_MAP).filter(
-    (ex) => MUSCLE_MAP[ex] === musculo
-  );
+  const exerciciosDoGrupo = Object.keys(logbook).filter((ex) => grupoMuscular(ex) === musculo);
 
   let estagnados = 0;
 
@@ -365,9 +381,7 @@ export function calcQuedaCargaMusculo(
   const current = granularity === "month" ? getMonthBounds(0) : getISOWeekBounds(0);
   const previous = granularity === "month" ? getMonthBounds(1) : getISOWeekBounds(1);
 
-  const exerciciosDoGrupo = Object.keys(MUSCLE_MAP).filter(
-    (ex) => MUSCLE_MAP[ex] === musculo
-  );
+  const exerciciosDoGrupo = Object.keys(logbook).filter((ex) => grupoMuscular(ex) === musculo);
 
   let quedas = 0;
 

@@ -68,7 +68,7 @@ Código puro: sem tela, rede, storage nem relógio. É a base de todas as outras
 | `authErrors.spec.ts` | Todo erro tem um código e uma mensagem em português, sem vazar detalhe interno nem revelar se o e-mail existe. |
 | `parseEmail.spec.ts` | O que é um e-mail válido: aparado, minúsculo, até 254 caracteres, sem quebra de linha. |
 | `loginSchema.spec.ts` | O login só exige campos preenchidos e não gigantes, sem política de senha. |
-| `registerSchema.spec.ts` | O cadastro exige nome, e-mail, senha forte e confirmação, e descarta `role`, CPF e similares. |
+| `registerSchema.spec.ts` | O cadastro exige só e-mail, senha forte e confirmação. Descarta nome, `role`, CPF e similares, para não guardar dados pessoais além do e-mail. |
 
 ---
 

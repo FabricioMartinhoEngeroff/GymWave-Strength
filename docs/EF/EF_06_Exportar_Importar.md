@@ -18,7 +18,7 @@ Qualquer usuário autenticado possui acesso.
 
 ## 3. Regras Gerais
 
-- **RG1** – A exportação lê os dados armazenados no `localStorage` (`dadosTreino` e `logbook`).
+- **RG1** – A exportação lê os dados do usuário no `localStorage`: o histórico em `registros` (ver EF_02 RG19), além de `dadosTreino`, `planoTreino` e `sessoes_config`.
 - **RG2** – A importação aceita arquivos nos formatos `.xlsx` e `.csv`.
 - **RG3** – Antes de importar, o sistema salva um backup automático dos dados atuais (`dadosTreino_backup`, `planoTreino_backup`), permitindo desfazer a operação.
 - **RG4** – A importação preserva registros já existentes no ciclo correspondente (não sobrescreve dados já registrados).
@@ -29,6 +29,20 @@ Qualquer usuário autenticado possui acesso.
 - **RG6** – O sistema exibe uma pré-visualização dos dados antes de confirmar a importação.
 - **RG7** – Após importação bem-sucedida, o botão "Desfazer importação" fica disponível enquanto o usuário permanecer na tela.
 - **RG8** – Ao desfazer, o sistema restaura os dados do backup e remove o resultado exibido.
+- **RG9** – **Planilha com várias abas (protocolo por semana):** a importação lê **todas as abas** do `.xlsx`. Abas sem cabeçalho de exercícios (ex.: "Guia", instruções) são ignoradas.
+  - Se houver **mais de uma aba de treino**, cada sessão recebe o prefixo da semana e o dia: aba "Semana 1" + ID `SEG` + Treino "Pull" → sessão **`S1 Seg · Pull`**; "Semanas 3-4" → `S3-4`.
+  - Com uma aba só (a planilha de 4 dias Upper/Lower A/B), o nome da sessão continua sendo o próprio Treino, sem prefixo. Nada muda para quem já usava.
+  - *Motivo:* protocolos que variam por semana precisam de sessões separadas por semana, sem misturar o histórico de semanas diferentes.
+- **RG10** – **Cabeçalho da planilha:** a linha de cabeçalho é a que tem uma célula **exatamente** igual a `Sessão` ou `Exercício`. Notas acima do cabeçalho que só citam a palavra (ex.: *"⚡ Antes do 1º exercício de cada músculo…"*) não são tomadas como cabeçalho.
+- **RG11** – **Exercício repetido no mesmo dia:** quando a mesma sessão lista o mesmo exercício mais de uma vez (ex.: *"Remada curvada — perto da falha"* e, depois, *"Remada curvada — até a falha total"*), ele vira **um exercício só**, na posição do primeiro.
+  - As séries válidas são somadas (máx. 4).
+  - O cue junta as instruções de cada vez: *"1ª: Perto da falha | 2ª: Até a falha total"*.
+- **RG12** – **Cue e cluster:** a coluna `Cue / foco` é importada e exibida no card do exercício. Se o cue descreve um cluster com tamanho de bloco (ex.: *"Cluster set: 24 reps em blocos de 4"*), o plano guarda `clusterBlocos` (6) para a tela de treino (EF_02 RG16.1).
+- **RG13** – **Exercícios com outro nome ou ainda fora do catálogo** (`src/data/exerciseAliases.ts`):
+  - **Mesmo exercício com outro nome** (`MESMO_EXERCICIO`) vira o nome do catálogo e herda vídeo, grupo muscular e histórico. Ex.: "Extensão de pernas" → "Cadeira extensora", "Agachamento búlgaro" → "Afundo búlgaro livre", "Pec deck" → "Voador".
+  - **Exercício parecido** (`PARECIDO_COM`) mantém o próprio nome, mas usa o vídeo/GIF do semelhante.
+  - **Exercício novo** entra no catálogo com grupo muscular. Fica sem vídeo até alguém cadastrar um em `src/data/exerciseVideos.ts`; IDs de vídeo não são inventados.
+  - *Motivo:* aproveitar vídeos, grupos musculares e histórico já existentes sem duplicar exercícios.
 
 ---
 
@@ -50,8 +64,8 @@ Qualquer usuário autenticado possui acesso.
 
 | Botão | Ação | Formato gerado |
 |---|---|---|
-| **Exportar como CSV** | Gera arquivo com todos os registros do `logbook` | `.csv` com colunas: data, exercicio, treino_id, top_set_kg, top_set_reps, backoff_kg, backoff_reps, series_validas, extra_kg, extra_reps |
-| **Exportar como JSON** | Gera backup completo do `dadosTreino` | `.json` com toda a estrutura armazenada |
+| **Exportar como CSV** | Gera arquivo com todo o histórico de `registros` | `.csv` com **uma linha por série**: `data,sessao,exercicio,serie,tipo,kg,reps,obs`. Textos que começam com `=`, `+`, `-` ou `@` são neutralizados, para o Excel não executar fórmulas. |
+| **Exportar como JSON** | Gera backup completo (versão 3) | `.json` com `{ app: "gymwave", versao: 3, exportadoEm, registros, dadosTreino, planoTreino, sessoes_config }`. A importação de JSON aceita também os backups antigos v2 (histórico no objeto `logbook`) e v1 (só `dadosTreino`). Ao importar, registros já existentes (mesmo exercício + sessão + data) não são duplicados. |
 
 **Nome dos arquivos:**
 - CSV: `gymwave_AAAA-MM-DD.csv`
@@ -77,6 +91,8 @@ O sistema reconhece automaticamente as colunas da planilha pelos seguintes padr�
 | Coluna esperada | Padrão reconhecido |
 |---|---|
 | Sessão | `sessão`, `sessao`, `treino` (v4 logbook) |
+| ID da sessão | `id` (ex.: `UA`, `SEG`, `SEX` — usado para o dia no protocolo por semana, RG9) |
+| Cue / foco | `cue`, `foco` |
 | Ordem | `ord.`, `ordem` |
 | Exercício | `exercício`, `exercicio` |
 | Grupo/Músculo | `grupo`, `músculo`, `musculo` |
@@ -117,12 +133,14 @@ Após confirmação bem-sucedida, exibe card com:
 
 | Coluna | Descrição | Obrig. |
 |---|---|---|
-| Sessão | Identificador da sessão (UA, UB, LA, LB, BR) | Sim |
+| Sessão / Treino | Nome da sessão (Upper A, Lower B, Pull, Upper Cluster…) | Sim |
+| ID | Sigla da sessão (UA, LB) ou do dia (SEG, TER, … SÁB) no protocolo por semana | Não |
 | Ordem | Posição do exercício na sessão | Não |
-| Exercício | Nome do exercício (deve corresponder ao cadastro) | Sim |
+| Exercício | Nome do exercício. Nomes diferentes do catálogo são associados pelos aliases (RG13) | Sim |
 | Grupo / Músculo | Grupo muscular primário | Não |
 | Rep mín / Rep máx | Faixa de repetições | Não |
-| Séries | Número de séries válidas (1–3) | Não (padrão: 3) |
+| Séries | Número de séries válidas (1–4) | Não (padrão: 3) |
+| Cue / foco | Instrução do exercício; pode descrever o cluster (RG12) | Não |
 | Séries C1–C4 | Séries válidas por ciclo específico | Não |
 | Peso C1–C4 (kg) | Peso inicial sugerido por ciclo | Não |
 

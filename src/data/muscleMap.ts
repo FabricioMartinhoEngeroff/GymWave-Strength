@@ -10,6 +10,7 @@ export const MUSCLE_MAP: Record<string, string> = {
   // ── Costas ────────────────────────────────────────────────────────────────
   "Barra fixa":               "Costas",
   "Puxada triângulo":                 "Costas",
+  "Pull down":                        "Costas",
   "Pull-around":                      "Costas",
   "Remada peito apoiado":             "Costas",
   "Remada baixa":    "Costas",
@@ -87,6 +88,8 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Abdômen cabo ajoelhado":           "Core",
   "Abdômen infra pendurado":          "Core",
   "Abdômen infra banco":              "Core",
+  "Abdominal pendurado na barra":     "Core",
+  "Prancha":                          "Core",
 
   // ── Protocolo 6 dias ──────────────────────────────────────────────────────
   "Remada curvada":                       "Costas",
@@ -121,3 +124,18 @@ export const MUSCLE_MAP: Record<string, string> = {
   "Rosca alternada":                      "Braço",
   "Rosca scott no cabo":                  "Braço",
 };
+
+// Nome sem acento, maiúscula, espaço nem hífen: "Pull down" = "Pull-down",
+// "Tríceps francês" = "Tríceps Francês".
+const chave = (nome: string) =>
+  nome.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+let porChave: Map<string, string> | null = null;
+
+/** Grupo muscular do exercício, tolerando diferenças de escrita no nome. */
+export function grupoMuscular(nome: string): string | undefined {
+  const exato = MUSCLE_MAP[nome];
+  if (exato) return exato;
+  porChave ??= new Map(Object.entries(MUSCLE_MAP).map(([ex, grupo]) => [chave(ex), grupo]));
+  return porChave.get(chave(nome));
+}

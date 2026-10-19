@@ -199,6 +199,14 @@ describe("backupJson", () => {
       expect(b.sessoes_config).toEqual({});
     });
 
+    it("cada registro exportado traz o nome legível do exercício, inclusive os antigos sem nome", () => {
+      localStorage.setItem("registros", JSON.stringify([
+        { id: "2026-06-01_UA_supino_reto_barra", data: "2026-06-01", sessao: "UA", exercicio: "supino_reto_barra", series: [{ tipo: "top1", kg: 100, reps: 5 }] },
+      ]));
+      const [r] = montarBackup().registros;
+      expect(r).toMatchObject({ exercicio: "supino_reto_barra", nome: "Supino reto barra" });
+    });
+
     it("ida e volta: exportar e importar em outro usuário reproduz os dados", () => {
       setCurrentUser("antigo");
       localStorage.setItem("gw:antigo:dadosTreino", JSON.stringify(LEGADO));

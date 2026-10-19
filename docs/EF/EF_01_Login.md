@@ -33,9 +33,19 @@ O perfil é sempre `user` no cadastro. O perfil `admin` só pode ser atribuído 
 - **RG6** – O idioma da interface é Português – Brasil.
 - **RG7** – Mensagens de falha de login são genéricas: o sistema nunca revela se o e-mail existe, se a senha está errada ou se a conta está bloqueada por outro motivo.
 - **RG8** – Não há dados de usuário ou senha fixos no código-fonte, e nenhuma credencial, token ou e-mail é gravado em `localStorage`.
+  - *Motivo:* o código do site é público (qualquer um lê pelo navegador). Uma conta "fixa" para alguém — por exemplo, um colega com treino próprio — exporia a senha dele e não resolveria nada: cada pessoa cria o próprio login, e o treino dela (plano importado e histórico) já fica separado por usuário (RG9).
 - **RG9** – Ao sair (logout) ou quando a sessão expira, o usuário volta para `/`, os dados em memória são limpos e as demais abas abertas também são deslogadas. Os dados de treino permanecem gravados por usuário (`gw:{id}:{chave}`) e não são misturados entre contas.
 - **RG10** – Ao iniciar, o sistema remove resquícios do login antigo (token, e-mail, flag `newUser` e lista de usuários do mock) do `localStorage` e do `sessionStorage`.
 - **RG11** – Erros técnicos são registrados apenas em desenvolvimento e sem dados sensíveis (senha, token, e-mail completo). Nunca são exibidos ao usuário.
+- **RG13** – **Dados pessoais mínimos:** o cadastro pede só **e-mail e senha** (mais a confirmação da senha, que não é guardada). Não se pede nome, CPF, telefone, endereço nem qualquer outro dado. Um nome (ou outro campo) enviado por fora da tela é descartado pelo schema e pelos gateways — nada além de e-mail e senha chega ao Firebase.
+  - *Motivo:* quanto menos dado pessoal o sistema guarda, menor a responsabilidade do dono do app (LGPD) e o estrago em caso de vazamento. O app não precisa saber o nome de ninguém para registrar treino.
+  - Contas criadas antes desta regra continuam funcionando; se tiverem nome salvo no Firebase, o cabeçalho ainda o mostra. Contas novas não têm nome e o cabeçalho exibe **"Olá, Usuário"**.
+- **RG14** – **Como senha e e-mail ficam guardados (produção / Firebase):**
+  - **Senha:** nunca é guardada em texto. O Firebase grava apenas um hash irreversível (scrypt, com sal por usuário e chave do projeto). Ninguém consegue ver a senha — nem o dono do app no console, nem numa exportação de usuários. O app envia a senha só para o Firebase (HTTPS) e não a grava no aparelho.
+  - **E-mail:** fica guardado legível no Firebase Authentication, criptografado em disco pelo Google e acessível **apenas** ao dono do projeto (console do Firebase). Outros usuários e o código do app não conseguem listar e-mails.
+  - *Motivo da escolha:* manter o e-mail legível preserva o **"Esqueci minha senha"** (o Firebase precisa do endereço para enviar o link) e dá ao dono um controle leve de quem usa o app. A alternativa avaliada — guardar só um código (hash) do e-mail — tiraria até do dono o acesso ao e-mail, mas quem esquecesse a senha perderia a conta. Ela foi descartada.
+  - *Cuidado operacional:* o ponto fraco real é a conta Google do dono do projeto (quem entra nela vê os e-mails). Manter a **verificação em duas etapas** ativa nessa conta.
+  - O aviso `[email_em_uso]` do cadastro permite descobrir se um e-mail específico já usa o app (não expõe nenhum outro dado). Risco aceito por enquanto.
 
 ---
 
@@ -74,11 +84,11 @@ O perfil é sempre `user` no cadastro. O perfil `admin` só pode ser atribuído 
 
 | Nº | Campo | Tipo | Obrig. | Estado inicial | Regras |
 |---|---|---|---|---|---|
-| 01 | Nome | Input texto | Sim | Em branco | *Trim*; de 3 a 100 caracteres; sem caracteres de controle. |
-| 02 | E-mail | Input e-mail | Sim | Em branco | Mesmas regras do login (*trim*, minúsculas, formato, máx. 254). |
-| 03 | Senha | Input senha | Sim | Em branco | Mín. 8 e máx. 128 caracteres, com ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial. Não sofre *trim*. |
-| 04 | Confirmar senha | Input senha | Sim | Em branco | Deve ser igual à senha. |
+| 01 | E-mail | Input e-mail | Sim | Em branco | Mesmas regras do login (*trim*, minúsculas, formato, máx. 254). |
+| 02 | Senha | Input senha | Sim | Em branco | Mín. 8 e máx. 128 caracteres, com ao menos: 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial. Não sofre *trim*. |
+| 03 | Confirmar senha | Input senha | Sim | Em branco | Deve ser igual à senha. Só confere a digitação; não é enviada nem guardada. |
 
+- São só esses três campos: não existe campo de nome (RG13).
 - Abaixo da senha é exibida uma lista de requisitos que é marcada (✓) em tempo real conforme cada regra é atendida.
 - Os campos validam ao sair do campo (*blur*) e novamente ao enviar.
 - O perfil (`role`) não é um campo: é sempre `user`. Qualquer valor de `role` enviado em chamadas diretas é ignorado.
@@ -118,9 +128,6 @@ O perfil é sempre `user` no cadastro. O perfil `admin` só pode ser atribuído 
 | `[campo_obrigatorio]` | Aviso | Vermelho (no campo) | Campo obrigatório. |
 | `[email_invalido]` | Aviso | Vermelho (no campo) | Informe um e-mail válido. |
 | `[valor_longo]` | Aviso | Vermelho (no campo) | Valor longo demais. |
-| `[nome_curto]` | Aviso | Vermelho (no campo) | O nome deve ter pelo menos 3 caracteres. |
-| `[nome_longo]` | Aviso | Vermelho (no campo) | O nome deve ter no máximo 100 caracteres. |
-| `[nome_invalido]` | Aviso | Vermelho (no campo) | O nome contém caracteres inválidos. |
 | `[senha_curta]` | Aviso | Vermelho (no campo) | A senha deve ter pelo menos 8 caracteres. |
 | `[senha_sem_maiuscula]` | Aviso | Vermelho (no campo) | A senha deve ter uma letra maiúscula. |
 | `[senha_sem_minuscula]` | Aviso | Vermelho (no campo) | A senha deve ter uma letra minúscula. |

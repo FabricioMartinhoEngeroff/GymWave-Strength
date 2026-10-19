@@ -10,6 +10,7 @@ import {
   exportarCSV,
   logbookParaRegistros,
   nomeExercicio,
+  comNome,
   paraRegistro,
   deRegistro,
   registrosParaLogbook,
@@ -99,6 +100,7 @@ describe("registros — formato v3", () => {
         data: "2026-10-13",
         sessao: "UA",
         exercicio: "supino_reto_barra",
+        nome: "Supino reto barra",
         series: [
           { tipo: "top1", kg: 85, reps: 7 },
           { tipo: "top2", kg: 85, reps: 7 },
@@ -166,7 +168,6 @@ describe("registros — formato v3", () => {
       expect(r).not.toHaveProperty("obs");
       expect(r).not.toHaveProperty("tecnica");
       expect(r).not.toHaveProperty("deload");
-      expect(r).not.toHaveProperty("nome");
       expect(r).not.toHaveProperty("validas");
       expect(r).not.toHaveProperty("bateuTeto");
       expect(paraRegistro(exercicio({ isDeload: true })).deload).toBe(true);
@@ -193,7 +194,30 @@ describe("registros — formato v3", () => {
     it("normaliza o nome para o catálogo", () => {
       const r = paraRegistro(exercicio({ exercicio: "Pulldown" }));
       expect(r.exercicio).toBe("pull_down");
-      expect(r).not.toHaveProperty("nome");
+      expect(r.nome).toBe("Pull-down");
+    });
+
+    it("sempre guarda o nome legível do exercício, logo depois do slug", () => {
+      const r = paraRegistro(exercicio({ exercicio: "Elevação lateral livre" }));
+      expect(r.nome).toBe("Elevação lateral livre");
+      expect(Object.keys(r).slice(0, 5)).toEqual(["id", "data", "sessao", "exercicio", "nome"]);
+    });
+
+    it("outro nome do mesmo exercício guarda o nome do catálogo", () => {
+      const r = paraRegistro(exercicio({ exercicio: "Extensão de pernas" }));
+      expect(r).toMatchObject({ exercicio: "cadeira_extensora", nome: "Cadeira extensora" });
+    });
+  });
+
+  describe("comNome (registros gravados antes do nome sempre presente)", () => {
+    it("registro sem nome ganha o nome do catálogo", () => {
+      const antigo = { id: "2026-06-01_UA_supino_reto_barra", data: "2026-06-01", sessao: "UA", exercicio: "supino_reto_barra", series: [] };
+      expect(comNome(antigo)).toEqual({ ...antigo, nome: "Supino reto barra" });
+    });
+
+    it("registro que já tem nome fica igual", () => {
+      const r = { id: "x", data: "2026-06-01", sessao: "UA", exercicio: "meu_exercicio_x", nome: "Meu Exercício X", series: [] };
+      expect(comNome(r)).toBe(r);
     });
   });
 

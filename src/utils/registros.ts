@@ -23,7 +23,7 @@ export interface Registro {
   data: string; // "YYYY-MM-DD"
   sessao: string; // "UA", "UB", "LA", "LB"…
   exercicio: string; // slug: "supino_reto_barra"
-  nome?: string; // só quando o slug não está no catálogo
+  nome?: string; // nome legível ("Supino reto barra"); falta só em registros antigos (ver comNome)
   series: Serie[]; // série não feita não aparece
   faixa?: [number, number]; // faixa de reps dos Top Sets
   faixaBackoff?: [number, number];
@@ -80,6 +80,11 @@ export function slugExercicio(nome: string): string {
 
 export function nomeExercicio(slug: string, nomeGuardado?: string): string {
   return doCatalogo(slug)?.nome ?? nomeGuardado ?? slug;
+}
+
+/** Registro gravado antes de o nome ser sempre guardado ganha o nome do catálogo. */
+export function comNome(reg: Registro): Registro {
+  return reg.nome ? reg : { ...reg, nome: nomeExercicio(reg.exercicio) };
 }
 
 // ─── Datas ────────────────────────────────────────────────────────────────────
@@ -154,7 +159,7 @@ export function paraRegistro(r: RegistroExercicio): Registro {
     data,
     sessao,
     exercicio,
-    ...(doCatalogo(r.exercicio) ? {} : { nome: r.exercicio }),
+    nome: nomeExercicio(exercicio, r.exercicio), // legível para quem lê o JSON (pessoa ou IA)
     series,
     ...(faixa && { faixa }),
     ...(faixaBackoff && { faixaBackoff }),

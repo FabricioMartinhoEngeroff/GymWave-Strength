@@ -1,5 +1,5 @@
 import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
-import { comIdUnico, logbookParaRegistros, nomeExercicio, sanitizarRegistros, type Registro } from "./registros";
+import { comIdUnico, comNome, logbookParaRegistros, nomeExercicio, sanitizarRegistros, type Registro } from "./registros";
 import { carregarRegistros, fotografarRegistros, restaurarRegistros, salvarRegistros, storageKey } from "./storage";
 
 // ─── Formato do backup ────────────────────────────────────────────────────────
@@ -122,7 +122,7 @@ export function montarBackup(agora = new Date()): BackupGymwave {
     app: BACKUP_APP,
     versao: BACKUP_VERSAO,
     exportadoEm: agora.toISOString(),
-    registros: carregarRegistros(),
+    registros: carregarRegistros().map(comNome),
     dadosTreino: lerChave<DadosTreino>("dadosTreino", {}),
     planoTreino: lerChave<PlanoTreino>("planoTreino", {}),
     sessoes_config: lerChave<Record<string, unknown[]>>("sessoes_config", {}),

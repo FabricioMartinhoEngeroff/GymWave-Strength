@@ -21,6 +21,12 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 - **RG1** – A tela exibe exercícios agrupados por sessão de treino (UA, UB, LA, LB, BR), definidos em `SESSOES` (hardcoded) com override do `planoTreino` (localStorage) quando disponível.
 - **RG1.1** – Se `planoTreino` existir no localStorage para a sessão selecionada, o sistema aplica dois overrides: (a) **`seriesValidas`** de cada exercício é substituído pelo valor do plano (2 ou 3); (b) **a ordem dos exercícios** é reorganizada conforme o campo `ordem` do plano, permitindo que a importação de planilha altere a sequência sem editar código.
 - **RG1.2** – O plano (padrão do `SESSOES` ou `planoTreino` importado, RG1.1) é a **única fonte de verdade** para `seriesValidas` — o histórico de treinos anteriores (`logbook`/`ultimoRegistro`) nunca sobrescreve esse valor. Se o último registro salvo daquele exercício tiver um `seriesValidas` diferente do plano atual (ex.: um treino feito antes de a planilha ser atualizada de 2 para 3 séries válidas), o sistema ignora o valor do histórico e usa sempre o do plano para decidir se o badge mostra "2 válidas"/"3 válidas" e se o bloco Back-off aparece. O histórico é usado apenas para sugerir o peso e as repetições do Top Set 1 (RG7) e as repetições do Top Set 2 e do Back-off (RG6, RG14) — nunca para redefinir a contagem de séries válidas.
+- **RG1.3** – **Sessões vindas da planilha (protocolos com vários dias/semanas):** os botões de sessão vêm do plano importado do usuário (`sessoes_config`).
+  - Sem plano importado, ou com um plano só das sessões padrão (Upper A/B, Lower A/B), a tela mostra as 4 sessões fixas, como sempre.
+  - Se o plano tiver outras sessões, a tela mostra **as sessões do plano** no lugar das fixas. Exemplo: um protocolo de 6 dias com uma aba por semana gera `S1 Seg · Pull`, `S1 Sex · Upper Cluster`, `S2 Seg · Pull`… (ver EF_06).
+  - Cada sessão tem um id curto gravado em cada registro. As fixas usam o id da rotação (`UA`, `UB`, `LA`, `LB`). As da planilha usam o id derivado do nome (`S1 Seg · Pull` → `S1SEG`), para que a mesma sessão em semanas diferentes não misture histórico.
+  - *Motivo:* atletas com protocolos diferentes (ex.: 4 dias Upper/Lower × 6 dias variando por semana) usam o mesmo app. Cada um importa a própria planilha no próprio login, e o plano de um nunca afeta o do outro (os dados ficam em `gw:{id do usuário}:…`).
+- **RG1.4** – `seriesValidas` aceita de **1 a 4**. O valor vem do plano (RG1.2).
 - **RG2** – O usuário deve selecionar a sessão do dia antes de registrar qualquer exercício.
 - **RG3** – O registro segue o modelo de séries v6: **Top Set 1** obrigatório → **Top Set 2** obrigatório → **Back-off** opcional (só quando `seriesValidas === 3`). Os dois Top Sets são pesados e ficam na mesma faixa de reps; o Back-off é a série extra de volume, com um pouco menos de carga, levada até a falha. A técnica **Cluster Set** e o modo **Deload** são alternativas ao fluxo padrão: ao ativar qualquer um deles, os blocos padrão são substituídos conforme as RGs correspondentes. Cluster Set e Deload são mutuamente exclusivos.
 - **RG4** – Os campos **Top Set 1** e **Top Set 2** são obrigatórios no modo padrão. Ao usar **Cluster Set**, a confirmação da técnica cumpre o mesmo papel: é preciso finalizar as duas séries (**"Finalizar Série 1 → Série 2"** e depois **"Confirmar Cluster"**) — ver RG16. No modo **Deload**, apenas o **Top Set 1** é obrigatório — o Top Set 2 é suprimido. Tentar avançar sem confirmar exibe aviso laranja com ⚠.
@@ -41,6 +47,17 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - **Séries válidas:** cada série cluster **não-vazia** conta como **1 série válida** (portanto, no máximo **2** por exercício), independentemente de quantos blocos (3 ou 4) foram preenchidos em cada uma — não é 1 série por bloco.
   - **1RM / topSet (gráficos):** usa o **Bloco 1 da Série 1** (esforço mais fresco) como esforço máximo da sessão.
   - Persistência: `tecnica: "RP"`, `clusterSeries` (Série 1) e `clusterSeries2` (Série 2, apenas quando preenchida). Registros antigos com só `clusterSeries` permanecem válidos (contam como 1 série).
+- **RG16.1** – **Cluster com número de blocos do plano:** quando a planilha descreve o cluster (ex.: *"24 reps em blocos de 4"*), o plano guarda `clusterBlocos` (24 ÷ 4 = **6 blocos**) e cada série mostra esse número de blocos no lugar dos 4 padrão. Sem essa informação, continuam 4 blocos.
+- **RG16.2** – **Cluster com 1 série válida:** se o exercício tem `seriesValidas = 1`, o Cluster Set tem **uma série só**: sem abas Série 1 / Série 2, sem "Finalizar Série 1 → Série 2" e sem "← Série 1". "Confirmar Cluster" exige ≥ 1 bloco válido apenas nessa série.
+- **RG18** – **1 série válida:** quando o plano define `seriesValidas = 1` (comum em protocolos de alta intensidade, ex.: *"1 série até a falha"*), o exercício termina no **Top Set 1**. O bloco Top Set 2 não aparece, "Próximo"/"Ver Resumo" não cobram o Top Set 2, o badge mostra **"1 válida"** e o registro salvo tem só a série `top1`, sem Top Set 2 vazio ou "fantasma".
+- **RG19** – **Histórico em lista de registros:** cada "Confirmar e Salvar Treino" grava **um registro novo por exercício** na chave `registros` do usuário. Registros anteriores nunca são sobrescritos, mesmo que o treino seja da mesma sessão.
+  - *Motivo:* guardar todos os treinos permite ver a **evolução ou a regressão do volume** ao longo do tempo. Antes, um treino podia substituir o anterior.
+  - Formato de cada registro (`src/utils/registros.ts`): `{ id, data (AAAA-MM-DD), sessao, exercicio (slug do catálogo), nome, series: [{ tipo, kg, reps }], faixa?, faixaBackoff?, validas?, bateuTeto?, tecnica?, deload?, obs? }`.
+  - `tipo` de cada série: `top1`, `top2`, `backoff`, `serie3`, `serie4`, `cluster1`, `cluster2`. `kg` e `reps` são números.
+  - Campos opcionais só são gravados quando existem. Dados derivados (progrediu, peso anterior, timestamp) não são gravados: são recalculados ao ler.
+  - O exercício é identificado pelo slug do catálogo (ex.: `puxador_frente_pegada_neutra`). Assim, nomes escritos de jeitos diferentes caem no mesmo histórico.
+  - Cada registro também guarda o **nome legível** do exercício (`nome`, ex.: "Puxador frente pegada neutra"), na grafia do catálogo. *Motivo:* quem lê o JSON exportado (uma pessoa ou uma IA fazendo análise) entende qual é o exercício e consegue classificar o grupo muscular sem precisar do código do app. Registros antigos sem `nome` recebem o nome do catálogo na exportação.
+  - Na primeira abertura após a mudança, o `logbook` antigo é convertido automaticamente para `registros`. Uma cópia do original fica em `logbook_v1_backup`.
 - **RG17** – **Painel "Último treino":** sempre que existe histórico do exercício no treino selecionado, o card exibe um painel com **todas as séries do último treino**, não só o Top Set 1. O painel lista, em ordem de execução, `Top Set 1`, `Top Set 2` e `Back-off` (ou, quando aquele treino foi em Cluster Set, cada bloco das duas séries: `Cluster S1 · B1`, `Cluster S1 · B2`, `Cluster S2 · B1`…), cada linha com peso × reps. Exibe também a data do treino, a contagem de séries, o volume total em kg·reps e a observação escrita naquele dia, quando houver. Séries com peso ou reps zerados são omitidas; um Top Set 1 registrado em Deload aparece como `Top Set 1 (deload)`. O painel é meramente informativo — serve para o atleta decidir entre subir a carga ou manter e buscar mais repetições — e convive com os banners de status (RG13 e Banner de Progressão), aparecendo abaixo deles, inclusive quando o `[banner_pr]` está ativo.
 
 ---
@@ -57,7 +74,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 
 | Componente | Tipo | Opções | Obrig. |
 |---|---|---|---|
-| Seletor de sessão | Chips clicáveis | UA / UB / LA / LB / BR | Sim |
+| Seletor de sessão | Chips clicáveis | Upper A / Upper B / Lower A / Lower B, ou as sessões do plano importado (RG1.3) | Sim |
 
 Ao clicar em uma sessão já selecionada, a sessão é desmarcada.
 
@@ -80,7 +97,7 @@ Exibe por exercício:
 | Faixa de reps dos Top Sets | Ex.: 5–8 reps (vale para o Top Set 1 e o Top Set 2) |
 | Faixa de reps do Back-off | Ex.: 8–10 reps, exibida com o percentual de carga: "Back-off (90%)" — só quando `seriesValidas === 3` |
 | Badge treino | Identificador da sessão (UA, UB…) |
-| Badge séries | "2 válidas" ou "3 válidas" |
+| Badge séries | "1 válida", "2 válidas", "3 válidas" ou "4 válidas" |
 | Banner de progressão | Informa se deve subir peso, manter ou primeiro registro. Durante o preenchimento do Top Set 1 assume o estado `[banner_pr]` quando o PR histórico é superado ou o teto de reps é atingido em tempo real (ver RG13) |
 | Painel "Último treino" | Lista todas as séries do treino anterior (peso × reps), data, volume e observação — ver RG17 |
 
@@ -190,7 +207,7 @@ Visível quando `seriesValidas === 3` e o Top Set 2 está confirmado. É a séri
 - Lista todos os exercícios com status (✓ concluído / ○ não preenchido / "Pulado").
 - Exibe dados resumidos: modo padrão → `Top 1: Xkg × Nreps · Top 2: Xkg × Nreps · Back-off: Xkg × Nreps`; modo técnica Cluster Set → `Cluster S1 — B1: Xkg × Nreps · B2: … | Cluster S2 — B1: Xkg × Nreps · …` (só as séries preenchidas); modo Deload → exibe `Top 1: Xkg × Nreps` seguido da etiqueta **"· Deload"** em vermelho.
 - Ao clicar em um exercício, retorna para edição.
-- Botão **"Confirmar e Salvar Treino"**: salva todos os exercícios concluídos no localStorage (`logbook` e `dadosTreino`).
+- Botão **"Confirmar e Salvar Treino"**: salva todos os exercícios concluídos no localStorage do usuário. Cada exercício vira um registro novo em `registros` (RG19), e o resumo por ciclo continua em `dadosTreino`.
 - Botão **"Voltar ao exercício"**: fecha a revisão sem salvar.
 
 ### 4.12 Resumo pós-save

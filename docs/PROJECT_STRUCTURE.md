@@ -92,6 +92,7 @@ src/
 ├── data/                   # Dados estáticos / configuração
 │   ├── cycles.ts               # Rotação de treinos: UA, UB, LA, LB, BR
 │   ├── exercise.ts             # Lista master de exercícios (legado)
+│   ├── exerciseAliases.ts      # Mesmo exercício com outro nome / exercício parecido (vídeo e GIF)
 │   ├── muscleMap.ts            # Mapa exercício → grupo muscular
 │   └── sessionExercises.ts     # Plano estático: exercícios por sessão com faixaTopSet,
 │                               # faixaBackoff, backoffPct e seriesValidas (2 | 3).
@@ -127,7 +128,10 @@ src/
 │   └── User.ts                 # Interface User
 
 └── utils/                  # Funções utilitárias puras
+    ├── backupJson.ts           # Backup JSON v3 (lê v2/v1), mesclagem e desfazer
     ├── handleApiError.ts       # Tratamento padronizado de erros de API
+    ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, exercício repetido
+    ├── registros.ts            # Formato v3 do histórico: slug do exercício, conversões, CSV
     ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), exercicioDeveSubirPeso()
     │                           # Legado: salvarDados() / carregarDados() → localStorage["dadosTreino"]
     ├── timeFilter.ts           # getCutoffTs() — corte de timestamp por intervalo (1M, 3M…)

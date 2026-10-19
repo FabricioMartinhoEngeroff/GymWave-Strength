@@ -564,6 +564,7 @@ describe("Exportar — Tela de exportação e importação inline", () => {
           data: "2026-10-13",
           sessao: "UA",
           exercicio: "supino_reto_barra",
+          nome: "Supino reto barra",
           series: [
             { tipo: "top1", kg: 85, reps: 7 },
             { tipo: "top2", kg: 85, reps: 7 },

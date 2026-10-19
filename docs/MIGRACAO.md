@@ -167,6 +167,23 @@ Restaura **ambas** as chaves a partir dos backups criados antes da importação 
 
 ---
 
+## Histórico em `registros` (formato v3)
+
+O histórico detalhado deixou de ficar no objeto `logbook`, em que cada treino podia substituir o anterior. Agora fica em uma **lista de registros** (`registros`), com um registro novo a cada treino salvo (EF_02 RG19).
+
+- **Conversão automática:** na primeira leitura, se `registros` ainda não existe e há um `logbook`, ele é convertido para a lista. Uma cópia do original fica em `logbook_v1_backup`. Nada é apagado.
+- **Telas que leem o histórico** (gráficos, volume load, sugestões de carga, relatórios) continuam recebendo o mesmo formato de antes. Ele é montado a partir de `registros` na hora da leitura (`carregarLogbookCompleto`).
+- **Backup JSON v3** inclui `registros`. Backups v2 (com `logbook`) e v1 (só `dadosTreino`) continuam importáveis e são convertidos.
+- **Desfazer importação** também restaura `registros`, a partir da cópia feita antes da importação.
+
+*Motivo:* ver a evolução ou a regressão do volume ao longo do tempo exige guardar **todos** os treinos, não só o último.
+
+## Planilhas com várias semanas
+
+A importação de planilha lê todas as abas e cria sessões por semana e dia (`S1 Seg · Pull`) quando há mais de uma aba de treino. Com uma aba só (planilha de 4 dias), o comportamento é o mesmo descrito acima. Detalhes em EF_06 RG9 a RG13.
+
+---
+
 ## Arquivo de Testes
 
 `src/__tests__/components/exportar/Exportar.spec.tsx`
