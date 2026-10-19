@@ -176,6 +176,13 @@ function getRotacaoId(sessao: string): string {
   return idDaSessao(sessao);
 }
 
+// Rótulo curto do seletor: "S3-4 Terça · Upper" → "S3-4 Ter"; o nome completo fica no title/aria-label.
+function rotuloCurto(sessao: string): string {
+  if (!sessao.includes(" · ")) return sessao;
+  const [semana = sessao] = sessao.split(" · ");
+  return semana.replace(/\p{L}{4,}/gu, (dia) => dia.slice(0, 3));
+}
+
 function lerSessoesConfig(): Record<string, ExercicioSessao[]> {
   try {
     const raw = localStorage.getItem(storageKey("sessoes_config"));
@@ -1097,8 +1104,10 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
                 $active={sessao === s}
                 onClick={() => setSessao(sessao === s ? null : s)}
                 type="button"
+                title={s}
+                aria-label={s}
               >
-                {s}
+                {rotuloCurto(s)}
               </CycleChip>
             ))}
           </SessaoRow>
