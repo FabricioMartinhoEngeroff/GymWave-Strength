@@ -31,15 +31,22 @@ const JUNK_RECORDS = [{ email: "x@y.com" }, null, "str", 42, { id: "1", email: "
 
 const forgedSignUp = (gateway: MockAuthGateway, overrides: Record<string, unknown> = {}) =>
   gateway.signUp(
-    forge({ name: ANA_NAME, email: ANA_EMAIL, password: VALID_PASSWORD, ...overrides }),
+    forge({ email: ANA_EMAIL, password: VALID_PASSWORD, ...overrides }),
   );
 
 describe("G4 — MockAuthGateway.signUp", () => {
-  it("cadastro válido → ok com {id, name, email, role:'user'}", async () => {
+  it("cadastro só com e-mail e senha → ok com {id, name:'', email, role:'user'}", async () => {
     const { gateway } = makeMockGateway();
     const user = unwrap(await registerAna(gateway));
     expect(sorted(Object.keys(user))).toEqual(PUBLIC_USER_KEYS);
-    expect(user).toMatchObject({ name: ANA_NAME, email: ANA_EMAIL, role: "user" });
+    expect(user).toMatchObject({ name: "", email: ANA_EMAIL, role: "user" });
+  });
+
+  it("nome enviado mesmo assim não é guardado", async () => {
+    const { gateway } = makeMockGateway();
+    const user = unwrap(await forgedSignUp(gateway, { name: ANA_NAME }));
+    expect(user.name).toBe("");
+    expect(JSON.stringify(readStoredUsers())).not.toContain(ANA_NAME);
   });
 
   it("o id é um UUID v4 válido", async () => {
@@ -129,9 +136,8 @@ describe("G4 — MockAuthGateway.signUp", () => {
 
   const INVALID_INPUTS: Array<[string, Record<string, unknown>]> = [
     ["e-mail inválido", { email: "abc" }],
-    ["nome curto", { name: "AB" }],
     ["senha fraca", { password: "123" }],
-    ["campos ausentes", { name: undefined, email: undefined, password: undefined }],
+    ["campos ausentes", { email: undefined, password: undefined }],
   ];
 
   it.each(INVALID_INPUTS)(

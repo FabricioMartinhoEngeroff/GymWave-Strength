@@ -26,25 +26,22 @@ import { getAuthErrorMessage } from "../../../../components/login/domain/authErr
 import { err, ok } from "../../../../components/login/domain/result";
 import { ANA } from "../helpers/fakeGateway";
 import { deferred } from "../helpers/deferred";
-import { ANA_EMAIL, ANA_NAME, VALID_PASSWORD } from "../helpers/fixtures";
+import { ANA_EMAIL, VALID_PASSWORD } from "../helpers/fixtures";
 import { changeEvent, submitEvent, submitTwiceWhilePending } from "../helpers/formEvents";
 import { expectNeverLogged, silenceConsole } from "../helpers/consoleSpies";
 import type { FormData } from "../../../../types/Form";
 
 interface RegisterFields {
-  name: string;
   email: string;
   password: string;
   confirmPassword: string;
 }
 
-const FIELDS = ["name", "email", "password", "confirmPassword"] as const;
-const NAME_MAX = 100;
+const FIELDS = ["email", "password", "confirmPassword"] as const;
 const MIN_REQUIREMENTS = 5;
 const REPLACE = { replace: true };
 
 const MESSY_REGISTRATION: RegisterFields = {
-  name: ` ${ANA_NAME} `,
   email: " Ana@Example.com ",
   password: VALID_PASSWORD,
   confirmPassword: VALID_PASSWORD,
@@ -78,9 +75,9 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("G14 — useRegisterForm: validação", () => {
-  it("estado inicial: 4 campos vazios", () => {
+  it("estado inicial: 3 campos vazios (e-mail, senha e confirmação; sem nome)", () => {
     const { result } = setup();
-    expect(result.current.formData).toEqual({ name: "", email: "", password: "", confirmPassword: "" });
+    expect(result.current.formData).toEqual({ email: "", password: "", confirmPassword: "" });
     expect(result.current.errors).toEqual({});
     expect(result.current.loading).toBe(false);
   });
@@ -92,13 +89,6 @@ describe("G14 — useRegisterForm: validação", () => {
     expect(mocks.auth.signUp).not.toHaveBeenCalled();
   });
 
-  it.each([["AB"], ["a".repeat(NAME_MAX + 1)]])("nome inválido (%s) → erro de nome", async (name) => {
-    const { result, fill, submit } = setup();
-    fill({ name });
-    await submit();
-    expect(result.current.errors.name).toBeTruthy();
-    expect(mocks.auth.signUp).not.toHaveBeenCalled();
-  });
 
   it("e-mail inválido → erro", async () => {
     const { result, fill, submit } = setup();
@@ -149,13 +139,12 @@ describe("G14 — useRegisterForm: validação", () => {
 });
 
 describe("G14 — useRegisterForm: envio", () => {
-  it("válido → signUp com {name, email, password}, sem confirmPassword e sem role", async () => {
+  it("válido → signUp só com {email, password}: sem nome, confirmPassword nem role", async () => {
     const { fill, submit } = setup();
     fill();
     await submit();
     expect(mocks.auth.signUp).toHaveBeenCalledTimes(1);
     expect(mocks.auth.signUp).toHaveBeenCalledWith({
-      name: ANA_NAME,
       email: ANA_EMAIL,
       password: VALID_PASSWORD,
     });
@@ -233,11 +222,11 @@ describe("G14 — useRegisterForm: envio", () => {
 });
 
 describe("G14 — tipo FormData (verificado só pelo tsc)", () => {
-  it("não tem mais cpf, telefone nem endereco", () => {
+  it("não tem mais nome, cpf, telefone nem endereco", () => {
     expectTypeOf<FormData>().not.toHaveProperty("cpf");
     expectTypeOf<FormData>().not.toHaveProperty("telefone");
     expectTypeOf<FormData>().not.toHaveProperty("endereco");
-    expectTypeOf<FormData>().toHaveProperty("name");
+    expectTypeOf<FormData>().not.toHaveProperty("name");
     expectTypeOf<FormData>().toHaveProperty("confirmPassword");
   });
 });

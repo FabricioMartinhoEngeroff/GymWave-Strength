@@ -7,8 +7,6 @@ const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const EMAIL_MAX = 254;
 const PASSWORD_MAX = 128;
-const NAME_MIN = 3;
-const NAME_MAX = 100;
 
 export type EmailError = "REQUIRED" | "INVALID_EMAIL" | "TOO_LONG";
 
@@ -30,20 +28,6 @@ const emailField = z.unknown().transform((value, ctx) => {
     return z.NEVER;
   }
   return parsed.value;
-});
-
-const nameField = z.unknown().transform((value, ctx) => {
-  const fail = (message: string) => {
-    ctx.addIssue({ code: "custom", message });
-    return z.NEVER;
-  };
-  if (typeof value !== "string") return fail("REQUIRED");
-  const name = value.trim();
-  if (name === "") return fail("REQUIRED");
-  if (CONTROL_CHARS.test(name)) return fail("NAME_INVALID");
-  if (name.length < NAME_MIN) return fail("NAME_TOO_SHORT");
-  if (name.length > NAME_MAX) return fail("NAME_TOO_LONG");
-  return name;
 });
 
 /** D1: no login só valem "obrigatório" e "máximo 128". D2: senha nunca sofre trim. */
@@ -87,16 +71,17 @@ export const loginSchema = z.object({
   password: loginPasswordField,
 });
 
-/** Entrada do gateway no cadastro. Chaves extras (ex.: role) são descartadas (D4). */
+/**
+ * Entrada do gateway no cadastro: só e-mail e senha, para não guardar outros dados pessoais.
+ * Chaves extras (ex.: role, name) são descartadas (D4).
+ */
 export const signUpSchema = z.object({
-  name: nameField,
   email: emailField,
   password: registerPasswordField,
 });
 
 export const registerSchema = z
   .object({
-    name: nameField,
     email: emailField,
     password: registerPasswordField,
     confirmPassword: z.string({ error: "REQUIRED" }).min(1, "REQUIRED"),

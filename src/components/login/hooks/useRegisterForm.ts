@@ -4,12 +4,12 @@ import { useAuth } from "../context/useAuth";
 import { getAuthErrorMessage, getFieldErrorMessage } from "../domain/authErrors";
 import { getPasswordRequirements, registerSchema } from "../domain/schemas";
 
-export type RegisterField = "name" | "email" | "password" | "confirmPassword";
+export type RegisterField = "email" | "password" | "confirmPassword";
 export type RegisterFormData = Record<RegisterField, string>;
 export type RegisterFormErrors = Partial<Record<RegisterField, string>>;
 
-const INITIAL: RegisterFormData = { name: "", email: "", password: "", confirmPassword: "" };
-const ALL_TOUCHED: Record<RegisterField, boolean> = { name: true, email: true, password: true, confirmPassword: true };
+const INITIAL: RegisterFormData = { email: "", password: "", confirmPassword: "" };
+const ALL_TOUCHED: Record<RegisterField, boolean> = { email: true, password: true, confirmPassword: true };
 
 export function useRegisterForm() {
   const { signUp } = useAuth();
@@ -73,14 +73,14 @@ export function useRegisterForm() {
 
     const parsed = registerSchema.safeParse(formData);
     if (!parsed.success) return;
-    const { name, email, password } = parsed.data;
+    const { email, password } = parsed.data;
 
     inFlight.current = true;
     setLoading(true);
     setFormError(null);
     setServerErrors({});
     try {
-      const result = await signUp({ name, email, password });
+      const result = await signUp({ email, password });
       if (!mounted.current) return;
 
       if (result.ok) {

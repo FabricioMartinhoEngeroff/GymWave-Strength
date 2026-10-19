@@ -18,14 +18,14 @@ import { err, ok } from "../../../../components/login/domain/result";
 import type { AuthUser } from "../../../../components/login/domain/types";
 import { ANA, createFakeGateway } from "../helpers/fakeGateway";
 import { deferred } from "../helpers/deferred";
-import { ANA_NAME, ANA_EMAIL, VALID_PASSWORD } from "../helpers/fixtures";
+import { ANA_EMAIL, VALID_PASSWORD } from "../helpers/fixtures";
 
 type Fake = ReturnType<typeof createFakeGateway>;
 type Overrides = NonNullable<Parameters<typeof createFakeGateway>[0]>;
 type SettledStatus = "anonymous" | "authenticated";
 
 const credentials = { email: ANA_EMAIL, password: "x" };
-const signUpInput = { name: ANA_NAME, email: ANA_EMAIL, password: VALID_PASSWORD };
+const signUpInput = { email: ANA_EMAIL, password: VALID_PASSWORD };
 
 function mount(fake: Fake) {
   const wrapper = ({ children }: { children: ReactNode }) => (

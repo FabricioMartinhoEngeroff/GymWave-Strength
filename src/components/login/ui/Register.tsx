@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { FaEnvelope, FaLock, FaUser } from "react-icons/fa";
+import { FaEnvelope, FaLock } from "react-icons/fa";
 import { Button } from "../../ui/Button";
 import { Footer, FormContainer, LoginBox, RightPanel } from "../../../styles/GlobalStyles";
 import type { UseRegisterFormReturn } from "../hooks/useRegisterForm";
@@ -10,7 +10,7 @@ export type RegisterProps = UseRegisterFormReturn & {
   onToggleLogin: () => void;
 };
 
-const FIELD_ORDER = ["name", "email", "password", "confirmPassword"] as const;
+const FIELD_ORDER = ["email", "password", "confirmPassword"] as const;
 
 export function Register({
   formData,
@@ -27,7 +27,6 @@ export function Register({
   onToggleLogin,
 }: RegisterProps) {
   const refs = {
-    name: useRef<HTMLInputElement>(null),
     email: useRef<HTMLInputElement>(null),
     password: useRef<HTMLInputElement>(null),
     confirmPassword: useRef<HTMLInputElement>(null),
@@ -47,19 +46,6 @@ export function Register({
 
         <form onSubmit={handleSubmit} noValidate>
           <FormContainer>
-            <AuthField
-              id="register-name"
-              name="name"
-              label="Nome"
-              icon={FaUser}
-              autoComplete="name"
-              maxLength={100}
-              value={formData.name}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              error={errors.name}
-              inputRef={refs.name}
-            />
             <AuthField
               id="register-email"
               name="email"

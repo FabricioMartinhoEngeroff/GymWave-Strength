@@ -1,7 +1,6 @@
 import { MockAuthGateway } from "../../../../components/login/gateway/MockAuthGateway";
 import {
   ANA_EMAIL,
-  ANA_NAME,
   createFakeClock,
   TEST_ITERATIONS,
   VALID_PASSWORD,
@@ -19,7 +18,6 @@ export async function registerAna(
 ) {
 
   return gateway.signUp({
-    name: ANA_NAME,
     email: ANA_EMAIL,
     password: VALID_PASSWORD,
     ...overrides,

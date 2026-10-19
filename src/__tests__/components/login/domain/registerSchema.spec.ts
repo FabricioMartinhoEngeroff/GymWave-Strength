@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   registerSchema,
+  signUpSchema,
   getPasswordRequirements,
 } from "../../../../components/login/domain/schemas";
 import {
@@ -11,7 +12,6 @@ import {
   VALID_PASSWORD,
 } from "../helpers/fixtures";
 
-const NAME_MAX = 100;
 const PASSWORD_MAX = 128;
 
 const ALL_REQUIREMENT_CODES = [
@@ -30,24 +30,28 @@ const parseWithPassword = (password: string) => parse({ password, confirmPasswor
 /** Senha que cumpre todos os requisitos e tem exatamente `length` caracteres. */
 const strongPasswordOfLength = (length: number) => "Aa1!" + "x".repeat(length - 4);
 
-describe("G1 — registerSchema: nome", () => {
-  it('aplica trim: " Ana " → "Ana"', () => {
-    const r = parse({ name: " Ana " });
-    expect(r.success && r.data.name).toBe("Ana");
+describe("G1 — registerSchema: só e-mail e senha (sem nome)", () => {
+  it("cadastro sem nome → ok", () => {
+    expect(parse().success).toBe(true);
   });
-  it('"AB" → NAME_TOO_SHORT', () => expect(issueCodes(parse({ name: "AB" }))).toContain("NAME_TOO_SHORT"));
-  it("101 caracteres → NAME_TOO_LONG", () =>
-    expect(issueCodes(parse({ name: "a".repeat(NAME_MAX + 1) }))).toContain("NAME_TOO_LONG"));
-  it("100 caracteres → ok", () => expect(parse({ name: "a".repeat(NAME_MAX) }).success).toBe(true));
-  it.each(["", "    "])("%j → REQUIRED", (name) => expect(issueCodes(parse({ name }))).toContain("REQUIRED"));
-  it.each(["Ana\u0000Silva", "Ana\nSilva", "Ana\u0007", "Ana\tSilva"])(
-    "caracteres de controle (%j) → rejeitado",
-    (name) => {
-      const r = parse({ name });
-      expect(r.success).toBe(false);
-      expect(issuesFor(r, "name").length).toBeGreaterThan(0);
-    },
-  );
+
+  it("o output tem só email e password (e a confirmação)", () => {
+    const r = parse();
+    expect(r.success && sorted(Object.keys(r.data))).toEqual(["confirmPassword", "email", "password"]);
+  });
+
+  it("nome enviado mesmo assim é descartado, sem erro", () => {
+    const r = parse({ name: "Ana Silva" });
+    expect(r.success).toBe(true);
+    expect(r.success && r.data).not.toHaveProperty("name");
+  });
+});
+
+describe("G1 — signUpSchema: entrada do gateway", () => {
+  it("aceita {email, password} e descarta nome", () => {
+    const r = signUpSchema.safeParse({ name: "Ana Silva", email: " Ana@Example.com ", password: VALID_PASSWORD });
+    expect(r.success && r.data).toEqual({ email: "ana@example.com", password: VALID_PASSWORD });
+  });
 });
 
 describe("G1 — registerSchema: senha de cadastro", () => {

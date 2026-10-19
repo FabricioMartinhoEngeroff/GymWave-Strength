@@ -21,43 +21,40 @@ const REQUIREMENTS = [
   { code: "PASSWORD_NO_NUMBER", label: "Um número", met: false },
   { code: "PASSWORD_NO_SPECIAL", label: "Um caractere especial", met: false },
 ];
-const FORBIDDEN_FIELDS = /cpf|telefone|endere|rua|bairro|cidade|estado|cep/i;
-const EXPECTED_INPUT_COUNT = 4; 
+const FORBIDDEN_FIELDS = /nome|cpf|telefone|endere|rua|bairro|cidade|estado|cep/i;
+const EXPECTED_INPUT_COUNT = 3;
 
 function props(overrides: Partial<Props> = {}): Props {
   return {
     ...baseFormProps(),
-    formData: { name: "", email: "", password: "", confirmPassword: "" },
+    formData: { email: "", password: "", confirmPassword: "" },
     requirements: REQUIREMENTS,
     onToggleLogin: vi.fn(),
     ...overrides,
   } as Props;
 }
 
-const nameInput = () => screen.getByLabelText(/nome/i) as HTMLInputElement;
 const emailInput = () => screen.getByLabelText(/e-mail/i) as HTMLInputElement;
 const passwordInput = () => screen.getByLabelText(/^senha$/i) as HTMLInputElement;
 const confirmInput = () => screen.getByLabelText(/confirmar senha/i) as HTMLInputElement;
 const requirementItem = (label: string) => screen.getByText(label).closest("li")!;
 
 describe("G16 — Register: campos e atributos", () => {
-  it("autocomplete: nome=name, e-mail=email, senha e confirmação=new-password", () => {
+  it("autocomplete: e-mail=email, senha e confirmação=new-password", () => {
     render(<Register {...props()} />);
-    expectAttributes(nameInput(), { autocomplete: "name" });
     expectAttributes(emailInput(), { autocomplete: "email" });
     expectAttributes(passwordInput(), { autocomplete: "new-password" });
     expectAttributes(confirmInput(), { autocomplete: "new-password" });
   });
 
-  it("limites: e-mail 254, senha e confirmação 128, nome 100", () => {
+  it("limites: e-mail 254, senha e confirmação 128", () => {
     render(<Register {...props()} />);
     expectAttributes(emailInput(), { maxlength: String(FIELD_LIMITS.email) });
     expectAttributes(passwordInput(), { maxlength: String(FIELD_LIMITS.password) });
     expectAttributes(confirmInput(), { maxlength: String(FIELD_LIMITS.password) });
-    expectAttributes(nameInput(), { maxlength: String(FIELD_LIMITS.name) });
   });
 
-  it("não existem campos de CPF, telefone nem endereço", () => {
+  it("só e-mail, senha e confirmação: sem nome, CPF, telefone nem endereço", () => {
     const { container } = render(<Register {...props()} />);
     expect(screen.queryByLabelText(FORBIDDEN_FIELDS)).toBeNull();
     expect(container.querySelectorAll("input")).toHaveLength(EXPECTED_INPUT_COUNT);
@@ -132,7 +129,7 @@ describe("G16 — Register: erros, loading e submit", () => {
   it("Enter em um campo envia o formulário", async () => {
     const p = props();
     render(<Register {...p} />);
-    await userEvent.type(nameInput(), "{enter}");
+    await userEvent.type(emailInput(), "{enter}");
     expect(p.handleSubmit).toHaveBeenCalledTimes(1);
   });
 
@@ -166,7 +163,6 @@ describe("G16 — Register: erros, loading e submit", () => {
       <Register
         {...props({
           formData: {
-            name: "Ana",
             email: "a@b.com",
             password: SECRET_PASSWORD,
             confirmPassword: SECRET_PASSWORD,

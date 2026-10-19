@@ -142,22 +142,21 @@ describe("G8 — FirebaseAuthGateway.signIn", () => {
 });
 
 describe("G8 — FirebaseAuthGateway.signUp", () => {
-  const input = { name: "Ana Silva", email: "Ana@Example.com", password: VALID_PASSWORD };
+  const input = { email: "Ana@Example.com", password: VALID_PASSWORD };
 
-  it("chama createUserWithEmailAndPassword e updateProfile(displayName)", async () => {
-    const user = fbUser();
-    fb.createUserWithEmailAndPassword.mockResolvedValue({ user });
+  it("chama só createUserWithEmailAndPassword (sem nome no perfil)", async () => {
+    fb.createUserWithEmailAndPassword.mockResolvedValue({ user: fbUser({ displayName: null }) });
     const r = await gw.signUp(input);
     expect(fb.createUserWithEmailAndPassword).toHaveBeenCalledWith(auth, "ana@example.com", VALID_PASSWORD);
-    expect(fb.updateProfile).toHaveBeenCalledWith(user, { displayName: "Ana Silva" });
-    expect(r.ok && r.value).toMatchObject({ id: "uid-1", email: "ana@example.com", role: "user" });
+    expect(fb.updateProfile).not.toHaveBeenCalled();
+    expect(r.ok && r.value).toMatchObject({ id: "uid-1", name: "", email: "ana@example.com", role: "user" });
   });
 
-  it("falha no updateProfile → cadastro continua ok, com o nome do input", async () => {
+  it("nome forjado no input não vai para o Firebase", async () => {
     fb.createUserWithEmailAndPassword.mockResolvedValue({ user: fbUser({ displayName: null }) });
-    fb.updateProfile.mockRejectedValue(fbError("auth/network-request-failed"));
-    const r = await gw.signUp(input);
-    expect(r.ok && r.value.name).toBe("Ana Silva");
+    const r = await gw.signUp({ ...input, name: "Ana Silva" } as never);
+    expect(fb.updateProfile).not.toHaveBeenCalled();
+    expect(r.ok && r.value.name).toBe("");
   });
 
   it("a persistência de sessão é configurada antes do cadastro", async () => {

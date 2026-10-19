@@ -5,7 +5,6 @@ import {
   sendPasswordResetEmail,
   setPersistence,
   signInWithEmailAndPassword,
-  updateProfile,
   type Auth,
   type User,
 } from "firebase/auth";
@@ -41,10 +40,10 @@ async function readRole(user: User): Promise<Role> {
   }
 }
 
-async function toUser(user: User, fallbackName = ""): Promise<AuthUser> {
+async function toUser(user: User): Promise<AuthUser> {
   return {
     id: user.uid,
-    name: user.displayName ?? fallbackName,
+    name: user.displayName ?? "",
     email: user.email ?? "",
     role: await readRole(user),
   };
@@ -76,16 +75,11 @@ export class FirebaseAuthGateway implements AuthGateway {
   async signUp(input: SignUpInput): Promise<Result<AuthUser, AuthError>> {
     const email = parseEmail(input.email);
     if (!email.ok) return err("INVALID_INPUT");
-    const name = String(input.name ?? "").trim();
     try {
       await this.ensurePersistence();
+      // Só e-mail e senha: nenhum outro dado pessoal vai para o Firebase.
       const cred = await createUserWithEmailAndPassword(this.auth, email.value, input.password);
-      try {
-        await updateProfile(cred.user, { displayName: name });
-      } catch {
-        /* o cadastro já existe; o nome vem do input */
-      }
-      return ok(await toUser(cred.user, name));
+      return ok(await toUser(cred.user));
     } catch (e) {
       return err(mapError(e));
     }

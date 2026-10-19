@@ -33,7 +33,6 @@ export const PUBLIC_USER_KEYS = ["email", "id", "name", "role"];
 
 export function validRegisterInput(overrides: Record<string, unknown> = {}) {
   return {
-    name: ANA_NAME,
     email: ANA_EMAIL,
     password: VALID_PASSWORD,
     confirmPassword: VALID_PASSWORD,
@@ -82,7 +81,7 @@ export function validLoginInput(overrides: Record<string, unknown> = {}) {
   };
 }
 
-export const FIELD_LIMITS = { email: 254, password: 128, name: 100 } as const;
+export const FIELD_LIMITS = { email: 254, password: 128 } as const;
 export const SECRET_PASSWORD = "S3gr3d0!XYZ";
 
 export const sorted = <T extends string>(items: readonly T[]): T[] => [...items].sort();

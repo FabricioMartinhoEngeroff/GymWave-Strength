@@ -144,7 +144,7 @@ export class MockAuthGateway implements AuthGateway {
       try {
         const parsed = signUpSchema.safeParse(input);
         if (!parsed.success) return err("INVALID_INPUT" as const);
-        const { name, email, password } = parsed.data;
+        const { email, password } = parsed.data;
 
         const users = this.readUsers();
         if (users.some((u) => u.email === email)) return err("EMAIL_IN_USE" as const);
@@ -152,7 +152,7 @@ export class MockAuthGateway implements AuthGateway {
         const record = await hashPassword(password, this.iterations);
         const stored: StoredUser = {
           id: crypto.randomUUID(),
-          name,
+          name: "", // o cadastro não pede nome
           email,
           role: "user",
           passwordHash: record.hash,
