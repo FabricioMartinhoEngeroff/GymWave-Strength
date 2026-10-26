@@ -301,11 +301,11 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
         seriesValidas: 2, progrediu: false,
       });
 
-      render(<TreinoSessao />); // sem renderFresh: ele limparia o treino anterior
+      render(<TreinoSessao />); 
       selecionarSessao("Upper A");
       pularParaUltimo();
       confirmarTopSet("50", "12");
-      confirmarBackoff("18");
+      confirmarBackoff("18"); 
       fireEvent.click(screen.getByText("Ver Resumo"));
       fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 
@@ -317,7 +317,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
         exercicio: "abdomen_cabo_ajoelhado",
         series: [
           { tipo: "top1", kg: 50, reps: 12 },
-          { tipo: "top2", kg: 50, reps: 18 },
+          { tipo: "top2", kg: 45, reps: 18 },
         ],
       });
       expect(lista[1]!.data).toMatch(/^\d{4}-\d{2}-\d{2}$/);
@@ -573,13 +573,59 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(repsInput.value).toBe("6");
     });
 
-    it("top set 2 kg espelha o peso do top set 1, nao o backoffKg do historico", () => {
-      setupHistoricoCompleto(); // topSetKg=90, backoffKg=80 → TS2 deve seguir o TS1
+    it("top set 1 kg repete o peso do historico mesmo com teto atingido (sem somar carga)", () => {
+      localStorage.setItem("logbook", JSON.stringify({
+        "Supino reto barra": [{
+          exercicio: "Supino reto barra", treinoId: "UA", data: "01/01/2026", dataTs: 1000,
+          topSetKg: 90, topSetReps: 9, topSetFaixaMin: 5, topSetFaixaMax: 9, topSetBateuTeto: true,
+          backoffKg: 90, backoffReps: 8, backoffFaixaMin: 5, backoffFaixaMax: 9,
+          seriesValidas: 2, progrediu: true,
+        }],
+      }));
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      expect((screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement).value).toBe("90");
+      expect((screen.getByLabelText(/Top Set 1 reps/i) as HTMLInputElement).value).toBe("9");
+    });
+
+    it("top set 2 kg repete o backoffKg do historico, nao o peso do top set 1", () => {
+      setupHistoricoCompleto(); // topSetKg=90, backoffKg=80 → TS2 mantém 80
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+      const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
+      expect(boKg.value).toBe("80");
+    });
+
+    it("top set 2 kg do historico nao muda quando o peso do top set 1 e trocado", () => {
+      setupHistoricoCompleto();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
       const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
-      expect(boKg.value).toBe("100");
+      expect(boKg.value).toBe("80");
+    });
+
+    it("desligar o Cluster Set restaura os valores do historico sem alterar", () => {
+      setupHistoricoCompleto();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByText("Cluster Set"));
+      fireEvent.click(screen.getByText("Cluster Set"));
+      expect((screen.getByLabelText(/Top Set 1 kg/i) as HTMLInputElement).value).toBe("90");
+      fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+      expect((screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement).value).toBe("80");
+    });
+
+    it("desligar o Deload restaura o top set 2 do historico sem alterar", () => {
+      setupHistoricoCompleto();
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
+      fireEvent.click(screen.getByText("Deload"));
+      fireEvent.click(screen.getByText("Deload"));
+      fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+      expect((screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement).value).toBe("80");
+      expect((screen.getByLabelText(/Top Set 2 reps/i) as HTMLInputElement).value).toBe("10");
     });
 
     it("backoff reps e pre-preenchido com as reps do historico", () => {
@@ -591,11 +637,11 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(boReps.value).toBe("10");
     });
 
-    it("top set 2 kg acompanha a troca de peso feita no top set 1", () => {
-      setupHistoricoCompleto();
-      render(<TreinoSessao />);
+    it("sem historico, top set 2 kg acompanha a troca de peso feita no top set 1", () => {
+      renderFresh();
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
+      expect((screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement).value).toBe("100");
       // volta e troca o peso do TS1 — o TS2 deve seguir
       fireEvent.click(screen.getByText("Editar Top Set 1"));
       confirmarTopSet("105", "7");
@@ -603,9 +649,8 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(boKg.value).toBe("105");
     });
 
-    it("top set 2 kg editado na mao trava o espelho do top set 1", () => {
-      setupHistoricoCompleto();
-      render(<TreinoSessao />);
+    it("sem historico, top set 2 kg editado na mao trava o espelho do top set 1", () => {
+      renderFresh();
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
       fireEvent.change(screen.getByLabelText(/Top Set 2 kg/i), { target: { value: "92" } });
@@ -615,11 +660,10 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(boKg.value).toBe("92");
     });
 
-    it("back-off kg sai de 90% do top set e as reps vem do historico", () => {
-      // extraKg/extraReps só aparecem com seriesValidas=3, que agora vem do
-      // plano — não do histórico (ver describe "Série Extra" acima).
-      // O peso do back-off é calculado do TS1 (100 × 0.9 = 90), não copiado
-      // do extraKg do treino passado (75).
+    it("back-off kg e reps repetem o historico, sem recalcular 90% do top set", () => {
+      // extraKg/extraReps só aparecem com seriesValidas=3, que vem do plano.
+      // O peso do back-off é o extraKg salvo no treino passado (75), não
+      // TS1 × 0.9 — o campo nunca altera a anotação do logbook.
       localStorage.setItem("planoTreino", JSON.stringify({
         "Upper A": {
           "Supino reto barra": { ordem: 1, series_validas: 3 },
@@ -628,34 +672,45 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       setupHistoricoComExtra();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
-      confirmarTopSet("100", "7");
-      confirmarBackoff("10");
+      fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+      fireEvent.click(screen.getByText("Confirmar Top Set 2"));
       const extraKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
       const extraReps = screen.getByLabelText(/Back-off reps/i) as HTMLInputElement;
-      expect(extraKg.value).toBe("90");
+      expect(extraKg.value).toBe("75");
       expect(extraReps.value).toBe("14");
     });
 
-    it("back-off kg acompanha a troca de peso feita no top set 1", () => {
+    it("back-off kg do historico nao muda quando o peso do top set 1 e trocado", () => {
       localStorage.setItem("planoTreino", JSON.stringify({
         "Upper A": { "Supino reto barra": { ordem: 1, series_validas: 3 } },
       }));
       setupHistoricoComExtra();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
+      confirmarTopSet("110", "7");
+      confirmarBackoff("10");
+      expect((screen.getByLabelText(/Back-off kg/i) as HTMLInputElement).value).toBe("75");
+    });
+
+    it("sem historico, back-off kg sai de 90% e acompanha a troca de peso do top set 1", () => {
+      localStorage.setItem("planoTreino", JSON.stringify({
+        "Upper A": { "Supino reto barra": { ordem: 1, series_validas: 3 } },
+      }));
+      render(<TreinoSessao />);
+      selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
       confirmarBackoff("10");
+      expect((screen.getByLabelText(/Back-off kg/i) as HTMLInputElement).value).toBe("90");
       fireEvent.click(screen.getByText("Editar Top Set 1"));
       confirmarTopSet("110", "7"); // 110 × 0.9 = 99
       const extraKg = screen.getByLabelText(/Back-off kg/i) as HTMLInputElement;
       expect(extraKg.value).toBe("99");
     });
 
-    it("back-off kg editado na mao trava o calculo de 90%", () => {
+    it("sem historico, back-off kg editado na mao trava o calculo de 90%", () => {
       localStorage.setItem("planoTreino", JSON.stringify({
         "Upper A": { "Supino reto barra": { ordem: 1, series_validas: 3 } },
       }));
-      setupHistoricoComExtra();
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       confirmarTopSet("100", "7");
@@ -1163,15 +1218,15 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(boKg.value).toBe("100");
     });
 
-    it("ao desativar Deload com historico, Top Set 2 volta a espelhar o Top Set 1", () => {
-      setupHistoricoNormal(); // backoffKg = 82 no historico, mas TS2 segue o TS1
+    it("ao desativar Deload com historico, Top Set 2 volta com o peso salvo no logbook", () => {
+      setupHistoricoNormal(); // backoffKg = 82 no historico: TS2 mantém 82 mesmo com TS1 = 100
       render(<TreinoSessao />);
       selecionarSessao("Upper A");
       ativarDeload();
       ativarDeload(); // desativa
       confirmarTopSet("100", "7");
       const boKg = screen.getByLabelText(/Top Set 2 kg/i) as HTMLInputElement;
-      expect(boKg.value).toBe("100");
+      expect(boKg.value).toBe("82");
     });
 
     it("ao desativar Deload com historico, backoffReps do ultimo treino e restaurado", () => {

@@ -1,14 +1,8 @@
-/**
- * seriesValidas → utils
- * Modelo de séries:
- *   2 válidas → Top Set 1 + Top Set 2
- *   3 válidas → Top Set 1 + Top Set 2 + Back-off (~90%)
- *   4 válidas → Top Set 1 + Top Set 2 + Série 3 + Série 4 (sem redução de carga)
- */
+
 import { describe, it, expect } from "vitest";
 import {
   normalizarSeriesValidas,
-  sugestaoSeriesExtras,
+  sugestaoDoUltimoTreino,
   volumeESeriesDoRegistro,
 } from "../../utils/seriesValidas";
 import type { RegistroExercicio } from "../../types/TrainingData";
@@ -44,20 +38,53 @@ describe("normalizarSeriesValidas", () => {
   });
 });
 
-describe("sugestaoSeriesExtras", () => {
-  it("3 válidas: Back-off sai do Top Set 1 × backoffPct e reps do back-off anterior", () => {
+describe("sugestaoDoUltimoTreino — o campo repete o logbook, nunca é alterado", () => {
+  it("Top Set 1 repete peso e reps do último treino, mesmo quando bateu o teto", () => {
+    const ultimo = registro({ topSetKg: 100, topSetReps: 9, topSetBateuTeto: true });
+    const s = sugestaoDoUltimoTreino(ultimo, 2, 0.9);
+    expect(s.topSetKg).toBe("100");
+    expect(s.topSetReps).toBe("9");
+  });
+
+  it("Top Set 2 repete peso e reps salvos no Top Set 2, não o peso do Top Set 1", () => {
+    const ultimo = registro({ topSetKg: 100, backoffKg: 95, backoffReps: 7 });
+    const s = sugestaoDoUltimoTreino(ultimo, 2, 0.9);
+    expect(s.backoffKg).toBe("95");
+    expect(s.backoffReps).toBe("7");
+  });
+
+  it("Top Set 2 sem peso salvo usa o peso do Top Set 1", () => {
+    const ultimo = registro({ topSetKg: 100, backoffKg: 0, backoffReps: 0 });
+    const s = sugestaoDoUltimoTreino(ultimo, 2, 0.9);
+    expect(s.backoffKg).toBe("100");
+    expect(s.backoffReps).toBe("");
+  });
+
+  it("3 válidas: Back-off repete o peso salvo, sem recalcular 10% a menos", () => {
     const ultimo = registro({ seriesValidas: 3, extraKg: 80, extraReps: 12 });
-    expect(sugestaoSeriesExtras(ultimo, 100, 3, 0.9)).toEqual({
-      extraKg: "90",
+    expect(sugestaoDoUltimoTreino(ultimo, 3, 0.9)).toMatchObject({
+      extraKg: "80",
       extraReps: "12",
       serie4Kg: "",
       serie4Reps: "",
     });
   });
 
+  it("3 válidas sem Back-off no último treino: sugere Top Set 1 × backoffPct", () => {
+    const ultimo = registro({ seriesValidas: 2, topSetKg: 100 });
+    const s = sugestaoDoUltimoTreino(ultimo, 3, 0.9);
+    expect(s.extraKg).toBe("90");
+    expect(s.extraReps).toBe("");
+  });
+
+  it("3 válidas não aproveita a Série 3 de um treino de 4 válidas como Back-off", () => {
+    const ultimo = registro({ seriesValidas: 4, topSetKg: 100, extraKg: 100, extraReps: 5 });
+    expect(sugestaoDoUltimoTreino(ultimo, 3, 0.9).extraKg).toBe("90");
+  });
+
   it("4 válidas: Série 3 e Série 4 repetem peso e reps do último treino, sem reduzir", () => {
     const ultimo = registro({ seriesValidas: 4, extraKg: 95, extraReps: 5, serie4Kg: 92.5, serie4Reps: 4 });
-    expect(sugestaoSeriesExtras(ultimo, 102, 4, 0.9)).toEqual({
+    expect(sugestaoDoUltimoTreino(ultimo, 4, 0.9)).toMatchObject({
       extraKg: "95",
       extraReps: "5",
       serie4Kg: "92.5",
@@ -65,9 +92,9 @@ describe("sugestaoSeriesExtras", () => {
     });
   });
 
-  it("4 válidas sem série 3/4 no último treino: usa o peso sugerido do Top Set 1 e as reps do Top Set 1", () => {
-    const ultimo = registro({ seriesValidas: 2, topSetReps: 6 });
-    expect(sugestaoSeriesExtras(ultimo, 100, 4, 0.9)).toEqual({
+  it("4 válidas sem série 3/4 no último treino: usa peso e reps do Top Set 1", () => {
+    const ultimo = registro({ seriesValidas: 2, topSetKg: 100, topSetReps: 6 });
+    expect(sugestaoDoUltimoTreino(ultimo, 4, 0.9)).toMatchObject({
       extraKg: "100",
       extraReps: "6",
       serie4Kg: "100",
@@ -77,12 +104,11 @@ describe("sugestaoSeriesExtras", () => {
 
   it("4 válidas não aproveita um Back-off antigo (que era ~90%) como peso da Série 3", () => {
     const ultimo = registro({ seriesValidas: 3, extraKg: 90, extraReps: 12 });
-    const s = sugestaoSeriesExtras(ultimo, 100, 4, 0.9);
-    expect(s.extraKg).toBe("100");
+    expect(sugestaoDoUltimoTreino(ultimo, 4, 0.9).extraKg).toBe("100");
   });
 
   it("2 válidas: nenhuma série extra", () => {
-    expect(sugestaoSeriesExtras(registro(), 100, 2, 0.9)).toEqual({
+    expect(sugestaoDoUltimoTreino(registro(), 2, 0.9)).toMatchObject({
       extraKg: "",
       extraReps: "",
       serie4Kg: "",
