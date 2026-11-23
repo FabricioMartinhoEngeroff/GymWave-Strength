@@ -7,6 +7,9 @@ import {
   type BackupLido,
   type ResultadoImportacao,
 } from "../../utils/backupJson";
+import { emTransacao } from "../../utils/storage";
+import { avisarErro } from "../mensagens/avisarErro";
+import { mensagens } from "../mensagens/mensagens";
 import {
   BtnPrimary,
   BtnRow,
@@ -43,6 +46,7 @@ export default function ImportarBackupJson() {
         setErro(err instanceof Error ? err.message : "Não foi possível ler o arquivo.");
       }
     };
+    reader.onerror = () => setErro("Não foi possível ler o arquivo.");
     reader.readAsText(file, "UTF-8");
   }
 
@@ -65,15 +69,23 @@ export default function ImportarBackupJson() {
 
   function confirmar() {
     if (!backup) return;
-    setResult(aplicarBackup(backup));
-    setBackup(null);
-    setFileName(null);
+    try {
+      setResult(emTransacao(() => aplicarBackup(backup)));
+      setBackup(null);
+      setFileName(null);
+    } catch (erro) {
+      avisarErro("importar backup", erro);
+    }
   }
 
   function desfazer() {
-    if (!window.confirm("Desfazer a migração e restaurar os dados anteriores?")) return;
-    desfazerBackup();
-    setResult(null);
+    mensagens.confirmar("desfazer_importacao", {
+      aoConfirmar: () => {
+        emTransacao(desfazerBackup);
+        setResult(null);
+        mensagens.mostrar("importacao_desfeita");
+      },
+    });
   }
 
   const resumo = backup ? resumirBackup(backup) : null;

@@ -14,6 +14,7 @@ import {
   paraRegistro,
   deRegistro,
   registrosParaLogbook,
+  sanitizarRegistros,
   slugExercicio,
   type Registro,
 } from "../../utils/registros";
@@ -370,15 +371,66 @@ describe("registros — formato v3", () => {
     });
   });
 
+  describe("Deload antigo com séries a mais (RG15)", () => {
+    it("é lido só com o Top Set 1, sem apagar o dado guardado", () => {
+      const antigo: Registro = { ...paraRegistro(exercicio()), deload: true };
+      expect(deRegistro(antigo)).toMatchObject({
+        isDeload: true, topSetKg: 85, backoffKg: 0, backoffReps: 0, extraKg: undefined, extraReps: undefined, seriesValidas: 1, topSetBateuTeto: false,
+      });
+      expect(antigo.series).toHaveLength(3);
+      expect(sanitizarRegistros([antigo])[0]?.series).toHaveLength(3);
+    });
+  });
+
+  describe("RPE por série", () => {
+    it("vai e volta em cada slot", () => {
+      const ida = exercicio({ topSetRpe: 8, backoffRpe: 9, extraRpe: 10 });
+      const reg = paraRegistro(ida);
+      expect(reg.series.map((s) => s.rpe)).toEqual([8, 9, 10]);
+      expect(deRegistro(reg)).toMatchObject({ topSetRpe: 8, backoffRpe: 9, extraRpe: 10 });
+    });
+
+    it("Série 4 e séries do cluster (RPE no último bloco)", () => {
+      expect(deRegistro(paraRegistro(exercicio({ seriesValidas: 4, serie4Kg: 80, serie4Reps: 5, serie4Rpe: 9.5 }))).serie4Rpe).toBe(9.5);
+      const cluster = paraRegistro(exercicio({
+        tecnica: "RP", topSetKg: 0, topSetReps: 0, backoffKg: 0, backoffReps: 0, extraKg: undefined, extraReps: undefined,
+        clusterSeries: [{ kg: 100, reps: 4 }, { kg: 100, reps: 3 }], clusterRpe: 9,
+        clusterSeries2: [{ kg: 90, reps: 4 }], clusterRpe2: 10,
+      }));
+      expect(cluster.series.map((s) => s.rpe)).toEqual([undefined, 9, 10]);
+      const volta = deRegistro(cluster);
+      expect(volta).toMatchObject({ clusterRpe: 9, clusterRpe2: 10 });
+      expect(volta.clusterSeries).toEqual([{ kg: 100, reps: 4 }, { kg: 100, reps: 3 }]);
+    });
+
+    it("sem RPE a série não ganha o campo (registros antigos iguais)", () => {
+      expect(paraRegistro(exercicio()).series.every((s) => !("rpe" in s))).toBe(true);
+    });
+
+    it("RPE inválido é descartado sem perder o treino", () => {
+      const bom = paraRegistro(exercicio());
+      const ruim = { ...bom, series: bom.series.map((s) => ({ ...s, rpe: 42 })) };
+      const [lido] = sanitizarRegistros([ruim]);
+      expect(lido?.series).toEqual(bom.series);
+      expect(paraRegistro(exercicio({ topSetRpe: 42 })).series[0]).not.toHaveProperty("rpe");
+    });
+  });
+
   describe("exportarCSV", () => {
     it("gera uma linha por série, fácil de abrir em planilha", () => {
       const csv = exportarCSV([paraRegistro(exercicio({ obs: 'disse "leve"' }))]);
       expect(csv.split("\n")).toEqual([
-        "data,sessao,exercicio,serie,tipo,kg,reps,obs",
-        '2026-10-13,UA,Supino reto barra,1,top1,85,7,"disse ""leve"""',
-        '2026-10-13,UA,Supino reto barra,2,top2,85,7,"disse ""leve"""',
-        '2026-10-13,UA,Supino reto barra,3,backoff,75,10,"disse ""leve"""',
+        "data,sessao,exercicio,serie,tipo,kg,reps,obs,rpe",
+        '2026-10-13,UA,Supino reto barra,1,top1,85,7,"disse ""leve""",',
+        '2026-10-13,UA,Supino reto barra,2,top2,85,7,"disse ""leve""",',
+        '2026-10-13,UA,Supino reto barra,3,backoff,75,10,"disse ""leve""",',
       ]);
+    });
+
+    it("leva o RPE de cada série na última coluna", () => {
+      const linhas = exportarCSV([paraRegistro(exercicio({ topSetRpe: 8.5 }))]).split("\n");
+      expect(linhas[1]).toMatch(/,8\.5$/);
+      expect(linhas[2]).toMatch(/,$/);
     });
 
     it("protege contra injeção de fórmula no Excel", () => {

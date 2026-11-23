@@ -24,7 +24,7 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 - **RG2** – O usuário pode filtrar por exercício e por período de tempo.
 - **RG3** – Caso não haja dados para o filtro aplicado, exibe "Sem registros para listar."
 - **RG4** – O usuário pode editar registros individuais diretamente na lista.
-- **RG5** – O usuário pode excluir registros individuais com confirmação.
+- **RG5** – O usuário pode excluir registros individuais com confirmação `[excluir_registro]` (EF_09).
 - **RG6** – Ao editar ou excluir, os dados são atualizados no `localStorage` imediatamente.
 
 ---

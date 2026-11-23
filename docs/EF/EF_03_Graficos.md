@@ -29,6 +29,10 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 - **RG7** – No Gráfico de Volume Load, barras de períodos em que houve ao menos uma sessão com técnica avançada (RP — Rest-Pause) recebem um marcador visual diferenciado (cor âmbar). O tooltip dessas barras indica a técnica utilizada. Isso evita que picos de volume gerados pela acumulação de blocos sejam confundidos com evolução real de carga.
 - **RG8** – A tela de Gráficos possui duas visões alternadas por um seletor (segmented control): **Progressão** (padrão) e **Volume Load**. Apenas uma visão é exibida por vez.
 - **RG9** – Na visão Volume Load, o usuário escolhe a granularidade de agrupamento: **Semana**, **Mês** ou **Ano**. Os registros do exercício (ou exercícios) filtrados são somados (peso × reps) dentro de cada período e exibidos como uma barra.
+- **RG10** – **Deload diferenciado:** sessões salvas em Deload (EF_02 RG15) aparecem marcadas nas duas visões.
+  - **Progressão:** ponto **vermelho vazado** (`#dc2626`), tooltip com **"⬇ Deload (1 série)"** e legenda abaixo do gráfico quando houver algum. O deload **não entra** na média das 4 últimas nem no chip de tendência, para não parecer perda de força.
+  - **Volume Load:** período só com deload tem barra **vermelha**; período misto mantém a cor normal (ou âmbar, RG7). Nos dois casos o tooltip indica "Inclui deload".
+- **RG11** – **O registro vale mais que o resumo:** quando o mesmo treino (exercício, sessão e data) está em `registros` e em `dadosTreino`, o gráfico usa só o registro, que guarda deload, técnica e séries feitas.
 
 ---
 

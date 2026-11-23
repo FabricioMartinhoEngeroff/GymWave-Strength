@@ -63,6 +63,14 @@ export interface RegistroExercicio {
   backoffFaixaMin: number;
   backoffFaixaMax: number;
 
+  // Esforço por série em RPE (6 a 10, de 0,5 em 0,5); RIR = 10 − RPE. Opcional.
+  topSetRpe?: number;
+  backoffRpe?: number; // Top Set 2
+  extraRpe?: number; // Back-off ou Série 3
+  serie4Rpe?: number;
+  clusterRpe?: number; // fim da Série 1 do Cluster
+  clusterRpe2?: number; // fim da Série 2 do Cluster
+
   tecnica?: "RP" | null;
   // Cluster Set: cada série cluster é um grupo de blocos (kg×reps). Série 1 fica
   // em clusterSeries; a Série 2 em clusterSeries2 (registros antigos têm só a 1).

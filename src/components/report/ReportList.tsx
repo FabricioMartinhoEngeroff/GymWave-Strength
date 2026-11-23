@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { LinhaRelatorio } from "../../types/TrainingData";
+import { mensagens } from "../mensagens/mensagens";
 import { ReportItem } from "./ReportItem";
 import { EditRow } from "./EditRow";
 
@@ -47,7 +48,14 @@ export function ReportList({
                 setEditandoIdx(idx);
                 setLinhaEditada({ ...l, series: l.series.map((s) => ({ ...s })) });
               }}
-              onDelete={() => excluirLinha(idx)}
+              onDelete={() =>
+                mensagens.confirmar("excluir_registro", {
+                  aoConfirmar: () => {
+                    excluirLinha(idx);
+                    mensagens.mostrar("registro_excluido");
+                  },
+                })
+              }
               isMobile={isMobile}
             />
           )}

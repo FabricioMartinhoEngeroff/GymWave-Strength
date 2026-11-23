@@ -3,7 +3,8 @@
  * Seção "Migração dos dados JSON dos treinos" da tela Exportar.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent } from "@testing-library/react";
+import { noDialogo, renderComMensagens } from "../mensagens/helpers";
 import Exportar from "../../../components/exportar/Exportar";
 
 const LEGADO = {
@@ -36,7 +37,7 @@ function enviar(texto: string, nome = "gymwave_backup_2026-10-16.json") {
 }
 
 function abrir() {
-  render(<Exportar />);
+  renderComMensagens(<Exportar />);
   fireEvent.click(screen.getByText(/migração dos dados json dos treinos/i));
 }
 
@@ -78,13 +79,28 @@ describe("ImportarBackupJson", () => {
   });
 
   it("desfazer restaura o estado anterior", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
     abrir();
     enviar(JSON.stringify(LEGADO));
     fireEvent.click(screen.getByText(/confirmar migração/i));
     fireEvent.click(screen.getByText(/desfazer migração/i));
+    noDialogo("Desfazer");
 
     expect(JSON.parse(localStorage.getItem("dadosTreino") || "{}")).toEqual({});
+    expect(screen.queryByText(/migração concluída/i)).not.toBeInTheDocument();
+  });
+
+  it("falha ao gravar desfaz tudo e avisa (EF_09 RG13)", () => {
+    const original = Storage.prototype.setItem;
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (this: Storage, k, v) {
+      if (k === "registros") throw new DOMException("cheio", "QuotaExceededError");
+      original.call(this, k, v);
+    });
+    abrir();
+    enviar(JSON.stringify(LEGADO));
+    fireEvent.click(screen.getByText(/confirmar migração/i));
+    expect(localStorage.getItem("dadosTreino")).toBeNull();
+    expect(screen.getByText("Sem espaço no aparelho")).toBeInTheDocument();
     expect(screen.queryByText(/migração concluída/i)).not.toBeInTheDocument();
   });
 

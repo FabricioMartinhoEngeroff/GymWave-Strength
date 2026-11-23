@@ -35,6 +35,9 @@ interface VolumeLoadCardProps {
 
 const COR_NORMAL = "#2962FF";
 const COR_RP = "#FFAB00";
+const COR_DELOAD = "#dc2626";
+
+const corDaBarra = (b: BucketVolume) => (b.soDeload ? COR_DELOAD : b.temRP ? COR_RP : COR_NORMAL);
 
 function fmtVolume(v: number): string {
   if (v >= 1000) return `${(v / 1000).toFixed(1)}k kg`;
@@ -69,6 +72,9 @@ const CustomTooltip = ({
       {bucket.temRP && (
         <p style={{ margin: "6px 0 0", color: COR_RP }}>Inclui sessão(ões) com técnica RP</p>
       )}
+      {bucket.temDeload && (
+        <p style={{ margin: "6px 0 0", color: "#f87171" }}>Inclui deload</p>
+      )}
     </div>
   );
 };
@@ -86,7 +92,7 @@ export function VolumeLoadCard({
   }, [dados, ciclosSelecionados, granularidade]);
 
   return (
-    <Card data-testid="volume-card" data-bucket-count={buckets.length} data-has-rp={buckets.some((b) => b.temRP)}>
+    <Card data-testid="volume-card" data-bucket-count={buckets.length} data-has-rp={buckets.some((b) => b.temRP)} data-has-deload={buckets.some((b) => b.temDeload)}>
       <CardHeader>
         <TitleBlock>
           <Title title={exercicio} data-testid="volume-card-title">
@@ -121,7 +127,7 @@ export function VolumeLoadCard({
 
               <Bar dataKey="volume" name="Volume load" radius={[6, 6, 0, 0]}>
                 {buckets.map((b) => (
-                  <Cell key={b.chave} fill={b.temRP ? COR_RP : COR_NORMAL} />
+                  <Cell key={b.chave} fill={corDaBarra(b)} />
                 ))}
               </Bar>
 

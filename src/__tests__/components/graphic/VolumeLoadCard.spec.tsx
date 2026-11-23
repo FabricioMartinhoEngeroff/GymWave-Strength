@@ -110,4 +110,14 @@ describe("VolumeLoadCard — components/graphic", () => {
       expect(screen.getByTestId("volume-card")).toHaveAttribute("data-has-rp", "false");
     });
   });
+
+  it("marca o card quando há período com deload (RG10)", () => {
+    renderCard([makeRegistro({ dataTs: new Date(2026, 5, 1).getTime(), data: "01/06/2026", isDeload: true })]);
+    expect(screen.getByTestId("volume-card")).toHaveAttribute("data-has-deload", "true");
+  });
+
+  it("sem deload o card não é marcado", () => {
+    renderCard([makeRegistro({ dataTs: new Date(2026, 5, 1).getTime(), data: "01/06/2026" })]);
+    expect(screen.getByTestId("volume-card")).toHaveAttribute("data-has-deload", "false");
+  });
 });

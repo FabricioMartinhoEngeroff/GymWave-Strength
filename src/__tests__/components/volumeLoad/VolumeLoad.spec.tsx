@@ -365,4 +365,12 @@ describe("VolumeLoad — Componente de volume por musculo", () => {
       expect(screen.getByText("↓ carga")).toBeInTheDocument();
     });
   });
+
+  it("exibe badge 'deload' no músculo com exercício em deload na semana (RG11)", () => {
+    localStorage.setItem("logbook", JSON.stringify({
+      "Supino reto barra": [makeLogbookEntry("Supino reto barra", "2026-06-10", { isDeload: true })],
+    }));
+    render(<VolumeLoad />);
+    expect(screen.getByText("deload")).toBeInTheDocument();
+  });
 });

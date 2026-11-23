@@ -174,6 +174,7 @@ O histórico detalhado deixou de ficar no objeto `logbook`, em que cada treino p
 - **Conversão automática:** na primeira leitura, se `registros` ainda não existe e há um `logbook`, ele é convertido para a lista. Uma cópia do original fica em `logbook_v1_backup`. Nada é apagado.
 - **Telas que leem o histórico** (gráficos, volume load, sugestões de carga, relatórios) continuam recebendo o mesmo formato de antes. Ele é montado a partir de `registros` na hora da leitura (`carregarLogbookCompleto`).
 - **Backup JSON v3** inclui `registros`. Backups v2 (com `logbook`) e v1 (só `dadosTreino`) continuam importáveis e são convertidos.
+- **RPE por série** (`rpe`, opcional): registros antigos não têm o campo e continuam válidos, sem conversão. O backup segue na versão 3 (EF_02 RG20).
 - **Desfazer importação** também restaura `registros`, a partir da cópia feita antes da importação.
 
 *Motivo:* ver a evolução ou a regressão do volume ao longo do tempo exige guardar **todos** os treinos, não só o último.

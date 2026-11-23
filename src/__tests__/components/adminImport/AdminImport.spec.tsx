@@ -3,7 +3,8 @@
  * Testa a tela de importacao de dados Saizen via xlsx/csv.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
+import { noDialogo, renderComMensagens } from "../mensagens/helpers";
 import AdminImport from "../../../components/adminImport/AdminImport";
 import { carregarLogbookCompleto, salvarRegistro } from "../../../utils/storage";
 
@@ -106,32 +107,32 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
   describe("Renderizacao inicial", () => {
     it("exibe titulo e subtitulo", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       expect(screen.getByText("Importar dados")).toBeInTheDocument();
       expect(screen.getByText(/popular o histórico/i)).toBeInTheDocument();
     });
 
     it("exibe a drop zone", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       expect(
         screen.getByText(/arraste e solte/i)
       ).toBeInTheDocument();
     });
 
     it("botao Confirmar importacao comeca desabilitado", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const btn = screen.getByText("Confirmar importação").closest("button");
       expect(btn).toBeDisabled();
     });
 
     it("botao Limpar tudo esta sempre habilitado", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const btn = screen.getByText("Limpar tudo").closest("button");
       expect(btn).not.toBeDisabled();
     });
 
     it("input aceita apenas .xlsx e .csv", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const input = screen.getByTestId("file-input") as HTMLInputElement;
       expect(input.accept).toBe(".xlsx,.csv");
     });
@@ -140,7 +141,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   describe("Carregamento de CSV", () => {
     it("exibe preview apos carregar arquivo CSV", async () => {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
 
       const input = screen.getByTestId("file-input");
       fireEvent.change(input, {
@@ -154,7 +155,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
     it("exibe exercicios na tabela de preview", async () => {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
 
       const input = screen.getByTestId("file-input");
       fireEvent.change(input, {
@@ -169,7 +170,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
     it("habilita botao Confirmar apos carregar arquivo", async () => {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
 
       const input = screen.getByTestId("file-input");
       fireEvent.change(input, {
@@ -184,7 +185,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
     it("exibe cabecalhos Top Set, Back-off e Séries Válidas na tabela", async () => {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
 
       const input = screen.getByTestId("file-input");
       fireEvent.change(input, {
@@ -202,7 +203,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   describe("Confirmacao de importacao", () => {
     async function loadAndConfirm() {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
 
       const input = screen.getByTestId("file-input");
       fireEvent.change(input, {
@@ -256,7 +257,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
     it("exibe resultado com total de registros salvos", async () => {
       await loadAndConfirm();
-      expect(screen.getByText(/importação concluída/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/importação concluída/i).length).toBeGreaterThan(0);
       expect(screen.getByText(/2 registros salvos/i)).toBeInTheDocument();
     });
 
@@ -277,7 +278,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   describe("Plano de treino (planoTreino)", () => {
     async function loadAndConfirm() {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       fireEvent.change(screen.getByTestId("file-input"), {
         target: { files: [makeFile("treinos.csv")] },
       });
@@ -318,7 +319,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   describe("Reimportacao substitui treino mas mantem historico", () => {
     async function loadAndConfirm() {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       fireEvent.change(screen.getByTestId("file-input"), {
         target: { files: [makeFile("treinos.csv")] },
       });
@@ -408,7 +409,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   describe("Desfazer importacao", () => {
     async function importarDados() {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       fireEvent.change(screen.getByTestId("file-input"), {
         target: { files: [makeFile("treinos.csv")] },
       });
@@ -445,8 +446,8 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
       localStorage.setItem("dadosTreino", JSON.stringify({ "Agachamento livre": {} }));
       localStorage.setItem("planoTreino", JSON.stringify({ "Upper A": { "Agachamento livre": { ordem: 1, series_validas: 2 } } }));
       await importarDados();
-      vi.spyOn(window, "confirm").mockReturnValue(true);
       fireEvent.click(screen.getByText(/desfazer importação/i));
+      noDialogo("Desfazer");
       const logbook = carregarLogbookCompleto();
       expect(logbook).toHaveProperty("Agachamento livre");
       const plano = JSON.parse(localStorage.getItem("planoTreino") || "{}");
@@ -455,19 +456,20 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   });
 
   describe("Limpar tudo", () => {
-    it("abre confirm antes de limpar", () => {
-      const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(false);
-      render(<AdminImport />);
+    it("pede confirmação e cancelar não apaga nada", () => {
+      localStorage.setItem("dadosTreino", JSON.stringify({ x: {} }));
+      renderComMensagens(<AdminImport />);
       fireEvent.click(screen.getByText("Limpar tudo"));
-      expect(confirmSpy).toHaveBeenCalledOnce();
+      noDialogo("Cancelar");
+      expect(localStorage.getItem("dadosTreino")).not.toBeNull();
     });
 
     it("limpa logbook e dadosTreino se o usuario confirmar", () => {
       localStorage.setItem("logbook", JSON.stringify({ x: [] }));
       localStorage.setItem("dadosTreino", JSON.stringify({ x: {} }));
-      vi.spyOn(window, "confirm").mockReturnValue(true);
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       fireEvent.click(screen.getByText("Limpar tudo"));
+      noDialogo("Apagar tudo");
       expect(localStorage.getItem("logbook")).toBeNull();
       expect(localStorage.getItem("registros")).toBeNull();
       expect(localStorage.getItem("dadosTreino")).toBeNull();
@@ -479,7 +481,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
   describe("sessoes_config na importacao", () => {
     async function loadAndConfirm() {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       fireEvent.change(screen.getByTestId("file-input"), {
         target: { files: [makeFile("treinos.csv")] },
       });
@@ -522,7 +524,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
   describe("Drag and drop", () => {
     it("muda estilo ao arrastar arquivo sobre a drop zone", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const dropZone = screen.getByRole("button", { name: /área de upload/i });
 
       fireEvent.dragOver(dropZone, { dataTransfer: { files: [] } });
@@ -531,7 +533,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
 
     it("carrega arquivo ao soltar na drop zone", async () => {
       mockFileReader("mock csv content");
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const dropZone = screen.getByRole("button", { name: /área de upload/i });
 
       fireEvent.drop(dropZone, {
@@ -544,7 +546,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     });
 
     it("abre file picker ao clicar na drop zone", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const dropZone = screen.getByRole("button", { name: /área de upload/i });
       const input = screen.getByTestId("file-input") as HTMLInputElement;
       const clickSpy = vi.spyOn(input, "click");
@@ -554,7 +556,7 @@ describe("AdminImport — Importacao Saizen xlsx/csv", () => {
     });
 
     it("abre file picker ao pressionar Enter na drop zone", () => {
-      render(<AdminImport />);
+      renderComMensagens(<AdminImport />);
       const dropZone = screen.getByRole("button", { name: /área de upload/i });
       const input = screen.getByTestId("file-input") as HTMLInputElement;
       const clickSpy = vi.spyOn(input, "click");

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { EXERCICIOS } from "../../data/exercise";
 import type { TreinoRotacao } from "../../data/cycles";
-import { storageKey } from "../../utils/storage";
+import { carregarDados, storageKey } from "../../utils/storage";
+import { mensagens } from "../mensagens/mensagens";
 
 interface CycleLogicParams {
   ciclo: string;
@@ -69,14 +70,12 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
     );
 
     if (pesoTotal === 0 && repsLimpos.every((r) => !r) && !obsLimpo) {
-      // eslint-disable-next-line no-restricted-globals
-      alert("Preencha ao menos um peso, repetição ou observação.");
+      mensagens.mostrar("preencha_registro");
       return;
     }
 
     if (!exercicioSelecionado) {
-      // eslint-disable-next-line no-restricted-globals
-      alert("Por favor, selecione um exercício.");
+      mensagens.mostrar("selecione_exercicio");
       return;
     }
 
@@ -88,9 +87,8 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
       exercicio: exercicioSelecionado,
     };
 
-    const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
-    if (!db[exercicioSelecionado]) db[exercicioSelecionado] = {};
-    db[exercicioSelecionado][ciclo] = novoRegistro;
+    const db = carregarDados();
+    (db[exercicioSelecionado] ??= {})[ciclo] = novoRegistro;
     localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(db));
 
     setPesos(["", "", ""]);
@@ -140,7 +138,7 @@ export function useSugestaoDePeso(
   exercicio: string
 ): { pesoMaximo: number; sugestaoPeso: number } {
   return useMemo(() => {
-    const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+    const db = carregarDados();
     const entries = db?.[exercicio];
     if (!entries) return { pesoMaximo: 0, sugestaoPeso: 0 };
 

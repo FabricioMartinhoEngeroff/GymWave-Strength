@@ -33,6 +33,7 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 - **RG6** – **Linha de PR (Recorde Absoluto):** Uma linha horizontal pontilhada dourada é sobreposta ao gráfico, posicionada no valor do maior 1RM estimado já registrado para o exercício selecionado. O objetivo visual é fazer a linha contínua do treino atual subir até cruzar essa linha.
 - **RG7** – **Badge de Conquista (PR confirmado):** Todo ponto do gráfico que representa uma sessão em que o 1RM calculado igualou ou superou o PR histórico vigente naquele momento recebe um marcador visual diferenciado (estrela ou cor brilhante). Esses pontos indicam as sessões que efetivamente quebraram o recorde.
 - **RG8** – **Indicador visual de Deload:** Sessões com `isDeload: true` são renderizadas como um **círculo vermelho vazado** no gráfico — preenchimento `rgba(220,38,38,0.15)` (vermelho translúcido), borda vermelha sólida (`#dc2626`, espessura 1.5 px), raio 5 px. Esse marcador diferencia visualmente as sessões de volume reduzido dos pontos normais (invisíveis por padrão) e dos pontos de PR (anel dourado/estrela). O tooltip de uma sessão Deload exibe a linha **"⬇ Deload (1 série)"** em vermelho, além dos dados normais.
+- **RG9** – **1RM pelo esforço (RPE):** quando o Top Set 1 tem RPE de 7 ou mais (EF_02 RG20), o gráfico mostra também o 1RM pelo esforço (EF_02 RG23), em **linha roxa tracejada** separada. Linha principal, PR (RG6/RG7) e Variação continuam no Epley, com peso e reps feitos: assim, começar a anotar RPE não cria um recorde nem um salto de força que não existiu. Cluster Set não entra, porque o RPE é do fim da série e a referência é o Bloco 1.
 
 ---
 
@@ -55,7 +56,7 @@ Exibido entre os filtros e o gráfico. No mobile: grid 2×2. No desktop: linha h
 
 | Célula | Dado | Formato |
 |---|---|---|
-| 1RM Atual | Maior 1RM estimado do exercício no período selecionado | `142 kg` (número grande, destaque) |
+| 1RM Atual | 1RM estimado da última sessão do período. Se ela tem RPE, mostra abaixo o 1RM pelo esforço (RG9), com **≈** quando aproximado | `142 kg` (número grande, destaque) · `pelo RPE: 145 kg` |
 | Variação | Delta do 1RM atual vs sessão anterior do mesmo exercício | `+4,5 kg` verde / `−2 kg` vermelho / `—` neutro |
 | Sessões | Quantidade de sessões com dados no período | `12 sessões` |
 | Último PR | Data em que o recorde absoluto foi registrado | `08/06/2026` |
@@ -127,6 +128,7 @@ Exibido entre os filtros e o gráfico. No mobile: grid 2×2. No desktop: linha h
 | Elemento | Descrição |
 |---|---|
 | Linha contínua + área | Evolução do 1RM estimado por sessão |
+| Linha roxa tracejada | 1RM pelo esforço, só nas sessões com RPE (RG9) |
 | Linha pontilhada dourada | Recorde absoluto do exercício (PR histórico) |
 | Ponto com anel / estrela | Sessão em que o PR foi quebrado |
 | Círculo vermelho vazado | Sessão registrada em modo Deload (`isDeload: true`) — volume reduzido (1 série válida) |

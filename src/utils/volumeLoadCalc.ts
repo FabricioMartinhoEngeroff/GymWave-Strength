@@ -1,8 +1,8 @@
 import { grupoMuscular } from "../data/muscleMap";
-import type { DadosTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
+import type { Logbook, RegistroExercicio } from "../types/TrainingData";
 import { volumeESeriesDoRegistro } from "./seriesValidas";
 import { slugExercicio } from "./registros";
-import { carregarLogbookCompleto, storageKey } from "./storage";
+import { carregarDados, carregarLogbookCompleto } from "./storage";
 
 type ClusterSerie = { kg: number; reps: number }[] | undefined;
 
@@ -32,10 +32,10 @@ function clusterVolAndSets(reg: RegistroExercicio): { vol: number; sets: number 
 // Salvar treino grava o mesmo treino em "registros" (lido como logbook) e no resumo
 // "dadosTreino". Para não somar duas vezes, a entrada do dadosTreino só conta quando
 // não há registro do mesmo exercício, sessão e data (histórico antigo, só legado).
-const chaveTreino = (exercicio: string, sessao: string, data: string) =>
+export const chaveTreino = (exercicio: string, sessao: string, data: string) =>
   `${slugExercicio(exercicio)}|${sessao}|${data}`;
 
-function treinosDoLogbook(logbook: Logbook): Set<string> {
+export function treinosDoLogbook(logbook: Logbook): Set<string> {
   const chaves = new Set<string>();
   Object.entries(logbook).forEach(([exercicio, registros]) =>
     registros.forEach((reg) => chaves.add(chaveTreino(exercicio, reg.treinoId, reg.data))));
@@ -48,6 +48,7 @@ export interface VolumeMusculo {
   volumeAnterior: number;
   delta: number; // percentage change, 0 if no previous data
   seriesAtual: number; // total valid sets this period
+  temDeload: boolean; // algum exercício do músculo em deload no período atual
 }
 
 function getISOWeekBounds(weeksAgo: number): { start: number; end: number } {
@@ -100,9 +101,7 @@ function countValidSets(pesos: string[], reps: string[]): number {
 }
 
 export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: number = 1): VolumeMusculo[] {
-  const db = JSON.parse(
-    localStorage.getItem(storageKey("dadosTreino")) || "{}"
-  ) as DadosTreino;
+  const db = carregarDados();
 
   const logbook = carregarLogbookCompleto();
   const jaNoLogbook = treinosDoLogbook(logbook);
@@ -126,6 +125,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
   const musculoAtual: Record<string, number> = {};
   const musculoAnterior: Record<string, number> = {};
   const musculoSeries: Record<string, number> = {};
+  const comDeload = new Set<string>();
 
   // Process legacy dadosTreino
   Object.entries(db).forEach(([exercicio, ciclos]) => {
@@ -173,6 +173,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
       if (ts >= current.start && ts <= current.end) {
         musculoAtual[musculo] = (musculoAtual[musculo] || 0) + vol;
         musculoSeries[musculo] = (musculoSeries[musculo] || 0) + sets;
+        if (reg.isDeload) comDeload.add(musculo);
       } else if (ts >= previous.start && ts <= previous.end) {
         musculoAnterior[musculo] = (musculoAnterior[musculo] || 0) + vol;
       }
@@ -191,7 +192,7 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
     const delta =
       anterior > 0 ? Math.round(((atual - anterior) / anterior) * 100) : 0;
     const seriesAtual = musculoSeries[musculo] || 0;
-    result.push({ musculo, volumeAtual: atual, volumeAnterior: anterior, delta, seriesAtual });
+    result.push({ musculo, volumeAtual: atual, volumeAnterior: anterior, delta, seriesAtual, temDeload: comDeload.has(musculo) });
   });
 
   return result.sort((a, b) => b.volumeAtual - a.volumeAtual);
@@ -208,12 +209,11 @@ export interface VolumeMusculoSemanal {
   semanas: WeekVolume[];
   delta: number;
   seriesAtual: number;
+  temDeload: boolean;
 }
 
 export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
-  const db = JSON.parse(
-    localStorage.getItem(storageKey("dadosTreino")) || "{}"
-  ) as DadosTreino;
+  const db = carregarDados();
 
   const logbook = carregarLogbookCompleto();
   const jaNoLogbook = treinosDoLogbook(logbook);
@@ -229,6 +229,8 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
   }
 
   const perWeek: Record<string, { volume: number; series: number }[]> = {};
+  const comDeload = new Set<string>();
+  const semanaAtual = weekSlots[weekSlots.length - 1];
 
   function ensure(m: string) {
     if (!perWeek[m]) perWeek[m] = weekSlots.map(() => ({ volume: 0, series: 0 }));
@@ -280,6 +282,7 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
       }
       if (vol <= 0) return;
       addToSlot(musculo, ts, vol, sets);
+      if (reg.isDeload && semanaAtual && ts >= semanaAtual.start && ts <= semanaAtual.end) comDeload.add(musculo);
     });
   });
 
@@ -297,7 +300,7 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
     const prev = wds.length >= 2 ? (wds[wds.length - 2]?.volume ?? 0) : 0;
     const delta = prev > 0 ? Math.round(((newest - prev) / prev) * 100) : 0;
 
-    result.push({ musculo, semanas, delta, seriesAtual: wds[wds.length - 1]?.series ?? 0 });
+    result.push({ musculo, semanas, delta, seriesAtual: wds[wds.length - 1]?.series ?? 0, temDeload: comDeload.has(musculo) });
   });
 
   return result.sort((a, b) => (b.semanas[b.semanas.length - 1]?.volume ?? 0) - (a.semanas[a.semanas.length - 1]?.volume ?? 0));
@@ -352,7 +355,7 @@ export function calcEstagnadoMusculo(musculo: string): boolean {
   let estagnados = 0;
 
   for (const exercicio of exerciciosDoGrupo) {
-    const registros = logbook[exercicio];
+    const registros = logbook[exercicio]?.filter((r) => !r.isDeload); // deload não é desempenho (RG11)
     if (!registros || registros.length === 0) continue;
 
     const sorted = [...registros].sort((a, b) => b.dataTs - a.dataTs);
@@ -386,7 +389,7 @@ export function calcQuedaCargaMusculo(
   let quedas = 0;
 
   for (const exercicio of exerciciosDoGrupo) {
-    const registros = logbook[exercicio];
+    const registros = logbook[exercicio]?.filter((r) => !r.isDeload); // deload não é desempenho (RG11)
     if (!registros || registros.length === 0) continue;
 
     const currentPeriod = registros

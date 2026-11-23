@@ -1,6 +1,6 @@
 import type { DadosTreino, Logbook, PlanoTreino, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
 import { comIdUnico, comNome, logbookParaRegistros, nomeExercicio, sanitizarRegistros, type Registro } from "./registros";
-import { carregarRegistros, fotografarRegistros, restaurarRegistros, salvarRegistros, storageKey } from "./storage";
+import { carregarDados, carregarRegistros, fotografarRegistros, restaurarRegistros, salvarRegistros, storageKey } from "./storage";
 
 // ─── Formato do backup ────────────────────────────────────────────────────────
 // v3 guarda o histórico como lista de registros (ver registros.ts). A importação
@@ -187,7 +187,7 @@ export function aplicarBackup(b: BackupLido): ResultadoImportacao {
   }
   fotografarRegistros();
 
-  const dados = lerChave<DadosTreino>("dadosTreino", {});
+  const dados = carregarDados();
   let dadosAdicionados = 0;
   let dadosPreservados = 0;
   for (const [exercicio, ciclos] of Object.entries(b.dadosTreino)) {

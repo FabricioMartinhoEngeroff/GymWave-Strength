@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcEpley, extractReferenceBlock } from "../../utils/epleyCalc";
+import { calcEpley, estimar1RM, extractReferenceBlock } from "../../utils/epleyCalc";
 import type { RegistroExercicio } from "../../types/TrainingData";
 
 const baseRegistro: RegistroExercicio = {
@@ -37,6 +37,37 @@ describe("epleyCalc", () => {
     it("calcEpley(0, 5) retorna 0", () => {
       expect(calcEpley(0, 5)).toBe(0);
     });
+  });
+
+  describe("estimar1RM — 1RM pelo esforço (reps + RIR)", () => {
+    it("soma as reps na reserva: 100kg x 5 @8 vale como 7RM", () => {
+      expect(estimar1RM(100, 5, 8)).toEqual({ rm1: calcEpley(100, 7), repsAteFalha: 7, aproximado: false });
+    });
+
+    it("@10 até 10 reps coincide com o Epley puro", () => {
+      expect(estimar1RM(100, 8, 10)?.rm1).toBe(calcEpley(100, 8));
+    });
+
+    it("1 rep @10 é o próprio 1RM (o Epley daria 103.33)", () => {
+      expect(estimar1RM(100, 1, 10)?.rm1).toBe(100);
+    });
+
+    it("acima de 10 reps até a falha usa Mayhew, mais conservador, e marca como aproximado", () => {
+      const r = estimar1RM(100, 15, 10);
+      expect(r?.aproximado).toBe(true);
+      expect(r?.rm1).toBeCloseTo(141.73, 1);
+      expect(r!.rm1).toBeLessThan(calcEpley(100, 15));
+    });
+
+    it("nunca cai ao cruzar as 10 reps (mais reps = 1RM igual ou maior)", () => {
+      const serie = [8, 9, 9.5, 10, 10.5, 11, 12, 15, 20].map((r) => estimar1RM(100, r, 10)!.rm1);
+      serie.slice(1).forEach((v, i) => expect(v).toBeGreaterThanOrEqual(serie[i]!));
+    });
+
+    it.each([[100, 5, undefined], [100, 5, 6], [100, 5, 6.5], [0, 5, 8], [100, 0, 8]])(
+      "sem base confiável (%s kg x %s @%s) não estima", (kg, reps, rpe) => {
+        expect(estimar1RM(kg, reps, rpe)).toBeNull();
+      });
   });
 
   describe("extractReferenceBlock — bloco de referencia por tecnica", () => {

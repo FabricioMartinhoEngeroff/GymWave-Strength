@@ -2,12 +2,16 @@ import { useMemo, useRef, useState } from "react";
 import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
-import type { DadosTreino, PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
-import { carregarRegistros, fotografarRegistros, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
+import type { PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
+import { carregarDados, carregarRegistros, emTransacao, fotografarRegistros, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
 import { exportarCSV } from "../../utils/registros";
 import { blocosCluster, mesclarRepetidos, prefixoAba, rotuloSessao } from "../../utils/planilhaSessoes";
 import { nomeCanonico } from "../../data/exerciseAliases";
 import { montarBackup } from "../../utils/backupJson";
+import { baixarArquivo } from "../../utils/baixarArquivo";
+import { avisarErro } from "../mensagens/avisarErro";
+import { lerPlanilha } from "../mensagens/lerPlanilha";
+import { mensagens } from "../mensagens/mensagens";
 import ImportarBackupJson from "./ImportarBackupJson";
 import {
   DropZone,
@@ -336,9 +340,7 @@ function parseDateBR(data: string): number | null {
 
 function useStats() {
   return useMemo(() => {
-    const db = JSON.parse(
-      localStorage.getItem(storageKey("dadosTreino")) || "{}"
-    ) as DadosTreino;
+    const db = carregarDados();
 
     let count = 0;
     let minTs = Infinity;
@@ -374,26 +376,13 @@ function useStats() {
 }
 
 function exportJSON() {
-  const blob = new Blob([JSON.stringify(montarBackup())], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `gymwave_backup_${new Date().toISOString().slice(0, 10)}.json`;
-  a.click();
-  URL.revokeObjectURL(url);
+  baixarArquivo(`gymwave_backup_${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(montarBackup()), "application/json");
 }
 
 function exportCSV() {
   // Uma linha por série (data, sessão, exercício, kg, reps…): abre direto em planilha.
   const csv = exportarCSV(carregarRegistros());
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `gymwave_${new Date().toISOString().slice(0, 10)}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+  baixarArquivo(`gymwave_${new Date().toISOString().slice(0, 10)}.csv`, csv, "text/csv");
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -414,23 +403,23 @@ export default function Exportar() {
   function handleFile(file: File) {
     setResult(null);
     setFileName(file.name);
+    const destino = { aoLer: setRows, aoDescartar: () => setFileName(null) };
     const ext = file.name.split(".").pop()?.toLowerCase();
 
     if (ext === "csv") {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const parsed = Papa.parse<Record<string, unknown>>(text, {
+      lerPlanilha(reader, { ...destino, extrair: (texto) => {
+        const parsed = Papa.parse<Record<string, unknown>>(texto as string, {
           header: true,
           skipEmptyLines: true,
         });
-        setRows(organizarRows(normalizeRows(mapColumns(parsed.data))));
-      };
+        return organizarRows(normalizeRows(mapColumns(parsed.data)));
+      } });
       reader.readAsText(file, "UTF-8");
     } else {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      lerPlanilha(reader, { ...destino, extrair: (conteudo) => {
+        const data = new Uint8Array(conteudo as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
         // Protocolo com uma aba por semana: lê todas as abas com cabeçalho de exercícios.
         const varias = wb.SheetNames.length > 1;
@@ -440,9 +429,9 @@ export default function Exportar() {
           return json ? [{ nome, json }] : [];
         });
         const prefixar = abas.length > 1;
-        setRows(organizarRows(abas.flatMap(({ nome, json }) =>
-          normalizeRows(mapColumns(json), prefixar ? (prefixoAba(nome) ?? nome) : null))));
-      };
+        return organizarRows(abas.flatMap(({ nome, json }) =>
+          normalizeRows(mapColumns(json), prefixar ? (prefixoAba(nome) ?? nome) : null)));
+      } });
       reader.readAsArrayBuffer(file);
     }
   }
@@ -473,26 +462,37 @@ export default function Exportar() {
   }
 
   function desfazerImport() {
-    const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
-    if (!ok) return;
-    const backup = localStorage.getItem(storageKey("dadosTreino_backup"));
-    if (backup) localStorage.setItem(storageKey("dadosTreino"), backup);
-    const planoBackup = localStorage.getItem(storageKey("planoTreino_backup"));
-    if (planoBackup) localStorage.setItem(storageKey("planoTreino"), planoBackup);
-    const sessoesBackup = localStorage.getItem(storageKey("sessoes_config_backup"));
-    if (sessoesBackup) localStorage.setItem(storageKey("sessoes_config"), sessoesBackup);
-    restaurarRegistros();
-    setResult(null);
-    setCanUndo(false);
+    mensagens.confirmar("desfazer_importacao", {
+      aoConfirmar: () => {
+        emTransacao(() => {
+          ["dadosTreino", "planoTreino", "sessoes_config"].forEach((base) => {
+            const copia = localStorage.getItem(storageKey(`${base}_backup`));
+            if (copia) localStorage.setItem(storageKey(base), copia);
+          });
+          restaurarRegistros();
+        });
+        setResult(null);
+        setCanUndo(false);
+        mensagens.mostrar("importacao_desfeita");
+      },
+    });
   }
 
   function confirmarImport() {
+    try {
+      emTransacao(gravarImport);
+    } catch (erro) {
+      avisarErro("importar planilha", erro);
+    }
+  }
+
+  function gravarImport() {
     localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
     localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
     localStorage.setItem(storageKey("sessoes_config_backup"), localStorage.getItem(storageKey("sessoes_config")) || "{}");
     fotografarRegistros();
 
-    const db = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+    const db = carregarDados();
     const planoNovo: PlanoTreino = {};
     const sessoesConfigMap: Record<string, {
       nome: string; grupo: string;
@@ -537,14 +537,14 @@ export default function Exportar() {
         const pesoStr = parsePeso(row[col]);
         if (!pesoStr) return;
 
-        if (!db[row.exercicio]) db[row.exercicio] = {};
+        const ciclos = (db[row.exercicio] ??= {});
 
-        if (db[row.exercicio][cicloId]) {
+        if (ciclos[cicloId]) {
           preservados++;
           return;
         }
 
-        db[row.exercicio][cicloId] = {
+        ciclos[cicloId] = {
           data: today,
           pesos: Array(seriesCount).fill(pesoStr),
           reps: Array(seriesCount).fill(""),
@@ -585,6 +585,7 @@ export default function Exportar() {
     localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
     localStorage.removeItem(storageKey("rascunho_treino"));
     setResult({ total, preservados, porSessao });
+    mensagens.mostrar("importacao_concluida");
     setCanUndo(true);
     setRows([]);
     setFileName(null);

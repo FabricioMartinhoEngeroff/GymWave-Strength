@@ -115,6 +115,43 @@ describe("PowerliftingChart — EF_07", () => {
     });
   });
 
+  // ── 1RM pelo esforço (RPE) ────────────────────────────────────────────────
+
+  describe("1RM pelo esforço (RPE)", () => {
+    const supino = (dia: number, over: Partial<RegistroExercicio> = {}) =>
+      makeRegistro({
+        exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 5,
+        data: `0${dia}/06/2026`, dataTs: new Date(2026, 5, dia).getTime(), ...over,
+      });
+
+    it("com RPE mostra o 1RM ajustado abaixo do Epley (100kg x 5 @8 → 7RM = 123.33)", () => {
+      setLogbook([supino(1, { topSetRpe: 8 })]);
+      render(<PowerliftingChart />);
+      expect(screen.getByTestId("stats-rm1")).toHaveTextContent("116.67 kg");
+      expect(screen.getByTestId("stats-rm1-rpe")).toHaveTextContent("123.33 kg");
+    });
+
+    it("sem RPE no ultimo treino nao mostra o ajustado", () => {
+      setLogbook([supino(1, { topSetRpe: 8 }), supino(8)]);
+      render(<PowerliftingChart />);
+      expect(screen.queryByTestId("stats-rm1-rpe")).toBeNull();
+    });
+
+    it("acima de 10 reps ate a falha marca como aproximado", () => {
+      setLogbook([supino(1, { topSetReps: 12, topSetRpe: 8 })]);
+      render(<PowerliftingChart />);
+      expect(screen.getByTestId("stats-rm1-rpe")).toHaveTextContent("≈");
+    });
+
+    it("comecar a anotar RPE nao cria PR falso nem mexe na variacao", () => {
+      setLogbook([supino(1), supino(8, { topSetRpe: 7 })]);
+      render(<PowerliftingChart />);
+      expect(screen.queryByTestId("pr-badge")).toBeNull();
+      expect(screen.getByTestId("stats-variacao")).toHaveTextContent("0.00 kg");
+      expect(screen.getByTestId("pr-reference-value")).toHaveTextContent("PR: 116.67 kg");
+    });
+  });
+
   // ── Linha de PR e badges ──────────────────────────────────────────────────
 
   describe("Linha de PR e badges", () => {

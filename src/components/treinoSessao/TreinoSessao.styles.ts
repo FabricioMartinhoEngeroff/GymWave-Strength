@@ -102,6 +102,10 @@ export const TecnicaLabel = styled(Label)`
 
 export const TecnicaChip = styled(CycleChip)`
   padding: 6px 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
 `;
 
 /* ── Session selector ────────────────────────────────────────── */
@@ -383,24 +387,6 @@ export const SaveBtn = styled.button<{ $disabled?: boolean }>`
   }
 `;
 
-/* ── Toast / success banner ─────────────────────────────────── */
-
-interface ToastBannerProps {
-  $variant?: "success" | "error";
-}
-
-export const ToastBanner = styled.div<ToastBannerProps>`
-  background: ${(p) => (p.$variant === "error" ? "#fef2f2" : "#dcfce7")};
-  border: 0.5px solid ${(p) => (p.$variant === "error" ? "#fecaca" : "#86efac")};
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 13px;
-  color: ${(p) => (p.$variant === "error" ? "#991b1b" : "#166534")};
-  text-align: center;
-  margin-bottom: 10px;
-  font-weight: 600;
-`;
-
 /* ── Date input ──────────────────────────────────────────────── */
 
 export const DateInput = styled.input`
@@ -415,5 +401,225 @@ export const DateInput = styled.input`
   &:focus {
     outline: none;
     color: #2563eb;
+  }
+`;
+
+/* ── Botões de ação do treino ────────────────────────────────── */
+/* && vence o button:hover global (index.css), como os estilos inline faziam. */
+
+export const PrimaryBtn = styled.button<{ $variant?: "blue" | "green" }>`
+  && {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: ${(p) => (p.$variant === "green" ? "#16a34a" : "#2563eb")};
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    &:disabled {
+      background: #e5e7eb;
+      color: #9ca3af;
+      cursor: not-allowed;
+    }
+  }
+`;
+
+export const GhostBtn = styled.button<{ $compacto?: boolean }>`
+  && {
+    width: 100%;
+    padding: ${(p) => (p.$compacto ? "8px" : "10px")};
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #6b7280;
+    font-size: ${(p) => (p.$compacto ? "12px" : "13px")};
+    cursor: pointer;
+  }
+`;
+
+export const NavBtn = styled.button`
+  && {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 0;
+    border-radius: 10px;
+    border: 1.5px solid #2563eb;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    &:disabled {
+      border-color: #e5e7eb;
+      background: #f9fafb;
+      color: #d1d5db;
+      cursor: default;
+    }
+  }
+`;
+
+/* ── Avisos e status ─────────────────────────────────────────── */
+
+export const AvisoInline = styled.div`
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12px;
+  color: #c2410c;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+`;
+
+const TONS = {
+  verde: { fundo: "#dcfce7", borda: "#86efac", texto: "#166534" },
+  azul: { fundo: "#eff6ff", borda: "#bfdbfe", texto: "#1d4ed8" },
+  ambar: { fundo: "#fefce8", borda: "#fde68a", texto: "#92400e" },
+  vermelho: { fundo: "#fef2f2", borda: "#fecaca", texto: "#991b1b" },
+};
+
+export type Tom = keyof typeof TONS;
+
+export const StatusBox = styled.div<{ $tom: Tom }>`
+  background: ${(p) => TONS[p.$tom].fundo};
+  border: 1px solid ${(p) => TONS[p.$tom].borda};
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: ${(p) => TONS[p.$tom].texto};
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  svg {
+    flex-shrink: 0;
+  }
+`;
+
+export const BannerBox = styled.div<{ $tom: Tom }>`
+  background: ${(p) => TONS[p.$tom].fundo};
+  border: 1px solid ${(p) => TONS[p.$tom].borda};
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  color: ${(p) => TONS[p.$tom].texto};
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  svg {
+    flex-shrink: 0;
+  }
+`;
+
+export const PrBox = styled.div`
+  background: linear-gradient(135deg, #166534, #d97706);
+  border: 1px solid #d4af37;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ffffff;
+  font-weight: 600;
+`;
+
+/* ── Painel "Último treino" ──────────────────────────────────── */
+
+export const UltimoTreinoBox = styled.div`
+  background: #f0f9ff;
+  border: 0.5px solid #bae6fd;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+`;
+
+export const UltimoTreinoLinha = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 3px 0;
+  & + & {
+    border-top: 0.5px solid #d8eefc;
+  }
+`;
+
+export const TextoApoio = styled.p`
+  font-size: 11px;
+  color: #6b7280;
+  margin: 4px 0 0;
+`;
+
+/* ── Esforço (RPE/RIR) ───────────────────────────────────────── */
+
+export const EsforcoTopo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 6px;
+`;
+
+export const EsforcoTitulo = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #6b7280;
+  svg {
+    color: #2563eb;
+  }
+`;
+
+export const EscalaBtn = styled.button`
+  && {
+    width: auto;
+    margin: 0;
+    padding: 4px 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: none;
+    border-radius: 8px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+`;
+
+export const EsforcoChips = styled.div`
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 4px;
+`;
+
+const COR_ESFORCO = { leve: "#16a34a", moderado: "#d97706", alto: "#dc2626" };
+
+export const EsforcoChip = styled.button<{ $ativo: boolean; $nivel: keyof typeof COR_ESFORCO }>`
+  && {
+    width: 100%;
+    margin: 0;
+    padding: 10px 0;
+    border: 1px solid ${(p) => (p.$ativo ? COR_ESFORCO[p.$nivel] : "rgba(0,0,0,0.10)")};
+    border-radius: 10px;
+    background: ${(p) => (p.$ativo ? COR_ESFORCO[p.$nivel] : "#ffffff")};
+    color: ${(p) => (p.$ativo ? "#ffffff" : "#6b7280")};
+    font-size: 12px;
+    font-weight: ${(p) => (p.$ativo ? 600 : 400)};
+    cursor: pointer;
+    transition: all 0.15s;
+    &:active {
+      opacity: 0.8;
+    }
   }
 `;

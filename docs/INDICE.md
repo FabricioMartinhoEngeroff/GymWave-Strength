@@ -16,6 +16,7 @@ Documentação de todas as telas e funcionalidades do sistema GymWave Strength.
 | EF_06 | Exportar / Importar Dados | `/app` → aba Exportar | [EF_06_Exportar_Importar.md](./EF_06_Exportar_Importar.md) |
 | EF_07 | Gráfico Powerlifter (Moderno) | `/grafico-powerlifter` | [EF_07_Grafico_Powerlifter.md](./EF_07_Grafico_Powerlifter.md) |
 | EF_08 | Importação Admin | `/admin` | [EF_08_Admin_Import.md](./EF_08_Admin_Import.md) |
+| EF_09 | Mensagens, Conquistas e Tela de Erro | Global | [EF_09_Mensagens_e_Erros.md](./EF_09_Mensagens_e_Erros.md) |
 
 ---
 
@@ -54,6 +55,8 @@ Cada usuário tem as próprias chaves, no formato `gw:{id do usuário}:{chave}`.
 | `dadosTreino` | Registros legados por exercício e ciclo |
 | `planoTreino` | Plano de treino importado via planilha (ordem e séries válidas por sessão) |
 | `sessoes_config` | Sessões e exercícios do plano importado (faixas, cue, `clusterBlocos`…). Define os botões de sessão da tela de treino (EF_02 RG1.3) |
+| `escala_esforco` | Escala em que o atleta vê o esforço: `RPE` ou `RIR` (EF_02 RG20). O dado gravado é sempre RPE |
+| `registros_corrompido` / `dadosTreino_corrompido` | Cópia do original quando não pôde ser lido (EF_09 RG12) |
 | `dadosTreino_backup` | Backup automático gerado antes de importações |
 | `planoTreino_backup` / `sessoes_config_backup` | Backup do plano antes de importações |
 

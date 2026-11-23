@@ -28,6 +28,8 @@ import {
   ChartLineUp,
 } from "phosphor-react";
 import type { RegistroGraficoRaw } from "../../hooks/useDadosTreino";
+import { mensagens } from "../mensagens/mensagens";
+import { montarSeriePorData, type PontoGrafico } from "./serieProgressao";
 import {
   Card,
   CardHeader,
@@ -45,21 +47,6 @@ interface ChartCardProps {
   ciclosSelecionados: string[];
   isMobile: boolean;
 }
-
-type PontoGrafico = {
-  data: string; // "DD/MM"
-  dataFull: string; // "DD/MM/YYYY"
-  dataTs: number;
-  cicloId: string;
-  pesos: number[];
-  topSet: number;
-  media4: number;
-};
-
-const media = (nums: number[]): number => {
-  if (nums.length === 0) return 0;
-  return nums.reduce((acc, v) => acc + v, 0) / nums.length;
-};
 
 /**
  * Gera um array de elementos <p> para cada peso na série.
@@ -124,36 +111,25 @@ const CustomTooltip = ({
       <p style={{ margin: "4px 0 0 0" }}>
         <strong>Média (últimas 4 datas):</strong> {Math.round(graf.media4)} kg
       </p>
+      {graf.isDeload && (
+        <p style={{ margin: "4px 0 0 0", color: "#f87171", fontWeight: 600 }}>⬇ Deload (1 série)</p>
+      )}
     </div>
   );
 };
 
-function montarSeriePorData(
-  dados: RegistroGraficoRaw[],
-  ciclosSelecionados: string[]
-): PontoGrafico[] {
-  const filtrados = dados.filter((d) => ciclosSelecionados.includes(d.cicloId));
-  const porData = new Map<string, RegistroGraficoRaw>();
+const COR_DELOAD = "#dc2626";
 
-  filtrados.forEach((d) => {
-    const atual = porData.get(d.data);
-    if (!atual || d.topSet > atual.topSet) porData.set(d.data, d);
-  });
+interface PontoProps { cx?: number; cy?: number; payload?: PontoGrafico; raio: number }
 
-  const ordenados = [...porData.values()].sort((a, b) => a.dataTs - b.dataTs);
-  const pontosBase = ordenados.map((d) => ({
-    data: d.data.slice(0, 5),
-    dataFull: d.data,
-    dataTs: d.dataTs,
-    cicloId: d.cicloId,
-    pesos: d.pesos,
-    topSet: d.topSet,
-  }));
-
-  return pontosBase.map((p, i) => {
-    const janela = pontosBase.slice(Math.max(0, i - 3), i + 1).map((x) => x.topSet);
-    return { ...p, media4: media(janela) };
-  });
+/** Ponto da linha; deload é um círculo vermelho vazado (RG10). */
+function Ponto({ cx, cy, payload, raio }: PontoProps) {
+  if (cx === undefined || cy === undefined) return null;
+  return payload?.isDeload ? (
+    <circle cx={cx} cy={cy} r={5} fill="rgba(220,38,38,0.15)" stroke={COR_DELOAD} strokeWidth={1.5} />
+  ) : (
+    <circle cx={cx} cy={cy} r={raio} fill="#fff" stroke="#00C853" strokeWidth={2.5} />
+  );
 }
 
 /**
@@ -178,10 +154,7 @@ export function ChartCard({
   const handleAtualizar = () => window.location.reload();
 
   const handleExcluir = () => {
-    const confirmacao = window.confirm("Deseja realmente excluir este gráfico?");
-    if (confirmacao) {
-      setVisivel(false);
-    }
+    mensagens.confirmar("ocultar_grafico", { aoConfirmar: () => setVisivel(false) });
   };
 
   // No mobile, limita a quantidade de labels visíveis no eixo X para evitar
@@ -282,7 +255,9 @@ export function ChartCard({
                 stroke="#00C853"
                 strokeWidth={2.5}
                 fill={`url(#${gradientId})`}
-                dot={{ r: isMobile ? 2.5 : 3 }}
+                dot={({ key, cx, cy, payload }) => (
+                  <Ponto key={key} cx={cx} cy={cy} payload={payload} raio={isMobile ? 2.5 : 3} />
+                )}
                 activeDot={{ r: 6 }}
               />
 
@@ -308,6 +283,18 @@ export function ChartCard({
           </ResponsiveContainer>
         </div>
       )}
+
+      {serie.some((p) => p.isDeload) && (
+        <p
+          data-testid="chart-card-deload"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, margin: "6px 0 0", fontSize: 12, color: "#f87171" }}
+        >
+          <svg width={12} height={12} aria-hidden>
+            <circle cx={6} cy={6} r={5} fill="rgba(220,38,38,0.15)" stroke={COR_DELOAD} strokeWidth={1.5} />
+          </svg>
+          Deload (1 série)
+        </p>
+      )}
     </Card>
   );
 }
@@ -316,9 +303,10 @@ type Tendencia = { texto: string; tone: "up" | "down" | "flat" };
 
 function useTendencia(serie: PontoGrafico[]): Tendencia | null {
   return useMemo(() => {
-    if (serie.length < 2) return null;
-    const atual = serie[serie.length - 1]?.topSet ?? 0;
-    const anterior = serie[serie.length - 2]?.topSet ?? 0;
+    const normais = serie.filter((p) => !p.isDeload);
+    if (normais.length < 2) return null;
+    const atual = normais[normais.length - 1]?.topSet ?? 0;
+    const anterior = normais[normais.length - 2]?.topSet ?? 0;
     const delta = atual - anterior;
 
     if (delta === 0) return { texto: "Estável", tone: "flat" };

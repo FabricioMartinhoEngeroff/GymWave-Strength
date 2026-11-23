@@ -251,4 +251,42 @@ describe("useDadosTreino — Hook de dados para gráficos", () => {
       });
     });
   });
+
+  describe("Deload e treino nas duas bases (EF_03 RG10/RG11)", () => {
+    const supino = (over: Partial<RegistroExercicio> = {}): RegistroExercicio => ({
+      ...BASE_LOGBOOK_REGISTRO, exercicio: "Supino reto barra", topSetKg: 100, topSetReps: 8,
+      data: "10/06/2026", dataTs: new Date(2026, 5, 10).getTime(), ...over,
+    });
+    const resumo = (pesos: string[], reps: string[]) =>
+      localStorage.setItem("dadosTreino", JSON.stringify({ "Supino reto barra": { UA: { data: "10/06/2026", pesos, reps, exercicio: "Supino reto barra" } } }));
+
+    it("marca o deload e usa só a série feita, mesmo com o resumo do mesmo treino", async () => {
+      resumo(["100", "97"], ["8", "6"]);
+      setLogbook([supino({ isDeload: true, backoffKg: 97, backoffReps: 6 })]);
+      const { result } = renderHook(() => useDadosTreino());
+      await waitFor(() => expect(result.current["Supino reto barra"]).toHaveLength(1));
+      expect(result.current["Supino reto barra"]?.[0]).toMatchObject({ isDeload: true, pesos: [100], volumeLoad: 800 });
+    });
+
+    it("o registro vale mais que o resumo: a técnica não se perde", async () => {
+      resumo(["110", "100"], ["4", "4"]);
+      setLogbook([supino({ topSetKg: 0, topSetReps: 0, tecnica: "RP", clusterSeries: [{ kg: 100, reps: 4 }, { kg: 110, reps: 4 }] })]);
+      const { result } = renderHook(() => useDadosTreino());
+      await waitFor(() => expect(result.current["Supino reto barra"]).toHaveLength(1));
+      expect(result.current["Supino reto barra"]?.[0]).toMatchObject({ tecnica: "RP", topSet: 100 });
+    });
+
+    it("resumo sem registro continua valendo (histórico antigo)", async () => {
+      resumo(["100", "97"], ["8", "6"]);
+      const { result } = renderHook(() => useDadosTreino());
+      await waitFor(() => expect(result.current["Supino reto barra"]).toHaveLength(1));
+      expect(result.current["Supino reto barra"]?.[0]?.isDeload).toBeFalsy();
+    });
+
+    it("série sem reps não aparece nos pesos", async () => {
+      setLogbook([supino({ backoffKg: 97, backoffReps: 0 })]);
+      const { result } = renderHook(() => useDadosTreino());
+      await waitFor(() => expect(result.current["Supino reto barra"]?.[0]?.pesos).toEqual([100]));
+    });
+  });
 });

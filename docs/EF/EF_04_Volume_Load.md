@@ -38,8 +38,10 @@ Qualquer usuário autenticado com dados registrados possui acesso.
   - **2–6 sem** — modo **comparativo semana a semana**: exibe N barras horizontais por músculo, uma para cada semana individual (da mais antiga à mais recente), permitindo comparar a evolução semana a semana.
   - **Mês** — compara mês calendário atual vs mês anterior (2 barras por músculo).
 - **RG8** – O banner de semanas consecutivas (`[banner_deload]`) é exibido quando o usuário possui ≥ 10 semanas de treino contínuo no logbook sem pausa de ≥ 7 dias. Semanas consecutivas são contadas a partir das datas reais dos registros.
-- **RG9** – O badge `[estagnado]` é exibido no card do grupo muscular quando ≥ 2 exercícios daquele grupo acumulam ≥ 4 sessões consecutivas sem progressão (`progrediu === false` e `topSetBateuTeto === false`).
-- **RG10** – O badge `[↓ carga]` é exibido no card do grupo muscular quando o tonnage (peso × reps) caiu entre o período anterior e o atual em ≥ 2 exercícios daquele grupo.
+- **RG9** – O badge `[estagnado]` é exibido no card do grupo muscular quando ≥ 2 exercícios daquele grupo acumulam ≥ 4 sessões consecutivas sem progressão (`progrediu === false` e `topSetBateuTeto === false`). Sessões em deload são ignoradas (RG11).
+- **RG10** – O badge `[↓ carga]` é exibido no card do grupo muscular quando o tonnage (peso × reps) caiu entre o período anterior e o atual em ≥ 2 exercícios daquele grupo. Sessões em deload são ignoradas (RG11).
+- **RG11** – **Deload:** o volume do deload conta só a série feita (EF_02 RG15) e o card do músculo exibe o badge `deload` quando há ao menos um exercício em deload no período atual, para explicar a queda de volume. Deload não gera `[estagnado]` nem `[↓ carga]`.
+- **RG12** – **Só conta o que foi feito:** série sem peso ou sem repetições não soma volume nem conta como série válida (EF_02 RG24).
 
 ---
 
@@ -101,6 +103,7 @@ Para cada grupo muscular com dados, exibe:
 | Badge de volume | `abaixo do estímulo` (amarelo) / `adequado` (verde) / `volume alto` (laranja) / `risco overtraining` (vermelho) — conforme RG4 |
 | Badge de estagnação | `estagnado` (laranja) — conforme RG9; exibido ao lado do badge de volume |
 | Badge de queda | `↓ carga` (vermelho) — conforme RG10; exibido ao lado dos outros badges |
+| Badge de deload | `deload` (azul) — conforme RG11 |
 | Variação percentual | Variação vs período anterior (verde / vermelho / "—"). No modo comparativo (2–6 sem), delta entre a semana mais recente e a penúltima |
 | Barras de volume | Varia conforme o modo — ver 4.5.1 e 4.5.2 abaixo |
 | Valores numéricos | Volume em kg ao lado de cada barra |

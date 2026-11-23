@@ -1256,4 +1256,48 @@ describe("VolumeLoadCalc — 4 séries válidas no logbook", () => {
     expect(peito?.volumeAtual).toBe(600 + 500 + 500 + 400);
     expect(peito?.seriesAtual).toBe(4);
   });
+
+  describe("Deload e séries não feitas (EF_04 RG11/RG12)", () => {
+    const entrada = (exercicio: string, iso: string, over: Record<string, unknown> = {}) => ({
+      exercicio, treinoId: "UA", data: iso.split("-").reverse().join("/"), dataTs: new Date(`${iso}T10:00:00`).getTime(),
+      topSetKg: 100, topSetReps: 6, topSetFaixaMin: 5, topSetFaixaMax: 9, topSetBateuTeto: false,
+      backoffKg: 100, backoffReps: 5, backoffFaixaMin: 5, backoffFaixaMax: 9,
+      seriesValidas: 3, extraKg: 90, extraReps: 10, progrediu: false, ...over,
+    });
+    const gravar = (lb: Record<string, unknown[]>) => localStorage.setItem("logbook", JSON.stringify(lb));
+    const peito = () => calcVolumeLoad().find((r) => r.musculo === "Peitoral");
+    const DOIS = ["Supino reto barra", "Crossover braço estendido"];
+    const nosDois = (f: (ex: string) => unknown[]) => Object.fromEntries(DOIS.map((ex) => [ex, f(ex)]));
+
+    it("deload conta só o Top Set 1 e marca o músculo", () => {
+      gravar({ [DOIS[0]!]: [entrada(DOIS[0]!, "2026-06-10", { isDeload: true })] });
+      expect(peito()).toMatchObject({ volumeAtual: 600, seriesAtual: 1, temDeload: true });
+    });
+
+    it("sem deload no período atual o músculo não é marcado", () => {
+      gravar({ [DOIS[0]!]: [entrada(DOIS[0]!, "2026-06-10"), entrada(DOIS[0]!, "2026-06-03", { isDeload: true })] });
+      expect(peito()?.temDeload).toBe(false);
+    });
+
+    it("comparativo semanal marca o deload da semana mais recente", () => {
+      gravar({ [DOIS[0]!]: [entrada(DOIS[0]!, "2026-06-10", { isDeload: true })] });
+      expect(calcVolumeLoadPerWeek(2).find((r) => r.musculo === "Peitoral")?.temDeload).toBe(true);
+    });
+
+    it("3 válidas com o Back-off sem reps conta 2 séries", () => {
+      gravar({ [DOIS[0]!]: [entrada(DOIS[0]!, "2026-06-10", { extraReps: 0 })] });
+      expect(peito()).toMatchObject({ volumeAtual: 1100, seriesAtual: 2 });
+    });
+
+    it("deload não gera queda de carga", () => {
+      gravar(nosDois((ex) => [entrada(ex, "2026-06-10", { topSetKg: 60, isDeload: true }), entrada(ex, "2026-06-03")]));
+      expect(calcQuedaCargaMusculo("Peitoral")).toBe(false);
+    });
+
+    it("deload não conta como sessão estagnada", () => {
+      const datas = ["2026-06-10", "2026-06-03", "2026-05-27"];
+      gravar(nosDois((ex) => [...datas.map((d) => entrada(ex, d)), entrada(ex, "2026-06-11", { isDeload: true })]));
+      expect(calcEstagnadoMusculo("Peitoral")).toBe(false);
+    });
+  });
 });

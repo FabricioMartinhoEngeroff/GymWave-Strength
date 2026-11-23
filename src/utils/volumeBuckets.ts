@@ -13,6 +13,8 @@ export interface BucketVolume {
   label: string;
   volume: number;
   temRP: boolean;
+  temDeload: boolean;
+  soDeload: boolean; // todas as sessões do período em deload
   inicioTs: number;
 }
 
@@ -84,12 +86,16 @@ export function agruparVolumePorPeriodo(
     if (atual) {
       atual.volume += r.volumeLoad;
       if (r.tecnica === "RP") atual.temRP = true;
+      if (r.isDeload) atual.temDeload = true;
+      else atual.soDeload = false;
     } else {
       buckets.set(chave, {
         chave,
         label,
         volume: r.volumeLoad,
         temRP: r.tecnica === "RP",
+        temDeload: !!r.isDeload,
+        soDeload: !!r.isDeload,
         inicioTs,
       });
     }

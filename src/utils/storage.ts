@@ -1,3 +1,5 @@
+import { deveSubirPeso } from "./esforco";
+import { serieFeita } from "./seriesValidas";
 import type { DadosTreino, Logbook, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
 import {
   comIdUnico,
@@ -49,15 +51,73 @@ export function storageKey(base: string): string {
   return _userId ? `gw:${_userId}:${base}` : base;
 }
 
+// ─── Proteção contra perda de dados (EF_09 RG12/RG13) ─────────────────────────
+
+type OuvinteCorrompido = (base: string) => void;
+const ouvintes = new Set<OuvinteCorrompido>();
+
+/** Chamado quando um dado guardado não pôde ser lido. Devolve a função que para de ouvir. */
+export function ouvirDadosCorrompidos(fn: OuvinteCorrompido): () => void {
+  ouvintes.add(fn);
+  return () => {
+    ouvintes.delete(fn);
+  };
+}
+
+/** Copia o original ilegível antes que qualquer gravação passe por cima. */
+function guardarCorrompido(base: string, raw: string): void {
+  const prefixo = storageKey(`${base}_corrompido`);
+  const copias = Object.keys(localStorage).filter((k) => k.startsWith(prefixo));
+  if (copias.some((k) => localStorage.getItem(k) === raw)) return;
+  try {
+    localStorage.setItem(copias.length === 0 ? prefixo : `${prefixo}_${copias.length + 1}`, raw);
+  } catch {
+    // Sem espaço para a cópia: o aviso ainda orienta a baixar o backup.
+  }
+  ouvintes.forEach((fn) => fn(base));
+}
+
 // JSON corrompido (ou de tipo inesperado) vira objeto vazio em vez de lançar.
 function lerObjeto<T extends object>(key: string): T {
-  const raw = localStorage.getItem(key);
-  if (!raw) return {} as T;
+  return parseObjeto<T>(localStorage.getItem(key)) ?? ({} as T);
+}
+
+function ehObjeto(v: unknown): v is object {
+  return typeof v === "object" && v !== null && !Array.isArray(v);
+}
+
+function parseObjeto<T extends object>(raw: string | null): T | null {
+  if (!raw) return null;
   try {
     const parsed: unknown = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null && !Array.isArray(parsed) ? (parsed as T) : ({} as T);
+    return ehObjeto(parsed) ? (parsed as T) : null;
   } catch {
-    return {} as T;
+    return null;
+  }
+}
+
+/** Lê um objeto guardado do usuário (plano, sessões…); ilegível vira vazio. */
+export function lerObjetoSalvo<T extends object = Record<string, unknown>>(base: string): T {
+  return lerObjeto<T>(storageKey(base));
+}
+
+const CHAVES_TREINO = ["registros", "logbook", "logbook_v1_backup", "dadosTreino", "planoTreino", "sessoes_config"];
+
+/** Grava tudo ou nada: se algo falhar, os dados de treino voltam ao que eram e o erro segue. */
+export function emTransacao<T>(gravar: () => T): T {
+  const antes = CHAVES_TREINO.map((base) => {
+    const chave = storageKey(base);
+    return { chave, valor: localStorage.getItem(chave) };
+  });
+  try {
+    return gravar();
+  } catch (erro) {
+    // Apaga primeiro o que cresceu, para sobrar espaço para o valor original.
+    antes.forEach(({ chave, valor }) => localStorage.getItem(chave) !== valor && localStorage.removeItem(chave));
+    antes.forEach(({ chave, valor }) => {
+      if (valor !== null && localStorage.getItem(chave) === null) localStorage.setItem(chave, valor);
+    });
+    throw erro;
   }
 }
 
@@ -96,7 +156,24 @@ export const salvarDados = (dados: DadosTreino) => {
 };
 
 
-export const carregarDados = (): DadosTreino => lerObjeto<DadosTreino>(storageKey("dadosTreino"));
+export function carregarDados(): DadosTreino {
+  const raw = localStorage.getItem(storageKey("dadosTreino"));
+  const lido = parseObjeto(raw);
+  if (!raw) return {};
+  const dados: DadosTreino = {};
+  let intacto = lido !== null;
+  for (const [exercicio, ciclos] of Object.entries(lido ?? {})) {
+    if (!ehObjeto(ciclos)) {
+      intacto = false;
+      continue;
+    }
+    const bons = Object.entries(ciclos).filter(([, reg]) => ehObjeto(reg));
+    if (bons.length < Object.keys(ciclos).length) intacto = false;
+    dados[exercicio] = Object.fromEntries(bons) as DadosTreino[string];
+  }
+  if (!intacto) guardarCorrompido("dadosTreino", raw);
+  return dados;
+}
 
 
 // ─── Histórico de treinos (formato v3: lista de registros) ────────────────────
@@ -119,8 +196,13 @@ export function carregarRegistros(): Registro[] {
   const raw = localStorage.getItem(storageKey("registros"));
   if (raw === null) return migrarLogbookV2() ?? [];
   try {
-    return sanitizarRegistros(JSON.parse(raw));
+    const lido: unknown = JSON.parse(raw);
+    const validos = sanitizarRegistros(lido);
+    // Registro inválido sairia na próxima gravação: guarda o original antes.
+    if (!Array.isArray(lido) || validos.length < lido.length) guardarCorrompido("registros", raw);
+    return validos;
   } catch {
+    guardarCorrompido("registros", raw);
     return [];
   }
 }
@@ -188,10 +270,53 @@ export function ultimoRegistro(exercicio: string, treinoId: string): RegistroExe
 }
 
 
+/** Treinos do exercício na sessão, do mais recente para o mais antigo, sem os deloads. */
+function treinosNormais(exercicio: string, treinoId: string): RegistroExercicio[] {
+  return carregarHistorico(exercicio)
+    .filter((r) => r.treinoId === treinoId && !r.isDeload)
+    .sort((a, b) => b.dataTs - a.dataTs);
+}
+
+/** Último treino que serve de referência: deload só vale se não houver outro (RG15). */
+export function ultimoTreinoNormal(exercicio: string, treinoId: string): RegistroExercicio | null {
+  return treinosNormais(exercicio, treinoId)[0] ?? ultimoRegistro(exercicio, treinoId);
+}
+
+/**
+ * Valores que abrem nos campos (RG5.1): o último treino normal e, para cada série
+ * que não foi feita nele, a última vez em que aquela série foi feita.
+ */
+export function referenciaDoExercicio(exercicio: string, treinoId: string): RegistroExercicio | null {
+  const ultimo = ultimoTreinoNormal(exercicio, treinoId);
+  if (!ultimo) return null;
+  const anteriores = treinosNormais(exercicio, treinoId);
+  const mesmoModelo = (r: RegistroExercicio) => (r.seriesValidas === 4) === (ultimo.seriesValidas === 4);
+  const ref = { ...ultimo };
+
+  if (ref.topSetKg <= 0) {
+    const r = anteriores.find((a) => serieFeita(a.topSetKg, a.topSetReps));
+    if (r) Object.assign(ref, { topSetKg: r.topSetKg, topSetReps: r.topSetReps });
+  }
+  if (!serieFeita(ref.backoffKg, ref.backoffReps)) {
+    const r = anteriores.find((a) => serieFeita(a.backoffKg, a.backoffReps));
+    if (r) Object.assign(ref, { backoffKg: r.backoffKg, backoffReps: r.backoffReps });
+  }
+  if (!serieFeita(ref.extraKg, ref.extraReps)) {
+    const r = anteriores.find((a) => mesmoModelo(a) && serieFeita(a.extraKg, a.extraReps));
+    if (r) Object.assign(ref, { extraKg: r.extraKg, extraReps: r.extraReps });
+  }
+  if (!serieFeita(ref.serie4Kg, ref.serie4Reps)) {
+    const r = anteriores.find((a) => mesmoModelo(a) && serieFeita(a.serie4Kg, a.serie4Reps));
+    if (r) Object.assign(ref, { serie4Kg: r.serie4Kg, serie4Reps: r.serie4Reps });
+  }
+  return ref;
+}
+
+
 export function exercicioDeveSubirPeso(exercicio: string, treinoId: string): boolean {
-  const ultimo = ultimoRegistro(exercicio, treinoId);
+  const ultimo = ultimoTreinoNormal(exercicio, treinoId);
   if (!ultimo) return false;
-  return ultimo.topSetBateuTeto;
+  return deveSubirPeso(ultimo.topSetBateuTeto, ultimo.topSetRpe);
 }
 
 

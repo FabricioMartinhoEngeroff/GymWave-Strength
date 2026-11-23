@@ -167,7 +167,7 @@
 
 ---
 
-### 1.9 epleyCalc (8 testes)
+### 1.9 epleyCalc
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -179,6 +179,43 @@
 | 6 | Registro modo BC — `extractReferenceBlock` | Retorna `{peso, reps}` do Bloco 1 (R1); demais blocos ignorados |
 | 7 | Registro modo RP — `extractReferenceBlock` | Retorna `{peso, reps}` do Bloco 1 (R1); demais blocos ignorados |
 | 8 | Registro BC sem Bloco 1 preenchido | `extractReferenceBlock` retorna null |
+| 9 | `estimar1RM(100, 5, 8)` | Vale como 7RM: Epley com 5 + 2 reps |
+| 10 | `estimar1RM` com RPE 10 ate 10 reps | Igual ao Epley puro |
+| 11 | `estimar1RM(100, 1, 10)` | 100 (o proprio 1RM) |
+| 12 | `estimar1RM(100, 15, 10)` | Mayhew (141.73), menor que o Epley, `aproximado: true` |
+| 13 | Reps de 8 a 20 com RPE 10 | 1RM nunca cai ao cruzar as 10 reps |
+| 14 | Sem RPE, RPE abaixo de 7, peso ou reps zerados | Retorna null |
+
+### 1.10 esforco (RPE/RIR)
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | `normalizarRpe` com 6, 6.5, 7, 8.5, 10 | Aceita |
+| 2 | `normalizarRpe` com 5.5, 10.5, 8.2, NaN, texto, null | Retorna undefined |
+| 3 | Rotulos RPE 10 / 8 / 8.5 / 6 | RIR 0 / 2 / 1.5 / 4+ |
+| 4 | Teto com RPE 7.5 | Sobe peso |
+| 5 | Teto com RPE 8 (limite) ou 10 | Nao sobe |
+| 6 | Teto sem RPE | Sobe (regra antiga) |
+| 7 | Sem teto, mesmo com RPE 6 | Nao sobe |
+| 8 | Fadiga: 100kg x 7 com RPE 7 → 8 → 8.5 em 2 semanas | Alerta com kg, RPE inicial, RPE atual e 3 treinos |
+| 9 | Fadiga: menos reps com RPE maior | Alerta |
+| 10 | Fadiga: mais reps com RPE maior | Sem alerta (progresso) |
+| 11 | Fadiga: menos de 3 treinos / alta < 1 / RPE caiu / mesma semana / sem RPE | Sem alerta |
+| 12 | Fadiga: outra carga, cluster ou treino sem RPE no meio | Ignorados na sequencia |
+| 13 | Fadiga: mesmo exercicio em outra sessao com outra carga | Nao apaga o alerta da sessao original |
+| 14 | Fadiga: deload no meio ou no fim | Zera a contagem |
+| 15 | Fadiga: carga mudou no ultimo treino | Alerta encerrado |
+| 16 | Fadiga: primeiro treino fora das 6 semanas | Nao entra na sequencia |
+
+### 1.11 registros — RPE por serie
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | RPE em Top Set 1, Top Set 2, Back-off e Serie 4 | Vai e volta no formato v3 |
+| 2 | RPE de Cluster Set | Gravado no ultimo bloco de cada serie; volta em `clusterRpe`/`clusterRpe2` |
+| 3 | Serie sem RPE | Registro sem o campo `rpe` (igual aos antigos) |
+| 4 | RPE invalido vindo de importacao | Campo descartado; treino mantido |
+| 5 | Exportar CSV | Coluna `rpe` no fim; vazia quando nao anotado |
 
 ---
 
@@ -462,7 +499,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ## 9. COMPONENTES DE FEATURE
 
-### 9.1 TreinoSessao (73 testes)
+### 9.1 TreinoSessao
 
 **Renderização inicial (3)**
 
@@ -609,6 +646,81 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 71 | Ativar Deload restaura pesos do historico no Top Set | Campo Top Set kg = peso do ultimo registro |
 | 72 | Desativar Deload restaura Back-off com sugestao azul | `data-suggestion="true"` nos campos de Back-off restaurados |
 | 73 | Salvar com Deload — `seriesValidas=1` | Apenas Top Set no registro; backoff zerado |
+
+**Esforço por série — RPE/RIR (EF_02 RG20 a RG22)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 74 | Salvar sem marcar esforco | Series sem o campo `rpe` |
+| 75 | Marcar RPE 8 no Top Set 1 e 9.5 no Top Set 2 | Gravados em cada serie do registro |
+| 76 | Tocar no chip marcado | Desmarca (`aria-pressed=false`) |
+| 77 | Trocar para RIR | RPE 8 vira RIR 2 em todas as series; escolha lembrada ao reabrir |
+| 78 | Historico com RPE 8.5 | Campo abre vazio; painel mostra `· RPE 8.5` |
+| 79 | Fechar e reabrir o app | Esforco volta do rascunho |
+| 80 | Cluster Set | Um esforco por serie cluster, gravado no registro |
+| 81 | Revisao | Exibe `@ RPE X` depois das reps |
+| 82 | Teto com RPE 7.5 | `Teto atingido — sobe peso no próximo` |
+| 83 | Teto com RPE 9 | `Teto atingido com RPE 9 — repete a carga`; nao conta no resumo |
+| 84 | Abrir com ultimo treino no teto, RPE 7 / RPE 9 | `SUBIR PESO HOJE` / `CONSOLIDAR CARGA` |
+| 85 | Mesma carga com RPE 7 → 8 → 9 em 3 treinos | `[alerta_fadiga]` exibido |
+| 86 | RPE estavel | Sem alerta |
+
+**Estrutura — domain, hook e blocos**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 87 | `espelharPesos` | Top Set 2 copia o Top Set 1; Back-off a 90%; trava com edicao ou confirmacao; nada em Deload/Cluster |
+| 88 | Ativar/desativar Cluster e Deload | Campos limpos ou restaurados do logbook; esforcos zerados |
+| 89 | `exercicioConcluido` por modo | Pulado, 1/2 validas, Deload e Cluster |
+| 90 | `montarRegistro` | Registro e linha legada por numero de validas; null quando nao ha o que salvar |
+| 91 | `useSessaoTreino` | Sugestao, espelho, rascunho, avisos, modos, salvar e substituir no mesmo dia |
+| 92 | `TopSetBlock`, `TopSet2Block`, `BackoffBlock`, `SeriesExtrasBlock`, `ClusterBlock`, `DeloadBlock` | Cada bloco edita so os proprios campos |
+
+**Só conta o que foi feito (EF_02 RG11 e RG24)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 93 | 3 validas, Back-off zerado, vazio, so com peso ou so com reps | Grava e conta 2 series; volume sem o Back-off |
+| 94 | 4 validas sem a Serie 4 | Grava 3 series |
+| 95 | Top Set 2 nao confirmado (so sugestao) | Nao grava Top Set 2 nem Back-off |
+| 96 | Top Set 2 apagado ou zerado | `Próximo` avanca sem aviso; grava so o Top Set 1 |
+| 97 | Top Set 1 sem reps | Exercicio nao e gravado |
+| 98 | Top Set confirmado e depois zerado | Volta a nao concluido; `Próximo` exibe aviso |
+| 99 | Cluster confirmado e depois esvaziado | Nao grava |
+| 100 | Exercicio pulado com sugestao nos campos | Nao grava peso, reps nem volume |
+| 101 | Pular, voltar e confirmar | Deixa de ser pulado e grava |
+| 102 | Revisao | Mostra so as series que serao gravadas |
+
+**Deload grava só o Top Set 1 (EF_02 RG15)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 103 | Deload com 4 validas e sugestoes guardadas | So `top1` em `registros` e em `dadosTreino`; `seriesValidas: 1` |
+| 104 | Deload no teto | Sem teto, sem PR, nao conta em "sobem de peso"; `Deload registrado — não conta para progressão` |
+| 105 | Deload vindo do Cluster | Top Set 1 volta com o ultimo treino |
+| 106 | Deload antigo com series a mais | Lido so com o Top Set 1; dado guardado intacto |
+| 107 | Treino depois do deload | Abre com o ultimo treino normal; progressao compara com ele |
+
+**O sistema sugere, nunca altera (EF_02 RG5.1)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 108 | Ultimo treino no teto | Campo mantem peso e reps; so o aviso aparece |
+| 109 | Serie nao feita no ultimo treino | Campo abre com a ultima vez em que ela foi feita |
+| 110 | Ultimo treino em Cluster | Top Sets abrem com o ultimo treino em que foram feitos |
+| 111 | Serie 3 (4 validas) x Back-off (3 validas) | Nao se misturam |
+| 112 | Serie 3/4 apagada e Top Set 1 reconfirmado | Campo continua vazio |
+
+**Gráficos e Volume com deload (EF_03 RG10/RG11, EF_04 RG11/RG12)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 113 | Progressao com deload | Ponto vermelho vazado e legenda `Deload (1 série)`; fora da media e da tendencia |
+| 114 | Volume Load: semana so deload / mista | `soDeload` (barra vermelha) / so `temDeload` (tooltip) |
+| 115 | Mesmo treino em `registros` e `dadosTreino` | Usa so o registro; deload e tecnica nao se perdem |
+| 116 | Serie sem reps | Nao aparece nos pesos nem conta como valida |
+| 117 | Volume por musculo com deload | Conta 1 serie; badge `deload` |
+| 118 | Deload e os alertas | Nao gera `estagnado` nem `↓ carga` |
 
 ---
 
@@ -839,7 +951,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.11 PowerliftingChart (22 testes)
+### 9.11 PowerliftingChart (26 testes)
 
 **Dados e cálculo (4)**
 
@@ -887,6 +999,78 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 20 | Apenas registros com `isDeload=true` | 1RM correto exibido no card de stats |
 | 21 | Mix normal + RP + Deload | Tres sessoes contabilizadas no card |
 | 22 | Registro sem campo `isDeload` (undefined) | Tratado como nao-deload; sem marcador vermelho |
+
+**1RM pelo esforco — RPE (4)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 23 | 100kg x 5 com RPE 8 | 1RM 116.67 e, abaixo, `pelo RPE: 123.33 kg` |
+| 24 | Ultimo treino sem RPE | Nao mostra o 1RM pelo RPE |
+| 25 | Mais de 10 reps ate a falha | Valor com `≈` |
+| 26 | Comecar a anotar RPE com a mesma carga e reps | Sem PR falso; variacao 0.00; linha de PR inalterada |
+
+---
+
+### 9.12 Mensagens e tela de erro (EF_09)
+
+**Avisos e confirmações**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | Mostrar mensagem do catalogo | Titulo, texto, cor e icone do tipo |
+| 2 | Sucesso/info por 5 s; aviso/conquista por 8 s | Some sozinho |
+| 3 | Erro | `role=alert`; fica ate fechar |
+| 4 | Mensagem repetida | Nao empilha; reinicia o tempo |
+| 5 | 4 mensagens | 3 visiveis; a 4a entra quando uma sai |
+| 6 | Dialogo aberto | Foco no botao seguro; titulo, texto e lista associados |
+| 7 | Esc, toque fora ou botao seguro | Cancela |
+| 8 | Tab no dialogo | Nao sai dele |
+| 9 | Dois dialogos | Um por vez, na ordem |
+| 10 | Catalogo | Todo texto preenchido e sem termo tecnico |
+| 11 | Codigo do sistema | Nenhum `alert`/`confirm`/`prompt` do navegador |
+
+**Saída do treino e séries não feitas**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | So abrir a sessao com sugestoes | Nao conta como treino em andamento |
+| 2 | Digitar, confirmar, pular, anotar ou marcar esforco | Conta como em andamento |
+| 3 | Trocar de aba em andamento | `[treino_em_andamento]`; ficar mantem, sair troca |
+| 4 | Entre as outras abas / mesma aba | Nao pergunta |
+| 5 | Sair da conta em andamento | `[sair_da_conta]` antes de sair |
+| 6 | Voltar ao treino com progresso | `[rascunho_restaurado]` |
+| 7 | Salvar com series nao feitas | Lista por exercicio; voltar nao grava; salvar assim mesmo grava so o feito |
+| 8 | Pulado e deload | Fora da lista |
+| 9 | Salvar sem nenhuma serie | `[nenhuma_serie_feita]`; nada gravado; rascunho mantido |
+
+**Conquistas**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | 1RM acima do anterior | `[conquista_recorde]`; varios viram uma mensagem |
+| 2 | Igual, primeiro registro ou deload | Sem recorde |
+| 3 | Todos os exercicios e series feitos | `[conquista_treino_completo]` |
+| 4 | 1, 10, 25, 50, 100, 200 treinos | `[conquista_marco]`; 2, 11, 99 e 150 nao |
+
+**Tela de erro e proteção de dados**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | Tela quebra | `[tela_erro]` sem detalhe tecnico |
+| 2 | Recarregar | Recarrega a pagina |
+| 3 | Baixar backup | JSON importavel; confirma "Backup baixado"; falha avisa sem quebrar |
+| 4 | Sem usuario logado | Sem botao de backup |
+| 5 | Aba quebra | Navegacao continua; trocar de aba recupera |
+| 6 | Rota quebra | Tela amigavel no lugar da do roteador; todas as rotas cobertas |
+| 7 | Backup com dado ilegivel | Campo `bruto`; nunca leva senha, sessao ou outro usuario |
+| 8 | Uma chave impossivel de ler | As outras vao no backup e continuam importaveis |
+| 9 | `registros`/`dadosTreino` ilegivel (todo ou parte) | Original copiado para `_corrompido` antes de gravar; avisa uma vez |
+| 10 | Plano, sessoes ou rascunho estragados | Tela abre com o que presta |
+| 11 | Falha no meio de salvar ou importar | Volta ao estado anterior; mensagem amigavel; rascunho mantido |
+| 12 | Rascunho sem espaco | `[rascunho_nao_salvo]`; tela continua |
+| 13 | Erro de espaco, bloqueio, rede, leitura, outros | Mensagem correspondente; ruido do navegador ignorado |
+| 14 | Planilha ilegivel / sem linhas | `[arquivo_invalido]` / `[planilha_vazia]`; nao fica em "Lendo…" |
+| 15 | Excluir no relatorio | Pede confirmacao |
 
 ---
 

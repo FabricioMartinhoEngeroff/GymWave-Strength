@@ -5,12 +5,13 @@
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { renderComMensagens } from "../mensagens/helpers";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
 import { carregarLogbookCompleto, carregarRegistros, salvarRegistro } from "../../../utils/storage";
 
 function renderFresh() {
   localStorage.clear();
-  return render(<TreinoSessao />);
+  return renderComMensagens(<TreinoSessao />);
 }
 
 function selecionarSessao(nome: string) {

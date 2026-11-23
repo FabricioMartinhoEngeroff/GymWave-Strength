@@ -8,6 +8,8 @@ import Exportar from "./components/exportar/Exportar";
 import BottomNav, { type Tab } from "./components/layout/BottomNav";
 import { GraphicsContainer } from "./components/graphic/GraphicsContainer";
 import ReportPage from "./components/report";
+import { ErrorBoundary } from "./components/mensagens/ErrorBoundary";
+import { mensagens } from "./components/mensagens/mensagens";
 import { useAuth } from "./components/login/context/useAuth";
 
 const Shell = styled.div`
@@ -73,17 +75,22 @@ export default function App() {
 
   const handleTabChange = useCallback(
     (newTab: Tab) => {
-      if (newTab !== "registrar" && unsavedChanges) {
-        if (!window.confirm("Você tem alterações não salvas. Sair mesmo assim?")) return;
-      }
-      setTab(newTab);
+      if (newTab === tab) return;
+      const trocar = () => setTab(newTab);
+      if (tab === "registrar" && unsavedChanges) mensagens.confirmar("treino_em_andamento", { aoConfirmar: trocar });
+      else trocar();
     },
-    [unsavedChanges]
+    [tab, unsavedChanges]
   );
 
-  const handleLogout = async () => {
+  const sair = async () => {
     await signOut();
     navigate("/", { replace: true });
+  };
+
+  const handleLogout = () => {
+    if (tab === "registrar" && unsavedChanges) mensagens.confirmar("sair_da_conta", { aoConfirmar: () => void sair() });
+    else void sair();
   };
 
   return (
@@ -96,19 +103,21 @@ export default function App() {
         </LogoutBtn>
       </TopBar>
       <TabContent>
-        {tab === "registrar" && <TreinoSessao onUnsavedChanges={setUnsavedChanges} />}
-        {tab === "graficos" && (
-          <Scrollable>
-            <GraphicsContainer />
-          </Scrollable>
-        )}
-        {tab === "volume" && <VolumeLoad />}
-        {tab === "relatorio" && (
-          <Scrollable>
-            <ReportPage />
-          </Scrollable>
-        )}
-        {tab === "exportar" && <Exportar />}
+        <ErrorBoundary key={tab}>
+          {tab === "registrar" && <TreinoSessao onUnsavedChanges={setUnsavedChanges} />}
+          {tab === "graficos" && (
+            <Scrollable>
+              <GraphicsContainer />
+            </Scrollable>
+          )}
+          {tab === "volume" && <VolumeLoad />}
+          {tab === "relatorio" && (
+            <Scrollable>
+              <ReportPage />
+            </Scrollable>
+          )}
+          {tab === "exportar" && <Exportar />}
+        </ErrorBoundary>
       </TabContent>
       <BottomNav active={tab} onChange={handleTabChange} />
     </Shell>

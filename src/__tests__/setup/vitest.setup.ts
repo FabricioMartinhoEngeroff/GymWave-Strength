@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import { mensagens } from "../../components/mensagens/mensagens";
 
 // Limpa o localStorage entre todos os testes
 beforeEach(() => {
@@ -7,6 +8,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  mensagens.limpar();
   sessionStorage.clear();
   localStorage.clear();
 });

@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { Info } from "phosphor-react";
 import { Button } from "../ui/Button";
 import type { DadosTreino, RegistroTreino } from "../../types/TrainingData";
-import { storageKey } from "../../utils/storage";
+import { carregarDados, storageKey } from "../../utils/storage";
 
 const CloudContainer = styled.div`
   position: relative;
@@ -38,7 +38,7 @@ export function CycleInstruction() {
 
   useEffect(() => {
   const jaViu = localStorage.getItem(storageKey("instrucoesVistas"));
-  const db: DadosTreino = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+  const db: DadosTreino = carregarDados();
 
   const temCiclo4 = Object.values(db).some((exercicio) => {
     const ciclos = exercicio as { [cicloId: string]: RegistroTreino };

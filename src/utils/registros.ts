@@ -3,6 +3,7 @@ import { MESMO_EXERCICIO } from "../data/exerciseAliases";
 import { EXERCISE_VIDEOS } from "../data/exerciseVideos";
 import { MUSCLE_MAP } from "../data/muscleMap";
 import { SESSOES } from "../data/sessionExercises";
+import { normalizarRpe } from "./esforco";
 import type { Logbook, RegistroExercicio, SeriesValidas } from "../types/TrainingData";
 
 // ─── Formato v3 do histórico ──────────────────────────────────────────────────
@@ -16,6 +17,7 @@ export interface Serie {
   tipo: TipoSerie;
   kg: number;
   reps: number;
+  rpe?: number; // 6 a 10; no cluster fica no último bloco da série
 }
 
 export interface Registro {
@@ -135,17 +137,20 @@ function faixaDe(min: unknown, max: unknown): [number, number] | undefined {
 export function paraRegistro(r: RegistroExercicio): Registro {
   const validas = normalizarValidas(r.seriesValidas);
   const series: Serie[] = [];
-  const add = (tipo: TipoSerie, kg: unknown, reps: unknown) => {
+  const add = (tipo: TipoSerie, kg: unknown, reps: unknown, rpe?: unknown) => {
     const k = Number(kg) || 0;
     const rp = Math.round(Number(reps) || 0);
-    if (k > 0 || rp > 0) series.push({ tipo, kg: k, reps: rp });
+    const esforco = normalizarRpe(rpe);
+    if (k > 0 || rp > 0) series.push({ tipo, kg: k, reps: rp, ...(esforco !== undefined && { rpe: esforco }) });
   };
-  add("top1", r.topSetKg, r.topSetReps);
-  add("top2", r.backoffKg, r.backoffReps);
-  add(validas === 4 ? "serie3" : "backoff", r.extraKg, r.extraReps);
-  add("serie4", r.serie4Kg, r.serie4Reps);
-  r.clusterSeries?.forEach((b) => add("cluster1", b.kg, b.reps));
-  r.clusterSeries2?.forEach((b) => add("cluster2", b.kg, b.reps));
+  const addCluster = (tipo: TipoSerie, blocos: RegistroExercicio["clusterSeries"], rpe?: number) =>
+    blocos?.forEach((b, i) => add(tipo, b.kg, b.reps, i === blocos.length - 1 ? rpe : undefined));
+  add("top1", r.topSetKg, r.topSetReps, r.topSetRpe);
+  add("top2", r.backoffKg, r.backoffReps, r.backoffRpe);
+  add(validas === 4 ? "serie3" : "backoff", r.extraKg, r.extraReps, r.extraRpe);
+  add("serie4", r.serie4Kg, r.serie4Reps, r.serie4Rpe);
+  addCluster("cluster1", r.clusterSeries, r.clusterRpe);
+  addCluster("cluster2", r.clusterSeries2, r.clusterRpe2);
 
   const data = dataBRparaISO(r.data);
   const sessao = String(r.treinoId ?? "").trim();
@@ -173,9 +178,12 @@ export function paraRegistro(r: RegistroExercicio): Registro {
 
 // ─── Registro → RegistroExercicio ─────────────────────────────────────────────
 
-/** `anterior` é o treino anterior do mesmo exercício na mesma sessão (para a progressão). */
+/** `anterior` é o treino normal (sem deload) anterior do mesmo exercício na mesma sessão. */
 export function deRegistro(reg: Registro, anterior?: Registro): RegistroExercicio {
-  const doTipo = (tipo: TipoSerie) => reg.series.filter((s) => s.tipo === tipo);
+  // Deload vale só o Top Set 1; registros antigos guardavam séries que não foram feitas.
+  const soTop1 = reg.deload && !reg.tecnica;
+  const series = soTop1 ? reg.series.filter((s) => s.tipo === "top1") : reg.series;
+  const doTipo = (tipo: TipoSerie) => series.filter((s) => s.tipo === tipo);
   const top1 = doTipo("top1")[0];
   const top2 = doTipo("top2")[0];
   const extra = doTipo("serie3")[0] ?? doTipo("backoff")[0];
@@ -184,6 +192,7 @@ export function deRegistro(reg: Registro, anterior?: Registro): RegistroExercici
     const lista = doTipo(tipo).map(({ kg, reps }) => ({ kg, reps }));
     return lista.length > 0 ? lista : undefined;
   };
+  const rpeDoCluster = (tipo: TipoSerie) => doTipo(tipo).find((s) => s.rpe !== undefined)?.rpe;
   const topAnterior = anterior?.series.find((s) => s.tipo === "top1");
   const topKg = top1?.kg ?? 0;
 
@@ -196,22 +205,28 @@ export function deRegistro(reg: Registro, anterior?: Registro): RegistroExercici
     topSetReps: top1?.reps ?? 0,
     topSetFaixaMin: reg.faixa?.[0] ?? 0,
     topSetFaixaMax: reg.faixa?.[1] ?? 0,
-    topSetBateuTeto: reg.bateuTeto ?? deduzirTeto(reg.series, reg.faixa, reg.tecnica),
+    topSetBateuTeto: !reg.deload && (reg.bateuTeto ?? deduzirTeto(series, reg.faixa, reg.tecnica)),
     backoffKg: top2?.kg ?? 0,
     backoffReps: top2?.reps ?? 0,
     backoffFaixaMin: reg.faixaBackoff?.[0] ?? 0,
     backoffFaixaMax: reg.faixaBackoff?.[1] ?? 0,
-    seriesValidas: reg.validas ?? deduzirValidas(reg.series),
+    seriesValidas: soTop1 ? 1 : (reg.validas ?? deduzirValidas(series)),
     extraKg: extra?.kg,
     extraReps: extra?.reps,
     serie4Kg: serie4?.kg,
     serie4Reps: serie4?.reps,
+    topSetRpe: top1?.rpe,
+    backoffRpe: top2?.rpe,
+    extraRpe: extra?.rpe,
+    serie4Rpe: serie4?.rpe,
+    clusterRpe: rpeDoCluster("cluster1"),
+    clusterRpe2: rpeDoCluster("cluster2"),
     tecnica: reg.tecnica,
     clusterSeries: blocos("cluster1"),
     clusterSeries2: blocos("cluster2"),
     pesoAnterior: anterior ? (topAnterior?.kg ?? 0) : undefined,
     repsAnterior: anterior ? (topAnterior?.reps ?? 0) : undefined,
-    progrediu: anterior ? topKg > (topAnterior?.kg ?? 0) : false,
+    progrediu: anterior && !reg.deload ? topKg > (topAnterior?.kg ?? 0) : false,
     isDeload: reg.deload ? true : undefined,
     obs: reg.obs,
   };
@@ -233,7 +248,7 @@ export function registrosParaLogbook(lista: Registro[]): Logbook {
   for (const reg of cronologico(lista, (r) => r.data)) {
     const chave = `${reg.exercicio}|${reg.sessao}`;
     convertidos.set(reg, deRegistro(reg, ultimoDaSessao.get(chave)));
-    ultimoDaSessao.set(chave, reg);
+    if (!reg.deload) ultimoDaSessao.set(chave, reg);
   }
 
   const logbook: Logbook = {};
@@ -286,11 +301,19 @@ export function ehRegistro(v: unknown): v is Registro {
   );
 }
 
+/** RPE inválido sai da série; o resto do treino fica. */
+function semRpeInvalido(s: Serie): Serie {
+  if (!("rpe" in s) || normalizarRpe(s.rpe) !== undefined) return s;
+  const limpa = { ...s };
+  delete limpa.rpe;
+  return limpa;
+}
+
 /** Mantém só registros válidos e com id único. */
 export function sanitizarRegistros(v: unknown): Registro[] {
   if (!Array.isArray(v)) return [];
   const ids = new Set<string>();
-  return v.filter(ehRegistro).map((r) => comIdUnico(r, ids));
+  return v.filter(ehRegistro).map((r) => comIdUnico({ ...r, series: r.series.map(semRpeInvalido) }, ids));
 }
 
 // ─── Exportação CSV (uma linha por série) ─────────────────────────────────────
@@ -304,12 +327,12 @@ const campo = (s: string) => {
 };
 
 export function exportarCSV(registros: Registro[]): string {
-  const linhas = ["data,sessao,exercicio,serie,tipo,kg,reps,obs"];
+  const linhas = ["data,sessao,exercicio,serie,tipo,kg,reps,obs,rpe"];
   for (const r of registros) {
     const nome = nomeExercicio(r.exercicio, r.nome);
     const obs = entreAspas(semFormula(r.obs ?? ""));
     r.series.forEach((s, i) => {
-      linhas.push([r.data, campo(r.sessao), campo(nome), i + 1, s.tipo, s.kg, s.reps, obs].join(","));
+      linhas.push([r.data, campo(r.sessao), campo(nome), i + 1, s.tipo, s.kg, s.reps, obs, s.rpe ?? ""].join(","));
     });
   }
   return linhas.join("\n");

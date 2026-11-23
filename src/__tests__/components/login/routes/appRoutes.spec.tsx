@@ -37,6 +37,10 @@ const PROTECTED: Array<[string, string]> = [
 ];
 
 describe("G12 — árvore de rotas", () => {
+  it("todas as rotas têm tela de erro amigável (EF_09 RG10)", () => {
+    expect(appRoutes.every((r) => r.errorElement)).toBe(true);
+  });
+
   it.each(PROTECTED)("%s é protegida por RequireAuth (anonymous → /)", (path, marker) => {
     const router = visit(path, { status: "anonymous" });
     expect(router.state.location.pathname).toBe("/");

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Gauge } from "lucide-react";
 import {
   CartesianGrid,
   ComposedChart,
@@ -28,19 +29,24 @@ import {
 
 import { NativeSelect } from "../ui/NativeSelect";
 import { carregarLogbookCompleto } from "../../utils/storage";
+import { rotuloEsforco } from "../../utils/esforco";
 import { getCutoffTs, TIME_INTERVAL_OPTIONS, type TimeInterval } from "../../utils/timeFilter";
-import { calcEpley, extractReferenceBlock } from "../../utils/epleyCalc";
+import { calcEpley, estimar1RM, extractReferenceBlock } from "../../utils/epleyCalc";
 import type { RegistroExercicio } from "../../types/TrainingData";
 
 const GOLD = "#D4AF37";
 const BLUE = "#5470C6";
 const GREEN = "#16a34a";
 const RED = "#dc2626";
+const PURPLE = "#a78bfa";
 
 interface ChartPoint {
   ts: number;
   data: string;
   rm1: number;
+  rm1Rpe: number | null; // 1RM pelo esforço (só quando o Top Set tem RPE)
+  rm1RpeAproximado: boolean;
+  rpe: number | undefined;
   peso: number;
   reps: number;
   tecnica: "RP" | null;
@@ -53,10 +59,14 @@ function buildChartPoints(registros: RegistroExercicio[]): ChartPoint[] {
     .map((r) => {
       const ref = extractReferenceBlock(r);
       if (!ref || ref.peso <= 0) return null;
+      const esforco = estimar1RM(ref.peso, ref.reps, ref.rpe);
       return {
         ts: r.dataTs,
         data: r.data,
         rm1: calcEpley(ref.peso, ref.reps),
+        rm1Rpe: esforco?.rm1 ?? null,
+        rm1RpeAproximado: esforco?.aproximado ?? false,
+        rpe: ref.rpe,
         peso: ref.peso,
         reps: ref.reps,
         tecnica: r.tecnica ?? null,
@@ -95,7 +105,12 @@ function CustomTooltip({ active, payload }: TooltipContentProps<ValueType, NameT
     <TooltipBox>
       <p><strong>{p.data}</strong></p>
       <p>1RM estimado: {p.rm1.toFixed(2)} kg</p>
-      <p>Ref: {p.peso} kg × {p.reps} reps</p>
+      <p>Ref: {p.peso} kg × {p.reps} reps{p.rpe !== undefined && ` · ${rotuloEsforco(p.rpe, "RPE")}`}</p>
+      {p.rm1Rpe !== null && (
+        <p style={{ color: PURPLE }}>
+          1RM pelo RPE: {p.rm1RpeAproximado && "≈ "}{p.rm1Rpe.toFixed(2)} kg
+        </p>
+      )}
       {p.tecnica && <p>Técnica: {p.tecnica}</p>}
       {p.isPr && <p style={{ color: GOLD, fontWeight: 700 }}>★ PR</p>}
       {p.isDeload && <p style={{ color: RED, fontWeight: 600 }}>⬇ Deload (1 série)</p>}
@@ -172,7 +187,8 @@ export const PowerliftingChart: React.FC = () => {
   );
 
   // Stats card
-  const rm1Atual = filteredPoints[filteredPoints.length - 1]?.rm1 ?? null;
+  const pontoAtual = filteredPoints[filteredPoints.length - 1];
+  const rm1Atual = pontoAtual?.rm1 ?? null;
   const rm1Anterior = filteredPoints[filteredPoints.length - 2]?.rm1 ?? null;
   const variacao = rm1Atual !== null && rm1Anterior !== null ? rm1Atual - rm1Anterior : null;
   const sessoes = filteredPoints.length;
@@ -277,6 +293,15 @@ export const PowerliftingChart: React.FC = () => {
             <p data-testid="stats-rm1" style={{ fontSize: 18, fontWeight: 700, color: "#fff", margin: "2px 0 0" }}>
               {rm1Atual !== null ? `${rm1Atual.toFixed(2)} kg` : "—"}
             </p>
+            {pontoAtual && pontoAtual.rm1Rpe !== null && (
+              <p
+                data-testid="stats-rm1-rpe"
+                style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: PURPLE, margin: "2px 0 0" }}
+              >
+                <Gauge size={12} strokeWidth={1.8} aria-hidden />
+                pelo RPE: {pontoAtual.rm1RpeAproximado && "≈ "}{pontoAtual.rm1Rpe.toFixed(2)} kg
+              </p>
+            )}
           </div>
           <div style={{ padding: "10px 12px", background: "rgba(0,0,0,0.3)" }}>
             <p style={{ fontSize: 10, color: "#9ca3af", margin: 0 }}>Variação</p>
@@ -327,7 +352,7 @@ export const PowerliftingChart: React.FC = () => {
             <Panel>
               <PanelTitle>
                 <h3>1RM Estimado (Epley)</h3>
-                <p>Evolução da força máxima estimada ao longo do tempo.</p>
+                <p>Evolução da força máxima estimada ao longo do tempo. Tracejado: 1RM pelo RPE, que conta as reps na reserva.</p>
               </PanelTitle>
               <ChartBox>
                 <ResponsiveContainer width="100%" height="100%">
@@ -386,6 +411,17 @@ export const PowerliftingChart: React.FC = () => {
                       strokeWidth={2.5}
                       dot={CustomDot}
                       activeDot={{ r: 5 }}
+                    />
+                    <Line
+                      yAxisId="rm1"
+                      type="monotone"
+                      dataKey="rm1Rpe"
+                      name="1RM pelo RPE (kg)"
+                      stroke={PURPLE}
+                      strokeWidth={2}
+                      strokeDasharray="4 3"
+                      dot={{ r: 2.5, fill: PURPLE }}
+                      connectNulls
                     />
                   </ComposedChart>
                 </ResponsiveContainer>

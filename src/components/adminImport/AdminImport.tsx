@@ -4,6 +4,8 @@ import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino, SeriesValidas } from "../../types/TrainingData";
 import { normalizarSeriesValidas } from "../../utils/seriesValidas";
 import {
+  carregarDados,
+  emTransacao,
   fotografarRegistros,
   getCurrentUser,
   limparRegistros,
@@ -12,6 +14,9 @@ import {
   setCurrentUser,
   storageKey,
 } from "../../utils/storage";
+import { avisarErro } from "../mensagens/avisarErro";
+import { lerPlanilha } from "../mensagens/lerPlanilha";
+import { mensagens } from "../mensagens/mensagens";
 import TextImport from "./TextImport";
 import {
   Screen,
@@ -293,28 +298,28 @@ export default function AdminImport() {
   function handleFile(file: File) {
     setResult(null);
     setFileName(file.name);
+    const destino = { aoLer: setRows, aoDescartar: () => setFileName(null) };
     const ext = file.name.split(".").pop()?.toLowerCase();
 
     if (ext === "csv") {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const parsed = Papa.parse<Record<string, unknown>>(text, {
+      lerPlanilha(reader, { ...destino, extrair: (texto) => {
+        const parsed = Papa.parse<Record<string, unknown>>(texto as string, {
           header: true,
           skipEmptyLines: true,
         });
-        setRows(normalizeRows(mapColumns(parsed.data)));
-      };
+        return normalizeRows(mapColumns(parsed.data));
+      } });
       reader.readAsText(file, "UTF-8");
     } else {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+      lerPlanilha(reader, { ...destino, extrair: (conteudo) => {
+        const data = new Uint8Array(conteudo as ArrayBuffer);
         const wb = XLSX.read(data, { type: "array" });
         const ws = wb.Sheets[wb.SheetNames[0] ?? ""];
         const json = ws ? xlsxToJson(ws) : [];
-        setRows(normalizeRows(mapColumns(json)));
-      };
+        return normalizeRows(mapColumns(json));
+      } });
       reader.readAsArrayBuffer(file);
     }
   }
@@ -349,23 +354,32 @@ export default function AdminImport() {
   // ── Confirm import ─────────────────────────────────────────
 
   function desfazerImport() {
-    const ok = window.confirm("Desfazer a importação e restaurar os dados anteriores?");
-    if (!ok) return;
-    withTargetUser(() => {
-      restaurarRegistros();
-      const backupLegacy = localStorage.getItem(storageKey("dadosTreino_backup"));
-      if (backupLegacy) localStorage.setItem(storageKey("dadosTreino"), backupLegacy);
-      const backupPlano = localStorage.getItem(storageKey("planoTreino_backup"));
-      if (backupPlano) localStorage.setItem(storageKey("planoTreino"), backupPlano);
-      const backupSessoes = localStorage.getItem(storageKey("sessoes_config_backup"));
-      if (backupSessoes) localStorage.setItem(storageKey("sessoes_config"), backupSessoes);
+    mensagens.confirmar("desfazer_importacao", {
+      aoConfirmar: () => {
+        withTargetUser(() => emTransacao(() => {
+          restaurarRegistros();
+          ["dadosTreino", "planoTreino", "sessoes_config"].forEach((base) => {
+            const copia = localStorage.getItem(storageKey(`${base}_backup`));
+            if (copia) localStorage.setItem(storageKey(base), copia);
+          });
+        }));
+        setResult(null);
+        setCanUndo(false);
+        mensagens.mostrar("importacao_desfeita");
+      },
     });
-    setResult(null);
-    setCanUndo(false);
   }
 
   function confirmarImport() {
-    const { total, porTreino } = withTargetUser(() => {
+    try {
+      gravarImport();
+    } catch (erro) {
+      avisarErro("importar planilha", erro);
+    }
+  }
+
+  function gravarImport() {
+    const { total, porTreino } = withTargetUser(() => emTransacao(() => {
       fotografarRegistros();
       localStorage.setItem(storageKey("dadosTreino_backup"), localStorage.getItem(storageKey("dadosTreino")) || "{}");
       localStorage.setItem(storageKey("planoTreino_backup"), localStorage.getItem(storageKey("planoTreino")) || "{}");
@@ -376,7 +390,7 @@ export default function AdminImport() {
       const today = getTodayBR();
       const todayTs = Date.now();
 
-      const legacyDb = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+      const legacyDb = carregarDados();
       const planoNovo: PlanoTreino = {};
 
       const sessoesConfigMap: Record<string, {
@@ -438,8 +452,8 @@ export default function AdminImport() {
 
         salvarRegistro(registro);
 
-        if (!legacyDb[row.exercicio]) legacyDb[row.exercicio] = {};
-        legacyDb[row.exercicio][row.treino_id] = {
+        const ciclos = (legacyDb[row.exercicio] ??= {});
+        ciclos[row.treino_id] = {
           data: today,
           pesos: [String(topKg), String(boKg)],
           reps: ["", ""],
@@ -457,9 +471,10 @@ export default function AdminImport() {
       localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
       localStorage.removeItem(storageKey("rascunho_treino"));
       return { total, porTreino };
-    });
+    }));
 
     setResult({ total, porTreino });
+    mensagens.mostrar("importacao_concluida");
     setCanUndo(true);
     setRows([]);
     setFileName(null);
@@ -468,17 +483,17 @@ export default function AdminImport() {
   // ── Clear all ──────────────────────────────────────────────
 
   function limparTudo() {
-    const ok = window.confirm(
-      `Isso vai apagar TODOS os dados de treino (logbook e dadosTreino) da sua conta. Tem certeza?`
-    );
-    if (!ok) return;
-    withTargetUser(() => {
-      localStorage.removeItem(storageKey("dadosTreino"));
-      limparRegistros();
+    mensagens.confirmar("limpar_tudo", {
+      aoConfirmar: () => {
+        withTargetUser(() => emTransacao(() => {
+          localStorage.removeItem(storageKey("dadosTreino"));
+          limparRegistros();
+        }));
+        setResult(null);
+        setRows([]);
+        setFileName(null);
+      },
     });
-    setResult(null);
-    setRows([]);
-    setFileName(null);
   }
 
   // ── Derived data for preview ───────────────────────────────

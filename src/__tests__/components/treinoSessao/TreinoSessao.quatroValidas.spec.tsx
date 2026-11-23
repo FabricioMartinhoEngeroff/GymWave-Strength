@@ -127,7 +127,7 @@ describe("TreinoSessao — 4 séries válidas", () => {
     fireEvent.change(screen.getByLabelText(/Série 4 reps/), { target: { value: "4" } });
 
     fireEvent.click(screen.getByText("Próximo"));
-    for (let i = 0; i < 9; i++) fireEvent.click(screen.getByText("Pular"));
+    for (let i = 0; i < 10; i++) fireEvent.click(screen.getByText("Pular"));
     fireEvent.click(screen.getByText("Ver Resumo"));
     fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 

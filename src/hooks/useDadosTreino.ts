@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import type { DadosTreino, RegistroTreino } from "../types/TrainingData";
-import { volumeESeriesDoRegistro } from "../utils/seriesValidas";
-import { carregarLogbookCompleto, storageKey } from "../utils/storage";
+import type { RegistroTreino } from "../types/TrainingData";
+import { serieFeita, volumeESeriesDoRegistro } from "../utils/seriesValidas";
+import { carregarDados, carregarLogbookCompleto } from "../utils/storage";
+import { chaveTreino, treinosDoLogbook } from "../utils/volumeLoadCalc";
 
 export interface RegistroGraficoRaw {
   data: string; // "DD/MM/YYYY"
@@ -13,6 +14,7 @@ export interface RegistroGraficoRaw {
   progrediu?: boolean;
   volumeLoad: number; // soma de (peso × reps) de todas as séries válidas da sessão
   tecnica?: "RP" | null;
+  isDeload?: boolean;
 }
 
 export type DadosAgrupados = Record<string, RegistroGraficoRaw[]>;
@@ -83,10 +85,15 @@ export function useDadosTreino(): DadosAgrupados {
   useEffect(() => {
     const porExe: DadosAgrupados = {};
 
+    const logbook = carregarLogbookCompleto();
+    // O registro guarda deload, técnica e séries feitas: vale mais que o resumo do mesmo treino (RG11).
+    const jaNoLogbook = treinosDoLogbook(logbook);
+
     // Read from legacy dadosTreino
-    const bruto = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}") as DadosTreino;
+    const bruto = carregarDados();
     Object.entries(bruto).forEach(([exe, ciclos]) => {
       Object.entries(ciclos).forEach(([cicloKey, reg]) => {
+        if (reg.data && jaNoLogbook.has(chaveTreino(exe, cicloKey, reg.data))) return;
         const registro = montarRegistroGrafico(reg, cicloKey);
         if (!registro) return;
 
@@ -97,7 +104,6 @@ export function useDadosTreino(): DadosAgrupados {
     });
 
     // Read from new logbook
-    const logbook = carregarLogbookCompleto();
     Object.entries(logbook).forEach(([exercicio, registros]) => {
       registros.forEach((reg) => {
         const temClusterSeries =
@@ -125,7 +131,7 @@ export function useDadosTreino(): DadosAgrupados {
         } else {
           volumeLoad = volumeESeriesDoRegistro(reg).volume;
           topSet = reg.topSetKg;
-          pesos = [reg.topSetKg, reg.backoffKg].filter((p) => p > 0);
+          pesos = [reg.topSetKg, ...(serieFeita(reg.backoffKg, reg.backoffReps) ? [reg.backoffKg] : [])];
         }
 
         if (!porExe[exercicio]) porExe[exercicio] = [];
@@ -139,6 +145,7 @@ export function useDadosTreino(): DadosAgrupados {
           progrediu: reg.progrediu,
           volumeLoad,
           tecnica: reg.tecnica ?? null,
+          isDeload: reg.isDeload ?? false,
         });
       });
     });

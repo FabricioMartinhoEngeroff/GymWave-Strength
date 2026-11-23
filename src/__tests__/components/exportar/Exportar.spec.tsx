@@ -546,10 +546,10 @@ describe("Exportar — Tela de exportação e importação inline", () => {
       const { conteudo, nome } = capturarDownload(() => fireEvent.click(screen.getByText("Exportar como CSV")));
       expect(nome).toMatch(/\.csv$/);
       expect(conteudo.split("\n")).toEqual([
-        "data,sessao,exercicio,serie,tipo,kg,reps,obs",
-        '2026-10-13,UA,Supino reto barra,1,top1,85,7,"top tava leve"',
-        '2026-10-13,UA,Supino reto barra,2,top2,85,7,"top tava leve"',
-        '2026-10-13,UA,Supino reto barra,3,backoff,75,10,"top tava leve"',
+        "data,sessao,exercicio,serie,tipo,kg,reps,obs,rpe",
+        '2026-10-13,UA,Supino reto barra,1,top1,85,7,"top tava leve",',
+        '2026-10-13,UA,Supino reto barra,2,top2,85,7,"top tava leve",',
+        '2026-10-13,UA,Supino reto barra,3,backoff,75,10,"top tava leve",',
       ]);
     });
 

@@ -132,4 +132,18 @@ describe("agruparVolumePorPeriodo — utils/volumeBuckets", () => {
       expect(buckets[0].temRP).toBe(false);
     });
   });
+
+  describe("Deload (EF_03 RG10)", () => {
+    const ts = (d: number) => new Date(2026, 5, d).getTime();
+
+    it.each([
+      ["só deload", [true], { temDeload: true, soDeload: true }],
+      ["misto", [true, false], { temDeload: true, soDeload: false }],
+      ["misto na outra ordem", [false, true], { temDeload: true, soDeload: false }],
+      ["sem deload", [false, false], { temDeload: false, soDeload: false }],
+    ])("balde %s", (_n, flags, esperado) => {
+      const [balde] = agruparVolumePorPeriodo(flags.map((isDeload, i) => makeRegistro({ dataTs: ts(1 + i), isDeload })), "semana");
+      expect(balde).toMatchObject(esperado);
+    });
+  });
 });

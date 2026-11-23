@@ -21,7 +21,16 @@ export function sanitize(value: unknown, seen = new WeakSet<object>()): unknown 
 }
 
 /** Só loga em DEV; em produção fica silencioso. */
-export function logAuthError(context: string, error: unknown): void {
+function log(escopo: string, context: string, error: unknown): void {
   if (!import.meta.env.DEV) return;
-  console.error(`[auth] ${context}`, sanitize(error));
+  console.error(`[${escopo}] ${context}`, sanitize(error));
+}
+
+export function logAuthError(context: string, error: unknown): void {
+  log("auth", context, error);
+}
+
+/** Erros do app fora da autenticação (EF_09 RG15). */
+export function logErro(context: string, error: unknown): void {
+  log("app", context, error);
 }

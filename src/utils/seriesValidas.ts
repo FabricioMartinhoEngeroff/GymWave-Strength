@@ -70,6 +70,11 @@ export function sugestaoDoUltimoTreino(
   return sugestao;
 }
 
+/** Série feita de verdade: só conta com peso e reps maiores que zero (RG24). */
+export function serieFeita(kg: number | undefined, reps: number | undefined): boolean {
+  return positivo(kg) && positivo(reps);
+}
+
 /** Volume (kg × reps) e séries válidas de um registro fora do Cluster Set. */
 export function volumeESeriesDoRegistro(reg: RegistroExercicio): { volume: number; series: number } {
   const slots: [number | undefined, number | undefined][] = [

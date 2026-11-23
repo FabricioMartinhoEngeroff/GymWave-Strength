@@ -5,7 +5,9 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { noDialogo, renderComMensagens } from "../mensagens/helpers";
 import { ChartCard } from "../../../components/graphic/ChartCard";
+import { montarSeriePorData } from "../../../components/graphic/serieProgressao";
 import type { RegistroGraficoRaw } from "../../../hooks/useDadosTreino";
 
 function makeRegistro(overrides: Partial<RegistroGraficoRaw> & { dataTs: number; data: string }): RegistroGraficoRaw {
@@ -112,17 +114,42 @@ describe("ChartCard — components/graphic", () => {
     });
 
     it("confirmando a exclusão remove o card da tela", () => {
-      vi.spyOn(window, "confirm").mockReturnValue(true);
-      render(<ChartCard exercicio="Supino Reto" dados={[]} ciclosSelecionados={["UA"]} isMobile={false} />);
+      renderComMensagens(<ChartCard exercicio="Supino Reto" dados={[]} ciclosSelecionados={["UA"]} isMobile={false} />);
       fireEvent.click(screen.getByTestId("chart-card-delete"));
+      noDialogo("Ocultar");
       expect(screen.queryByTestId("chart-card")).not.toBeInTheDocument();
     });
 
     it("cancelando a exclusão mantém o card visível", () => {
-      vi.spyOn(window, "confirm").mockReturnValue(false);
-      render(<ChartCard exercicio="Supino Reto" dados={[]} ciclosSelecionados={["UA"]} isMobile={false} />);
+      renderComMensagens(<ChartCard exercicio="Supino Reto" dados={[]} ciclosSelecionados={["UA"]} isMobile={false} />);
       fireEvent.click(screen.getByTestId("chart-card-delete"));
+      noDialogo("Cancelar");
       expect(screen.getByTestId("chart-card")).toBeInTheDocument();
+    });
+  });
+
+  describe("Deload diferenciado (RG10)", () => {
+    const dia = (d: number, topSet: number, isDeload = false) =>
+      makeRegistro({ dataTs: new Date(2026, 5, d).getTime(), data: `0${d}/06/2026`, topSet, isDeload });
+    const card = (dados: RegistroGraficoRaw[]) =>
+      render(<ChartCard exercicio="Supino" dados={dados} ciclosSelecionados={["UA"]} isMobile={false} />);
+
+    it("mostra a legenda de deload só quando existe algum", () => {
+      const { unmount } = card([dia(1, 100), dia(8, 60, true)]);
+      expect(screen.getByTestId("chart-card-deload")).toHaveTextContent("Deload (1 série)");
+      unmount();
+      card([dia(1, 100), dia(8, 102)]);
+      expect(screen.queryByTestId("chart-card-deload")).toBeNull();
+    });
+
+    it("a tendência ignora o deload", () => {
+      card([dia(1, 100), dia(2, 102.5), dia(8, 60, true)]);
+      expect(screen.getByTestId("chart-card-trend")).toHaveTextContent("+2.5 kg");
+    });
+
+    it("a média das 4 últimas ignora o deload", () => {
+      const serie = montarSeriePorData([dia(1, 100), dia(2, 60, true), dia(8, 110)], ["UA"]);
+      expect(serie.map((p) => p.media4)).toEqual([100, 100, 105]);
     });
   });
 });

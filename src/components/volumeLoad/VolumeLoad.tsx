@@ -200,13 +200,19 @@ const SeriesBadge = styled.span<{ $status: "ok" | "low" | "high" }>`
     p.$status === "low" ? "#92400e" : "#991b1b"};
 `;
 
-const DiagBadge = styled.span<{ $variant: "estagnado" | "queda" }>`
+const DIAG_CORES = {
+  estagnado: { fundo: "#fff7ed", texto: "#c2410c" },
+  queda: { fundo: "#fef2f2", texto: "#991b1b" },
+  deload: { fundo: "#eff6ff", texto: "#1d4ed8" },
+};
+
+const DiagBadge = styled.span<{ $variant: keyof typeof DIAG_CORES }>`
   display: inline-block;
   font-size: 10px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: ${(p) => p.$variant === "estagnado" ? "#fff7ed" : "#fef2f2"};
-  color: ${(p) => p.$variant === "estagnado" ? "#c2410c" : "#991b1b"};
+  background: ${(p) => DIAG_CORES[p.$variant].fundo};
+  color: ${(p) => DIAG_CORES[p.$variant].texto};
 `;
 
 const EmptyMsg = styled.p`
@@ -392,6 +398,9 @@ export default function VolumeLoad() {
                           {quedaCarga && (
                             <DiagBadge $variant="queda">↓ carga</DiagBadge>
                           )}
+                          {d.temDeload && (
+                            <DiagBadge $variant="deload">deload</DiagBadge>
+                          )}
                         </BadgesRow>
                       )}
                     </div>
@@ -440,6 +449,9 @@ export default function VolumeLoad() {
                           )}
                           {quedaCarga && (
                             <DiagBadge $variant="queda">↓ carga</DiagBadge>
+                          )}
+                          {d.temDeload && (
+                            <DiagBadge $variant="deload">deload</DiagBadge>
                           )}
                         </BadgesRow>
                       )}

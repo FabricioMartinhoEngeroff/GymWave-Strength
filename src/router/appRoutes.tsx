@@ -5,10 +5,11 @@ import GraphicsContainer from "../components/graphic";
 import { RequireAuth } from "../components/login/routes/RequireAuth";
 import { RequireRole } from "../components/login/routes/RequireRole";
 import { AuthPage } from "../components/login/ui/AuthPage";
+import { ErroDeRota } from "../components/mensagens/ErroDeRota";
 import { PowerliftingChart } from "../components/PowerliftChart";
 import ReportPage from "../components/report";
 
-export const appRoutes: RouteObject[] = [
+const rotas: RouteObject[] = [
   { path: "/", element: <AuthPage /> },
   {
     path: "/admin",
@@ -24,3 +25,6 @@ export const appRoutes: RouteObject[] = [
   { path: "/grafico-powerlifter", element: <RequireAuth><PowerliftingChart /></RequireAuth> },
   { path: "*", element: <Navigate to="/" replace /> },
 ];
+
+/** Erro em qualquer rota mostra a tela amigável (EF_09 RG10). */
+export const appRoutes: RouteObject[] = rotas.map((rota) => ({ ...rota, errorElement: <ErroDeRota /> }));

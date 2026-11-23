@@ -64,7 +64,7 @@ Qualquer usuário autenticado possui acesso.
 
 | Botão | Ação | Formato gerado |
 |---|---|---|
-| **Exportar como CSV** | Gera arquivo com todo o histórico de `registros` | `.csv` com **uma linha por série**: `data,sessao,exercicio,serie,tipo,kg,reps,obs`. Textos que começam com `=`, `+`, `-` ou `@` são neutralizados, para o Excel não executar fórmulas. |
+| **Exportar como CSV** | Gera arquivo com todo o histórico de `registros` | `.csv` com **uma linha por série**: `data,sessao,exercicio,serie,tipo,kg,reps,obs,rpe`. A coluna `rpe` (EF_02 RG20) é a última e fica vazia quando o esforço não foi anotado. Textos que começam com `=`, `+`, `-` ou `@` são neutralizados, para o Excel não executar fórmulas. |
 | **Exportar como JSON** | Gera backup completo (versão 3) | `.json` com `{ app: "gymwave", versao: 3, exportadoEm, registros, dadosTreino, planoTreino, sessoes_config }`. A importação de JSON aceita também os backups antigos v2 (histórico no objeto `logbook`) e v1 (só `dadosTreino`). Ao importar, registros já existentes (mesmo exercício + sessão + data) não são duplicados. |
 
 **Nome dos arquivos:**

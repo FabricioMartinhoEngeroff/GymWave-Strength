@@ -63,8 +63,21 @@ src/
 │   │   └── SearchBar.tsx       # Filtro de exercício + período
 │   │
 │   ├── treinoSessao/       # Tela principal de registro de treino (aba Registrar)
-│   │   ├── TreinoSessao.tsx        # Componente principal
+│   │   ├── TreinoSessao.tsx        # Tela: monta as partes
+│   │   ├── ExercicioCard.tsx       # Card do exercício aberto (escolhe o modo)
+│   │   ├── ProgressBanner.tsx      # PR, subir/consolidar carga, fadiga
+│   │   ├── UltimoTreinoPanel.tsx · NavegacaoExercicios.tsx · RevisaoTreino.tsx · DiasDesdeUltimo.tsx
+│   │   ├── blocks/                 # Um bloco por modo: TopSet, TopSet2, Backoff, SeriesExtras, Cluster, Deload + EsforcoInput
+│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, sessoes, ultimoTreino, datas
+│   │   ├── hooks/                  # useSessaoTreino (sugestão, espelho, rascunho, salvar), useEscalaEsforco
 │   │   └── TreinoSessao.styles.ts  # Styled-components
+│   │
+│   ├── mensagens/          # Módulo global de mensagens e erros (EF_09)
+│   │   ├── mensagens.ts            # Store: mostrar(), confirmar(), responder()
+│   │   ├── CentralDeMensagens.tsx  # Desenha avisos, conquistas e confirmações (montada no main)
+│   │   ├── ErrorBoundary.tsx · ErroDeRota.tsx · TelaErro.tsx   # Tela de erro amigável
+│   │   ├── avisarErro.ts · capturaGlobal.ts · lerPlanilha.ts
+│   │   └── domain/                 # catalogo (textos) e traduzirErro
 │   │
 │   ├── adminImport/        # Importação de planilha para seed do logbook
 │   │   ├── AdminImport.tsx         # Upload .xlsx/.csv → normaliza → salva no logbook
@@ -130,9 +143,13 @@ src/
 └── utils/                  # Funções utilitárias puras
     ├── backupJson.ts           # Backup JSON v3 (lê v2/v1), mesclagem e desfazer
     ├── handleApiError.ts       # Tratamento padronizado de erros de API
+    ├── backupEmergencia.ts     # Backup da tela de erro, com o conteúdo bruto do que estiver ilegível
+    ├── baixarArquivo.ts        # Download de texto
+    ├── epleyCalc.ts            # calcEpley(), estimar1RM() pelo esforço, extractReferenceBlock()
+    ├── esforco.ts              # RPE/RIR: rótulos, deveSubirPeso(), detectarFadiga()
     ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, exercício repetido
     ├── registros.ts            # Formato v3 do histórico: slug do exercício, conversões, CSV
-    ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), exercicioDeveSubirPeso()
+    ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), referenciaDoExercicio(), exercicioDeveSubirPeso()
     │                           # Legado: salvarDados() / carregarDados() → localStorage["dadosTreino"]
     ├── timeFilter.ts           # getCutoffTs() — corte de timestamp por intervalo (1M, 3M…)
     ├── validateUUID.ts         # Validação de UUID
@@ -165,6 +182,8 @@ src/__tests__/
 │   ├── report/
 │   │   └── ReportPage.spec.tsx     # 5 testes — título, filtros, dados
 │   ├── treinoSessao/
+│   │   ├── domain/ · hooks/ · blocks/      # regras puras, useSessaoTreino e cada bloco
+│   │   ├── TreinoSessao.esforco.spec.tsx   # RPE/RIR, progressão pelo esforço, fadiga
 │   │   └── TreinoSessao.spec.tsx   # 22 testes — sessão, ciclo, navegação, auto-fill, conclusão
 │   ├── ui/
 │   │   └── Input.spec.tsx          # 6 testes — Input (3) e Button (3)
@@ -256,7 +275,7 @@ Cada exercício tem **Top Set** (PR work) + **Back-off** (85% do Top Set) e opci
 |--------------------|-------------------------------------------------------------|
 | `seriesValidas: 2` | Top Set + Back-off (padrão para compostos e máquinas)       |
 | `seriesValidas: 3` | Top Set + Back-off + Série Extra (isoladores de alto volume)|
-| `topSetBateuTeto`  | reps ≥ faixaTopSet[1] → obrigatório subir peso (+1 ou +2kg) |
+| `topSetBateuTeto`  | reps ≥ faixaTopSet[1]; sobe peso se o RPE do Top Set for < 8 ou não anotado (EF_02 RG21) |
 
 ### Exercícios com `seriesValidas = 3` (definidos em `sessionExercises.ts`)
 

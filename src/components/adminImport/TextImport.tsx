@@ -1,6 +1,8 @@
 import { useState } from "react";
 import {
+  carregarDados,
   carregarLogbookCompleto,
+  emTransacao,
   getCurrentUser,
   salvarLogbookCompleto,
   setCurrentUser,
@@ -16,6 +18,7 @@ import {
   ResultTitle,
   ResultRow,
 } from "./AdminImport.styles";
+import { avisarErro } from "../mensagens/avisarErro";
 import styled from "styled-components";
 
 const Wrapper = styled.div`
@@ -198,7 +201,7 @@ export default function TextImport() {
     try {
       const sessoesConfig: Record<string, ExercicioSessao[]> = {};
       const logbook = carregarLogbookCompleto();
-      const dadosTreino = JSON.parse(localStorage.getItem(storageKey("dadosTreino")) || "{}");
+      const dadosTreino = carregarDados();
       const planoNovo: Record<string, Record<string, { ordem: number; series_validas: number }>> = {};
       let totalEx = 0;
 
@@ -245,8 +248,7 @@ export default function TextImport() {
               obs: "Importado via texto",
             });
 
-            if (!dadosTreino[ex.nome]) dadosTreino[ex.nome] = {};
-            dadosTreino[ex.nome][treinoId] = {
+            (dadosTreino[ex.nome] ??= {})[treinoId] = {
               data: today,
               pesos: [String(topSetKg), String(boKg)],
               reps: ["", ""],
@@ -257,14 +259,18 @@ export default function TextImport() {
         });
       });
 
-      localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfig));
-      salvarLogbookCompleto(logbook);
-      localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosTreino));
-      localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
+      emTransacao(() => {
+        localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfig));
+        salvarLogbookCompleto(logbook);
+        localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosTreino));
+        localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
+      });
       localStorage.removeItem(storageKey("rascunho_treino"));
 
       setResult({ sessoes: sessions.length, exercicios: totalEx });
       setErrors([]);
+    } catch (erro) {
+      avisarErro("importar texto", erro);
     } finally {
       setCurrentUser(loggedInUser);
     }
