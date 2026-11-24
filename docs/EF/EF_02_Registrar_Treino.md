@@ -81,6 +81,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - Ativar ou desativar o Cluster Set, ou ativar o Deload, limpa os esforços marcados no exercício. O rascunho (RG12) guarda os esforços.
   - A escala escolhida (RPE ou RIR) vale para a tela toda e fica salva por usuário (chave `escala_esforco`).
   - Um `rpe` inválido vindo de importação é descartado; o resto do treino é mantido.
+  - Um botão **?** explica as duas escalas (RG25).
   - Implementação: `utils/esforco.ts` e `treinoSessao/blocks/EsforcoInput.tsx`.
 - **RG21** – **Progressão pelo esforço:** o sistema só manda subir a carga quando o Top Set 1 **bate o teto de reps com RPE abaixo de 8** (mais de 2 reps na reserva).
   - Teto com **RPE < 8** → "Teto atingido — sobe peso no próximo" e, no treino seguinte, `[subir_peso]`.
@@ -107,6 +108,14 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - **Cluster Set:** blocos sem peso ou reps são ignorados; série cluster sem bloco não conta.
   - O esforço (RG20) de uma série ignorada também não é gravado.
   - A tela de revisão mostra exatamente as séries que serão gravadas. Implementação: `seriesFeitas` em `treinoSessao/domain/`.
+- **RG25** – **Ajuda do esforço (?):** ao lado do botão de trocar escala, em todas as séries, o botão **?** abre um balão que explica o RPE, o RIR e para que servem (`[ajuda_esforco]`).
+  - **Abre** só ao tocar no **?**. Nunca abre sozinho.
+  - **Fecha** ao tocar de novo no **?**, no **X**, fora do balão ou com a tecla **Esc**. Rolar a tela não fecha.
+  - Só **um balão** fica aberto por vez: abrir o de outra série fecha o anterior.
+  - Flutua abaixo da linha do esforço, sem empurrar os campos. Se não couber na tela, a tela rola até ele aparecer.
+  - O texto é o mesmo nas duas escalas e o limite de subir carga vem de `RPE_LIMITE_SUBIR` (RG21), para nunca divergir da regra.
+  - É só leitura: não marca esforço, não troca a escala, não grava nada e não entra no rascunho (RG12).
+  - Implementação: `treinoSessao/blocks/AjudaEsforco.tsx`.
 
 ---
 
@@ -247,11 +256,12 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 |---|---|---|---|---|
 | 01 | Esforço | 8 chips de um toque | RPE: ≤6, 7, 7.5, 8, 8.5, 9, 9.5, 10 · RIR: 4+, 3, 2.5, 2, 1.5, 1, 0.5, 0 | Não |
 | 02 | Trocar escala | Botão com ícone de setas | Mostra a outra escala (RPE ⇄ RIR) | — |
+| 03 | Ajuda | Botão **?**, à direita do botão de trocar escala | Abre e fecha o balão `[ajuda_esforco]` (RG25) | — |
 
 - Tocar no chip marcado **desmarca**.
 - Cor do chip marcado: **verde** (abaixo de RPE 8), **laranja** (8 e 8.5), **vermelho** (9 ou mais). O número é sempre visível, então a informação não depende só da cor.
-- Ícones `lucide-react`, os mesmos da barra de navegação: `Gauge` (esforço), `ArrowLeftRight` (trocar escala), `TrendingUp` (subir), `Repeat` (consolidar), `Equal` (na faixa), `TrendingDown` (abaixo), `BatteryWarning` (fadiga), `Layers` (Cluster Set), `BatteryCharging` (Deload).
-- Acessibilidade: cada grupo tem o nome da série e do exercício, e o chip marcado usa `aria-pressed`.
+- Ícones `lucide-react`, os mesmos da barra de navegação: `Gauge` (esforço), `ArrowLeftRight` (trocar escala), `CircleHelp` (ajuda), `X` (fechar ajuda), `TrendingUp` (subir), `Repeat` (consolidar), `Equal` (na faixa), `TrendingDown` (abaixo), `BatteryWarning` (fadiga), `Layers` (Cluster Set), `BatteryCharging` (Deload).
+- Acessibilidade: cada grupo tem o nome da série e do exercício, e o chip marcado usa `aria-pressed`. O **?** usa `aria-expanded`, e fechar com **Esc** ou no **X** devolve o foco para ele.
 
 ### 4.9 Observação
 
@@ -295,4 +305,5 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 | `[subir_peso]` | Banner | Âmbar | — | SUBIR PESO HOJE (teto atingido: Xkg x Nreps) |
 | `[consolidar_carga]` | Banner | Azul | — | CONSOLIDAR CARGA (teto com RPE X: Xkg x Nreps) |
 | `[alerta_fadiga]` | Banner | Vermelho | Sinal de fadiga | Xkg foi de RPE A para RPE B em N treinos. Considere um deload. |
+| `[ajuda_esforco]` | Balão | Branco | RPE e RIR: quão perto da falha | **RPE** (esforço percebido): nota de 6 a 10. 10 é a falha, não sairia mais nenhuma rep. · **RIR** (reps na reserva): quantas reps ainda sairiam. 0 é a falha. · É a mesma medida: RIR = 10 − RPE. Ex.: RPE 8 = RIR 2. · **Para que serve:** bateu o teto de reps no Top Set 1 com RPE abaixo de 8 (RIR acima de 2), sobe o peso; com RPE 8 ou mais, repete a carga. A mesma carga pesando cada vez mais gera o alerta de fadiga. · Opcional: marque ao terminar a série. |
 | `[ultimo_treino]` | Painel informativo | Azul claro | ÚLTIMO TREINO · DD/MM/AAAA | Todas as séries do treino anterior (peso × reps), contagem de séries, volume em kg·reps e observação do dia, quando houver (ver RG17) |

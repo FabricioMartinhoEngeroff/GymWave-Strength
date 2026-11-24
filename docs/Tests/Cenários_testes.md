@@ -722,6 +722,23 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 117 | Volume por musculo com deload | Conta 1 serie; badge `deload` |
 | 118 | Deload e os alertas | Nao gera `estagnado` nem `↓ carga` |
 
+**Ajuda do esforço — balão ? (EF_02 RG25)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 119 | Abrir a tela | Balao fechado (`aria-expanded=false`) |
+| 120 | Posicao do `?` | Logo a direita do botao de trocar escala |
+| 121 | Tocar no `?` | Abre o balao e rola ate ele aparecer |
+| 122 | Texto nas escalas RPE e RIR | Explica RPE, RIR, `RIR = 10 − RPE`, para que serve e que e opcional |
+| 123 | Limite de subir carga no texto | Vem de `RPE_LIMITE_SUBIR` (RG21) |
+| 124 | Tocar de novo no `?` / tocar fora | Fecha |
+| 125 | `X` / tecla Esc | Fecha e devolve o foco para o `?` |
+| 126 | Tocar dentro, rolar ou apertar outra tecla | Continua aberto |
+| 127 | Abrir o `?` de outra serie | Fecha o anterior; um balao por vez |
+| 128 | Abrir e fechar | Nao marca esforco, nao troca escala, nao grava nada |
+| 129 | Sair da tela com o balao aberto | Ouvintes do documento removidos |
+| 130 | Top Set 1, Top Set 2, Back-off, Serie 3, Serie 4 e Cluster Set | Todos tem o `?` |
+
 ---
 
 ### 9.2 CycleCard (5 testes)

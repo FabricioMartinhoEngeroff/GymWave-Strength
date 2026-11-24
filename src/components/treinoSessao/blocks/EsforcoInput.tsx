@@ -1,6 +1,7 @@
 import { ArrowLeftRight, Gauge } from "lucide-react";
 import { rotuloChip, rotuloEsforco, RPES } from "../../../utils/esforco";
-import { EscalaBtn, EsforcoChip, EsforcoChips, EsforcoTitulo, EsforcoTopo } from "../TreinoSessao.styles";
+import { EscalaBtn, EsforcoAcoes, EsforcoChip, EsforcoChips, EsforcoTitulo, EsforcoTopo } from "../TreinoSessao.styles";
+import { AjudaEsforco } from "./AjudaEsforco";
 import type { EscalaProps } from "./tipos";
 
 interface EsforcoInputProps extends EscalaProps {
@@ -23,10 +24,13 @@ export function EsforcoInput({ serie, exercicio, valor, onChange, escala, onTroc
           <Gauge size={14} strokeWidth={1.8} aria-hidden />
           {escala === "RPE" ? "Esforço (RPE)" : "Reps na reserva (RIR)"}
         </EsforcoTitulo>
-        <EscalaBtn type="button" onClick={onTrocarEscala} aria-label={`Trocar para ${outra}`}>
-          <ArrowLeftRight size={12} strokeWidth={1.8} aria-hidden />
-          {outra}
-        </EscalaBtn>
+        <EsforcoAcoes>
+          <EscalaBtn type="button" onClick={onTrocarEscala} aria-label={`Trocar para ${outra}`}>
+            <ArrowLeftRight size={12} strokeWidth={1.8} aria-hidden />
+            {outra}
+          </EscalaBtn>
+          <AjudaEsforco />
+        </EsforcoAcoes>
       </EsforcoTopo>
       <EsforcoChips>
         {RPES.map((rpe) => (

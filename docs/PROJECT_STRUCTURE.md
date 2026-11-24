@@ -67,7 +67,7 @@ src/
 │   │   ├── ExercicioCard.tsx       # Card do exercício aberto (escolhe o modo)
 │   │   ├── ProgressBanner.tsx      # PR, subir/consolidar carga, fadiga
 │   │   ├── UltimoTreinoPanel.tsx · NavegacaoExercicios.tsx · RevisaoTreino.tsx · DiasDesdeUltimo.tsx
-│   │   ├── blocks/                 # Um bloco por modo: TopSet, TopSet2, Backoff, SeriesExtras, Cluster, Deload + EsforcoInput
+│   │   ├── blocks/                 # Um bloco por modo: TopSet, TopSet2, Backoff, SeriesExtras, Cluster, Deload + EsforcoInput e AjudaEsforco
 │   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, sessoes, ultimoTreino, datas
 │   │   ├── hooks/                  # useSessaoTreino (sugestão, espelho, rascunho, salvar), useEscalaEsforco
 │   │   └── TreinoSessao.styles.ts  # Styled-components

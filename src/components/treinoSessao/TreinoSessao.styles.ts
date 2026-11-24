@@ -1,4 +1,4 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 export const Screen = styled.div`
   width: 100%;
@@ -561,6 +561,7 @@ export const TextoApoio = styled.p`
 /* ── Esforço (RPE/RIR) ───────────────────────────────────────── */
 
 export const EsforcoTopo = styled.div`
+  position: relative; /* âncora do balão de ajuda */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -594,6 +595,87 @@ export const EscalaBtn = styled.button`
     font-size: 11px;
     font-weight: 500;
     cursor: pointer;
+  }
+`;
+
+export const EsforcoAcoes = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const botaoDeIcone = css`
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+`;
+
+export const AjudaBtn = styled.button`
+  && {
+    ${botaoDeIcone}
+    color: #2563eb;
+  }
+`;
+
+/** Flutua abaixo da linha do esforço. Fica sob a barra fixa do topo (z-index 5). */
+export const AjudaBalao = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 4;
+  padding: 10px 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+  color: #374151;
+  font-size: 12px;
+  line-height: 1.45;
+  text-align: left;
+  scroll-margin: 12px;
+  p {
+    margin: 6px 0 0;
+  }
+  /* Ponta do balão, centralizada no "?" */
+  &::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    border: 1px solid #bfdbfe;
+    border-right: none;
+    border-bottom: none;
+    background: #ffffff;
+    transform: rotate(45deg);
+  }
+`;
+
+export const AjudaTitulo = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+`;
+
+export const AjudaFecharBtn = styled.button`
+  && {
+    ${botaoDeIcone}
+    color: #6b7280;
   }
 `;
 
