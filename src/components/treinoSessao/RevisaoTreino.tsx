@@ -38,7 +38,7 @@ function LinhaResumo({ state, escala }: { state: ExerciseState | undefined; esca
       {!state.tecnica && (
         <p style={DETALHE}>
           {resumoSeries(state, escala)}
-          {state.isDeload && <span style={{ color: "#dc2626" }}> · Deload</span>}
+          {state.isDeload && <span style={{ color: DETALHE.color }}> · Deload</span>}
         </p>
       )}
       {state.tecnicaConfirmed && state.tecnica && <p style={DETALHE}>{resumoCluster(state, escala)}</p>}

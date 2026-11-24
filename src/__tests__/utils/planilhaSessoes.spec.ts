@@ -7,6 +7,7 @@ import { describe, it, expect } from "vitest";
 import {
   blocosCluster,
   idDaSessao,
+  lerRpeAlvo,
   listarSessoes,
   mesclarRepetidos,
   prefixoAba,
@@ -124,6 +125,47 @@ describe("planilhaSessoes", () => {
       expect(blocosCluster("Até a falha")).toBeUndefined();
       expect(blocosCluster("Cluster set de 100 repetições")).toBeUndefined();
     });
+  });
+
+  describe("lerRpeAlvo (EF_06 RG14)", () => {
+    /** Número com que o Excel guarda uma data. */
+    const serialExcel = (dia: number, mes: number, ano = 2026) => Date.UTC(ano, mes - 1, dia) / 86400000 + 25569;
+
+    it.each<[unknown, [number, number]]>([
+      ["7-8", [7, 8]], ["7 - 8", [7, 8]], ["7–8", [7, 8]], ["7 a 8", [7, 8]], ["  9-10 ", [9, 10]],
+      ["8-8", [8, 8]], ["7,5-8", [7.5, 8]], ["7.5-8", [7.5, 8]], ["6-10", [6, 10]],
+    ])("%j", (celula, esperado) => expect(lerRpeAlvo(celula)).toEqual({ rpe_alvo: esperado }));
+
+    it.each<[string, number, [number, number]]>([
+      ["7/ago (pt-BR)", serialExcel(7, 8), [7, 8]], ["8/jul (en-US)", serialExcel(8, 7), [7, 8]],
+      ["9/out", serialExcel(9, 10), [9, 10]], ["10/set", serialExcel(10, 9), [9, 10]], ["8/ago", serialExcel(8, 8), [8, 8]],
+      ["outro ano", serialExcel(7, 8, 2031), [7, 8]],
+    ])("data que o Excel criou: %s", (_n, celula, esperado) => expect(lerRpeAlvo(celula)).toEqual({ rpe_alvo: esperado }));
+
+    it.each([undefined, null, "", "   "])("vazia (%j): sem alvo e sem mensagem", (celula) => expect(lerRpeAlvo(celula)).toEqual({}));
+
+    it.each([
+      "8", 8, 0, 7.8, NaN, "8-7", "5-8", "9-11", "7.3-8", "7-8-9", "RPE 8", "07/ago", "abc", "-", true, "7/8",
+      serialExcel(15, 3), serialExcel(5, 8), serialExcel(9, 11),
+    ])("ilegível: %j", (celula) => expect(lerRpeAlvo(celula)).toEqual({ rpe_alvo_ilegivel: true }));
+  });
+
+  describe("mesclarRepetidos com esforço alvo (EF_06 RG14)", () => {
+    const linha = (rpe: object) => ({ sessao: "Pull", exercicio: "Stiff", series_validas: 1, cue: "", ...rpe });
+    const mesclar = (...alvos: object[]) => {
+      const { rpe_alvo, rpe_alvo_ilegivel } = mesclarRepetidos(alvos.map(linha) as ReturnType<typeof linha>[])[0] as Record<string, unknown>;
+      return { rpe_alvo, rpe_alvo_ilegivel };
+    };
+    const A = { rpe_alvo: [7, 8] }, B = { rpe_alvo: [9, 10] }, RUIM = { rpe_alvo_ilegivel: true };
+
+    it.each([
+      ["só no segundo", [{}, B], B.rpe_alvo, undefined],
+      ["nos dois: vale o primeiro", [A, B], A.rpe_alvo, undefined],
+      ["ilegível e válido: vale o válido, sem mensagem", [RUIM, B], B.rpe_alvo, undefined],
+      ["válido e ilegível", [A, RUIM], A.rpe_alvo, undefined],
+      ["ilegível e vazio: mensagem", [{}, RUIM], undefined, true],
+      ["nenhum", [{}, {}], undefined, undefined],
+    ])("%s", (_n, alvos, rpe_alvo, rpe_alvo_ilegivel) => expect(mesclar(...alvos)).toEqual({ rpe_alvo, rpe_alvo_ilegivel }));
   });
 });
 

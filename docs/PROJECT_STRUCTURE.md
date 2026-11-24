@@ -65,10 +65,10 @@ src/
 │   ├── treinoSessao/       # Tela principal de registro de treino (aba Registrar)
 │   │   ├── TreinoSessao.tsx        # Tela: monta as partes
 │   │   ├── ExercicioCard.tsx       # Card do exercício aberto (escolhe o modo)
-│   │   ├── ProgressBanner.tsx      # PR, subir/consolidar carga, fadiga
+│   │   ├── ProgressBanner.tsx      # PR ao vivo + card do último treino com os avisos
 │   │   ├── UltimoTreinoPanel.tsx · NavegacaoExercicios.tsx · RevisaoTreino.tsx · DiasDesdeUltimo.tsx
 │   │   ├── blocks/                 # Um bloco por modo: TopSet, TopSet2, Backoff, SeriesExtras, Cluster, Deload + EsforcoInput e AjudaEsforco
-│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, rpeAlvo, sessoes, ultimoTreino
+│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, rpeAlvo, avisosTreino, sessoes, ultimoTreino
 │   │   ├── hooks/                  # useSessaoTreino (sugestão, espelho, rascunho, salvar), useEscalaEsforco
 │   │   └── TreinoSessao.styles.ts  # Styled-components
 │   │
@@ -76,7 +76,7 @@ src/
 │   │   ├── mensagens.ts            # Store: mostrar(), confirmar(), responder()
 │   │   ├── CentralDeMensagens.tsx  # Desenha avisos, conquistas e confirmações (montada no main)
 │   │   ├── ErrorBoundary.tsx · ErroDeRota.tsx · TelaErro.tsx   # Tela de erro amigável
-│   │   ├── avisarErro.ts · capturaGlobal.ts · lerPlanilha.ts
+│   │   ├── avisarErro.ts · avisarRpeAlvoIlegivel.ts · capturaGlobal.ts · lerPlanilha.ts
 │   │   └── domain/                 # catalogo (textos) e traduzirErro
 │   │
 │   ├── adminImport/        # Importação de planilha para seed do logbook
@@ -147,8 +147,8 @@ src/
     ├── baixarArquivo.ts        # Download de texto
     ├── datas.ts                # Regra única de data: parseDataBR(), formatarBR(), hojeBR(), BR ↔ ISO
     ├── epleyCalc.ts            # calcEpley(), estimar1RM() pelo esforço, extractReferenceBlock()
-    ├── esforco.ts              # RPE/RIR: escala, rótulos, passouDoAlvo(), deveSubirPeso(), detectarFadiga()
-    ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, exercício repetido
+    ├── esforco.ts              # RPE/RIR: escala, rótulos, faixaValida(), passouDoAlvo(), deveSubirPeso(), detectarFadiga(), detectarRegressao()
+    ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, rpe_alvo, exercício repetido
     ├── registros.ts            # Formato v3 do histórico: slug do exercício, conversões, CSV
     ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), referenciaDoExercicio(), exercicioDeveSubirPeso()
     │                           # Legado: salvarDados() / carregarDados() → localStorage["dadosTreino"]
@@ -241,7 +241,7 @@ RegistroExercicio {
   topSetKg: number
   topSetReps: number
   topSetFaixaMin/Max: number
-  topSetBateuTeto: boolean  // reps >= faixaMax → sobe peso na próxima sessão
+  topSetBateuTeto: boolean  // reps >= faixaMax (só o fato; o aviso depende do esforço, EF_02 RG21)
   backoffKg: number         // topSetKg × backoffPct (sugerido automaticamente)
   backoffReps: number
   backoffFaixaMin/Max: number
@@ -276,7 +276,7 @@ Cada exercício tem **Top Set** (PR work) + **Back-off** (85% do Top Set) e opci
 |--------------------|-------------------------------------------------------------|
 | `seriesValidas: 2` | Top Set + Back-off (padrão para compostos e máquinas)       |
 | `seriesValidas: 3` | Top Set + Back-off + Série Extra (isoladores de alto volume)|
-| `topSetBateuTeto`  | reps ≥ faixaTopSet[1]; sobe peso se o RPE do Top Set não passar do alvo do exercício (`rpeAlvo`) ou não foi anotado (EF_02 RG21) |
+| `topSetBateuTeto`  | reps ≥ faixaTopSet[1]; avisa que dá para subir a carga se o RPE do Top Set não passar do alvo do exercício (`rpeAlvo`) ou não foi anotado (EF_02 RG21) |
 
 ### Exercícios com `seriesValidas = 3` (definidos em `sessionExercises.ts`)
 

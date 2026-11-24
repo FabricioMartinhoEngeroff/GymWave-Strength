@@ -66,7 +66,14 @@ export function ExercicioCard({ treino, ex }: { treino: SessaoTreino; ex: Exerci
 
       <ExerciseGif exerciseName={ex.nome} />
 
-      <ProgressBanner ultimo={treino.ultimo} prAtivo={treino.prAtivo} fadiga={treino.fadiga} rpeAlvo={rpeAlvo} escala={treino.escala} />
+      <ProgressBanner
+        ultimo={treino.ultimo}
+        prAtivo={treino.prAtivo}
+        fadiga={treino.fadiga}
+        regressao={treino.regressao}
+        rpeAlvo={rpeAlvo}
+        escala={treino.escala}
+      />
 
       {/* Chips sempre visíveis; o Cluster substitui os Top Sets quando ativo */}
       <TecnicaCard style={{ background: "#fafafa" }}>

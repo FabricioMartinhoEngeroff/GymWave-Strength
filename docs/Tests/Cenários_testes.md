@@ -215,6 +215,21 @@
 | 23 | Fadiga: deload no meio ou no fim | Zera a contagem |
 | 24 | Fadiga: carga mudou no ultimo treino | Alerta encerrado |
 | 25 | Fadiga: primeiro treino fora das 6 semanas | Nao entra na sequencia |
+| 26 | Regressao: reps 10 → 9 → 8 na mesma carga, RPE 9 e 10 nos 2 ultimos | Alerta com kg, reps `[10, 9, 8]` |
+| 27 | Regressao: 11 → 10 → 9 → 8 | Alerta com as 4 reps |
+| 28 | Regressao: 10 → 10 → 9 → 8 / 8 → 10 → 9 → 8 | Sequencia abre no treino antes da queda: `[10, 9, 8]` |
+| 29 | Regressao: RPE 6 no treino que abriu a sequencia; 9.5 antigo nos ultimos | Alerta |
+| 30 | Regressao: RPE 8 em um dos 2 ultimos | Sem alerta |
+| 31 | Regressao: so 2 treinos, so 1 queda (10 → 10 → 9), queda interrompida (10 → 9 → 9), recuperou (10 → 8 → 9), estavel | Sem alerta |
+| 32 | Regressao: nao depende do alvo do exercicio | Mesmo resultado em pesado e isolador |
+| 33 | Regressao: deload no meio ou no fim | Zera a contagem |
+| 34 | Regressao: primeiro treino a 42 dias / 43 dias do ultimo | Entra / nao entra |
+| 35 | Regressao: 9 dias / 10 dias entre o primeiro e o ultimo; duas sessoes na mesma semana | Sem alerta / alerta / sem alerta |
+| 36 | Regressao: carga mudou no ultimo treino | Sem alerta |
+| 37 | Regressao: outra carga, cluster, treino sem RPE ou sem reps no meio | Ignorados na sequencia |
+| 38 | Regressao: outra sessao com outra carga; sessao sem historico; lista fora de ordem; vazia | Igual a fadiga (cenarios 22 e 23); ordem nao importa; sem alerta |
+| 39 | Fadiga e regressao no mesmo historico | Nunca as duas |
+| 40 | `faixaAlvo` 7 a 8 em RPE / RIR | `7–8` / `2–3` |
 
 ### 1.11 registros — RPE por serie
 
@@ -578,8 +593,8 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 11 | Confirmar Top Set sem dados | Botao desabilitado (`disabled`) |
 | 12 | Confirmar Top Set com dados validos | Bloco Back-off aparece |
 | 13 | Back-off apos confirmar Top Set 100kg | Peso sugerido automaticamente = 85 (85%) |
-| 14 | Top Set com reps no teto (9 reps, faixa 5–9) | Badge verde `Teto atingido` exibido |
-| 15 | Top Set abaixo da faixa (3 reps, faixa 5–9) | Badge vermelho `Abaixo da faixa` exibido |
+| 14 | Top Set com reps no teto (9 reps, faixa 5–9) | Status verde `[status_teto]` exibido |
+| 15 | Top Set abaixo da faixa (3 reps, faixa 5–9) | Status ambar `Abaixo da faixa` exibido |
 
 **Série Extra (seriesValidas) (6)**
 
@@ -598,7 +613,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 21 | Primeiro registro do exercicio | Banner azul `Primeiro registro — defina o peso` |
+| 21 | Primeiro registro do exercicio | Aviso azul `[primeiro_registro]` no card do ultimo treino (cenario 168) |
 
 **Navegação entre exercícios (2)**
 
@@ -690,7 +705,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 65 | Salvar treino com Deload | `isDeload: true` no registro do logbook |
 | 66 | Salvar treino com Deload | `backoffKg: 0` no registro |
 | 67 | Salvar treino com Deload | `topSetKg` correto no registro |
-| 68 | Revisao pre-save com exercicio Deload | Etiqueta `· Deload` em vermelho visivel |
+| 68 | Revisao pre-save com exercicio Deload | Etiqueta `· Deload` em cinza visivel |
 | 69 | Ativar Deload e confirmar Top Set | Titulo do exercicio exibe `✓` |
 | 70 | Deload com `Proximo` validacao | Back-off NAO e exigido |
 | 71 | Ativar Deload restaura pesos do historico no Top Set | Campo Top Set kg = peso do ultimo registro |
@@ -709,10 +724,10 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 79 | Fechar e reabrir o app | Esforco volta do rascunho |
 | 80 | Cluster Set | Um esforco por serie cluster, gravado no registro |
 | 81 | Revisao | Exibe `@ RPE X` depois das reps |
-| 82 | Teto com RPE 8 e alvo 7 a 8; teto com RPE 10 e alvo 9 a 10 | `Teto atingido — sobe peso no próximo`; conta no resumo; campos nao mudam |
-| 83 | Teto com RPE 9 e alvo 7 a 8 | `Teto atingido com RPE 9 — repete a carga`; nao conta no resumo |
-| 84 | Abrir com ultimo treino no teto, RPE 7 / RPE 9 | `SUBIR PESO HOJE` / `CONSOLIDAR CARGA` |
-| 85 | Alvo 7 a 8 com 8 → 9 → 10; alvo 9 a 10 com 9 → 10 → 10 | `[alerta_fadiga]` exibido |
+| 82 | Teto com RPE 8 e alvo 7 a 8; teto com RPE 10 e alvo 9 a 10 | `Teto de reps atingido dentro do alvo`; conta no resumo; campos nao mudam |
+| 83 | Teto com RPE 9 e alvo 7 a 8 | `Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.`; nao conta no resumo |
+| 84 | Abrir com ultimo treino no teto, RPE 7 / RPE 9 | Aviso `[subir_peso]` / `[consolidar_carga]` no card |
+| 85 | Alvo 7 a 8 com 8 → 9 → 10; alvo 9 a 10 com 9 → 10 → 10 | `[alerta_fadiga]` exibido no card, sem sugerir deload |
 | 86 | RPE estavel, um dia ruim so, subiu dentro do alvo | Sem alerta |
 
 **Estrutura — domain, hook e blocos**
@@ -746,7 +761,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
 | 103 | Deload com 4 validas e sugestoes guardadas | So `top1` em `registros` e em `dadosTreino`; `seriesValidas: 1` |
-| 104 | Deload no teto | Sem teto, sem PR, nao conta em "sobem de peso"; `Deload registrado — não conta para progressão` |
+| 104 | Deload no teto | Sem teto, sem PR, nao conta no resumo de teto; `Deload registrado — não conta para progressão` |
 | 105 | Deload vindo do Cluster | Top Set 1 volta com o ultimo treino |
 | 106 | Deload antigo com series a mais | Lido so com o Top Set 1; dado guardado intacto |
 | 107 | Treino depois do deload | Abre com o ultimo treino normal; progressao compara com ele |
@@ -780,7 +795,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 120 | Posicao do `?` | Logo a direita do botao de trocar escala |
 | 121 | Tocar no `?` | Abre o balao e rola ate ele aparecer |
 | 122 | Texto nas escalas RPE e RIR | Explica RPE, RIR, `RIR = 10 − RPE`, para que serve e que e obrigatorio |
-| 123 | Alvos no texto | Vem de `RPE_ALVO` (RG28); sobe ate o alvo, repete acima, peso nao muda sozinho |
+| 123 | Alvos no texto | Vem de `RPE_ALVO` (RG28); da para subir ate o alvo, em consolidacao acima, peso nao muda sozinho |
 | 124 | Tocar de novo no `?` / tocar fora | Fecha |
 | 125 | `X` / tecla Esc | Fecha e devolve o foco para o `?` |
 | 126 | Tocar dentro, rolar ou apertar outra tecla | Continua aberto |
@@ -834,6 +849,36 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 159 | Painel do ultimo treino com a tela em RPE ou em RIR | Mostra as duas escalas do mesmo jeito |
 | 160 | Painel: cada serie com o seu esforco; serie sem esforco | Cada linha mostra o dela; sem esforco, nenhuma escala |
 | 161 | Painel com Cluster Set | Esforco no ultimo bloco de cada serie, nas duas escalas |
+
+**Avisos no card "Último treino" (EF_02 RG17, RG29 e RG30)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 162 | `avisosDoTreino`: textos exatos de cada aviso, em RPE e em RIR | Iguais a secao 5 da EF_02 |
+| 163 | `avisosDoTreino`: ordem subir > fadiga/regressao > informativo | Lista ordenada |
+| 164 | `avisosDoTreino`: tom e marca | subir verde ↑; fadiga e regressao ambar !; informativo azul i; nenhum vermelho |
+| 165 | Nenhum texto com ordem (`deload`, `considere`, `subir peso hoje`, `consolidar`, `defina`) | Textos neutros |
+| 166 | Teto dentro do alvo com RPE / sem RPE (registro antigo) | `(RPE 8)` no texto / sem parenteses |
+| 167 | Sem teto, sem fadiga, sem regressao | Nenhum aviso; linha de avisos nao existe |
+| 168 | Primeiro registro na sessao | Card so com titulo e `[primeiro_registro]`; sem data, series e volume |
+| 169 | Registro sem serie para listar: com aviso / sem aviso | Card com o aviso / card nao aparece |
+| 170 | Posicao | Aviso dentro do card, depois das series e antes da contagem; nada fora dele |
+| 171 | Um aviso | Sem `ver mais` |
+| 172 | Dois avisos (teto + fadiga no isolador) | So o de subir; `ver mais` mostra a fadiga; `ver menos` recolhe; `aria-expanded` acompanha |
+| 173 | Trocar de exercicio com a lista aberta | Outro card abre recolhido |
+| 174 | Fadiga / regressao na tela | Aviso ambar com o texto exato; nao vermelho; campos e chip Deload inalterados |
+| 175 | Trocar RPE para RIR | Texto do aviso acompanha; series seguem nas duas escalas |
+| 176 | `[banner_pr]` ativo | Fora e acima do card; avisos continuam |
+| 177 | Avisos na tela | `Próximo` e salvar continuam livres; peso e reps sugeridos nao mudam |
+| 178 | Aviso | Marca e texto; fundo transparente; barra lateral |
+| 179 | `ProgressBanner.tsx` e `UltimoTreinoPanel.tsx` | Nenhum hex solto |
+| 180 | Plano com `rpeAlvo` 7 a 8 em Stiff | Cabecalho `alvo RPE 7–8`; teto com RPE 9 vira `[consolidar_carga]`; esforco segue obrigatorio |
+| 181 | Status do Top Set: teto dentro do alvo / sem esforco / acima do alvo / na faixa / abaixo | `[status_teto]` / `Teto de reps atingido` / `[consolidar_carga]` / `Na faixa de reps` / `Abaixo da faixa` |
+| 182 | Cor do status | Verde / verde / azul / azul / ambar; nenhum vermelho |
+| 183 | Deload: texto do modo, status e etiqueta da revisao | Cinza |
+| 184 | Resumo do treino | `N exercício(s) no teto de reps dentro do alvo` |
+| 185 | Balao ? | `dá para subir a carga` e `carga em consolidação`; sem `sobe o peso` nem `repete a carga` |
+| 186 | Tela de treino inteira | Nenhum texto com ordem de carga; sem vermelho fora de campo invalido |
 
 ---
 
@@ -996,6 +1041,23 @@ As funcoes de data (`parseData`, `formatarData`) foram para `utils/datas.ts`. Os
 | 33 | Resultado com dados novos (banco vazio) | Exibe `4 adicionado(s) · 0 preservado(s)` |
 | 34 | Resultado com exercicio ja existente | Exibe adicionados < total e preservados > 0 |
 
+**Esforço alvo pela planilha (EF_06 RG14)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 38 | `lerRpeAlvo` com `7-8`, `7 - 8`, `7–8`, `7 a 8`, `9-10`, `8-8`, `7,5-8`, `7.5-8`, espacos em volta | Faixa |
+| 39 | `lerRpeAlvo` com vazio, null, `8`, 8, `8-7`, `5-8`, `9-11`, `7.3-8`, `7-8-9`, texto | undefined |
+| 40 | Celula que o Excel trocou por data: 7/ago, 8/jul, 9/out, 10/set; 15/mar, 5/ago | 7–8, 7–8, 9–10, 9–10; undefined |
+| 41 | Importar CSV e XLSX com `rpe_alvo` | `rpeAlvo` em `sessoes_config`; no treino, alvo da planilha |
+| 42 | Cabecalho `RPE alvo`, `rpe_alvo`, `RPE-Alvo` | Reconhecido; `RPE` sozinho nao |
+| 43 | Sem a coluna ou celula vazia | Importa sem `rpeAlvo`; regra automatica de antes; sem mensagem |
+| 44 | Exercicio repetido no dia: alvo so no segundo / invalido no primeiro / nos dois | Do segundo / do segundo / do primeiro |
+| 45 | Mesmo exercicio em duas sessoes com alvos diferentes | Cada sessao com o seu |
+| 46 | Desfazer importacao | `rpeAlvo` anterior restaurado |
+| 47 | Celula ilegivel (`8-7`, `07/ago`, texto) | Importa; `[rpe_alvo_ilegivel]` com exercicio e sessao; so os ilegiveis, sem repetir |
+| 48 | Exercicio repetido: ilegivel + valido / ilegivel + vazio | Sem mensagem / com mensagem |
+| 49 | Falha ao gravar | Sem `[rpe_alvo_ilegivel]` |
+
 ---
 
 ### 9.9 AdminImport (26 testes)
@@ -1030,6 +1092,7 @@ As funcoes de data (`parseData`, `formatarData`) foram para `utils/datas.ts`. Os
 | 26 | Desfazer — confirm=true restaura backup | localStorage volta ao estado anterior, sem dados novos |
 | 27 | Desfazer — confirm=false nao restaura | Dados importados permanecem no localStorage |
 | 28 | Desfazer — esconde resultado apos desfazer | `Importacao concluida` sumido da tela |
+| 29 | Planilha com `rpe_alvo` valido / invalido / sem a coluna (EF_06 RG14) | `rpeAlvo` em `sessoes_config` / sem `rpeAlvo`, com `[rpe_alvo_ilegivel]` / sem `rpeAlvo`, sem mensagem |
 
 ---
 

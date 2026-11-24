@@ -63,7 +63,8 @@ export function AjudaEsforco() {
           <p>É a mesma medida: RIR = 10 − RPE. Ex.: RPE 8 = RIR 2.</p>
           <p>
             <strong>Para que serve:</strong> bateu o teto de reps no Top Set 1 com esforço igual ou abaixo do alvo do
-            exercício, sobe o peso; se passou do alvo, repete a carga. É só um aviso: o peso não muda sozinho.
+            exercício, dá para subir a carga; se passou do alvo, carga em consolidação. É só um aviso: o peso não muda
+            sozinho.
           </p>
           <p>
             <strong>Alvo:</strong> agacho, supino, terra e barra fixa, {nasDuasEscalas(RPE_ALVO.composto)}. Máquinas, cabos e

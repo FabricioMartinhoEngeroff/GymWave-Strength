@@ -59,6 +59,7 @@ Qualquer pessoa usando o app, logada ou não. "Baixar backup" só aparece para u
 - **RG14** – **Rascunho que não pôde ser salvo** (armazenamento cheio ou bloqueado) não derruba a tela: aparece `[rascunho_nao_salvo]`.
 - **RG15** – **Erro traduzido:** erros não tratados (clique, tarefa em segundo plano) são traduzidos: armazenamento cheio → `[armazenamento_cheio]`; armazenamento bloqueado → `[armazenamento_bloqueado]`; rede → `[sem_conexao]`; arquivo/dado ilegível → `[dados_ilegiveis]`; demais → `[erro_inesperado]`. O detalhe técnico só vai para o log de desenvolvimento, sem dados pessoais (EF_01). Ruídos do navegador (ex.: `ResizeObserver loop`) são ignorados.
 - **RG16** – **Importação de arquivo:** arquivo ilegível → `[arquivo_invalido]`; planilha sem linhas reconhecidas → `[planilha_vazia]`. Nada é gravado.
+  - Coluna `rpe_alvo` com célula ilegível → a planilha é importada e `[rpe_alvo_ilegivel]` aparece junto de `[importacao_concluida]` (EF_06 RG14). É dado inválido: fica na tela até fechar, para dar tempo de ler a lista.
 
 ---
 
@@ -108,6 +109,7 @@ Cartão central sobre fundo escurecido: ícone, título, texto, lista de itens (
 | `[armazenamento_bloqueado]` | Erro | Armazenamento bloqueado | O navegador não deixou acessar os dados. Saia do modo anônimo ou libere o armazenamento do site. |
 | `[sem_conexao]` | Erro | Sem conexão | Verifique sua internet e tente novamente. Seus treinos continuam no aparelho. |
 | `[arquivo_invalido]` | Erro | Arquivo não reconhecido | Não foi possível ler o arquivo. Nada foi alterado. |
+| `[rpe_alvo_ilegivel]` | Erro | Esforço alvo não lido | Estes exercícios ficaram sem o alvo da planilha: lista. Ex.: Remada curvada (Upper A) · Stiff (Lower A). Use o formato 7-8. |
 | `[dados_ilegiveis]` | Erro | Dados ilegíveis | Não foi possível ler essas informações. Tente recarregar a página. |
 | `[erro_inesperado]` | Erro | Algo deu errado | Seus dados estão salvos. Tente novamente. |
 | `[conquista_recorde]` | Conquista | Novo recorde! | Lista dos exercícios: `Supino reto barra: 100kg × 8` |

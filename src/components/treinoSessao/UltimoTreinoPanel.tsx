@@ -1,44 +1,76 @@
+import { useState } from "react";
 import type { RegistroExercicio } from "../../types/TrainingData";
 import { rotuloEsforco } from "../../utils/esforco";
-import { UltimoTreinoBox, UltimoTreinoLinha } from "./TreinoSessao.styles";
+import {
+  AvisoLinha, AvisoLista, UltimoTreinoBox, UltimoTreinoData, UltimoTreinoLinha, UltimoTreinoObs, UltimoTreinoRodape,
+  UltimoTreinoSerie, UltimoTreinoTitulo, UltimoTreinoTopo, UltimoTreinoValor, VerMaisBtn,
+} from "./TreinoSessao.styles";
+import { MAX_AVISOS_VISIVEIS, type AvisoTreino } from "./domain/avisosTreino";
 import { seriesDoRegistro } from "./domain/ultimoTreino";
 
+/** O aviso mais relevante; os demais ficam atrás do "ver mais" (RG29). */
+function Avisos({ avisos }: { avisos: AvisoTreino[] }) {
+  const [aberto, setAberto] = useState(false);
+  if (avisos.length === 0) return null;
+  const visiveis = aberto ? avisos : avisos.slice(0, MAX_AVISOS_VISIVEIS);
+
+  return (
+    <>
+      <AvisoLista>
+        {visiveis.map(({ tipo, tom, marca, texto }) => (
+          <AvisoLinha key={tipo} $tom={tom} data-testid={`aviso-${tipo}`}>
+            <strong>{marca}</strong>
+            <span>{texto}</span>
+          </AvisoLinha>
+        ))}
+      </AvisoLista>
+      {avisos.length > MAX_AVISOS_VISIVEIS && (
+        <VerMaisBtn type="button" onClick={() => setAberto((a) => !a)} aria-expanded={aberto}>
+          {aberto ? "ver menos" : "ver mais"}
+        </VerMaisBtn>
+      )}
+    </>
+  );
+}
+
 /**
- * Painel "Último treino" (RG17): lista TODAS as séries do treino anterior deste
- * exercício, com o esforço nas duas escalas, para decidir entre subir a carga ou manter e buscar mais reps.
+ * Card "Último treino" (RG17): lista TODAS as séries do treino anterior deste
+ * exercício, com o esforço nas duas escalas, e os avisos já calculados (RG29).
  */
-export function UltimoTreinoPanel({ ultimo }: { ultimo: RegistroExercicio }) {
-  const linhas = seriesDoRegistro(ultimo);
-  if (linhas.length === 0) return null;
+export function UltimoTreinoPanel({ ultimo, avisos }: { ultimo: RegistroExercicio | null; avisos: AvisoTreino[] }) {
+  const linhas = ultimo ? seriesDoRegistro(ultimo) : [];
+  const temSeries = ultimo !== null && linhas.length > 0;
+  if (!temSeries && avisos.length === 0) return null;
   const volume = linhas.reduce((sum, l) => sum + l.kg * l.reps, 0);
 
   return (
     <UltimoTreinoBox data-testid="ultimo-treino-detalhe">
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 4 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: "#0369a1", letterSpacing: 0.3 }}>ÚLTIMO TREINO</span>
-        <span style={{ fontSize: 10, color: "#0284c7" }}>{ultimo.data}</span>
-      </div>
+      <UltimoTreinoTopo>
+        <UltimoTreinoTitulo>ÚLTIMO TREINO</UltimoTreinoTitulo>
+        {temSeries && <UltimoTreinoData>{ultimo.data}</UltimoTreinoData>}
+      </UltimoTreinoTopo>
 
       {linhas.map((l, i) => (
         <UltimoTreinoLinha key={`${l.label}-${i}`}>
-          <span style={{ fontSize: 11, color: "#0369a1" }}>{l.label}</span>
-          <span style={{ fontSize: 12, fontWeight: 600, color: "#075985", textAlign: "right" }}>
-            <span style={{ whiteSpace: "nowrap" }}>{l.kg}kg × {l.reps} reps</span>
+          <UltimoTreinoSerie>{l.label}</UltimoTreinoSerie>
+          <UltimoTreinoValor>
+            <span>{l.kg}kg × {l.reps} reps</span>
             {l.rpe !== undefined && (
               // Em tela estreita o esforço desce inteiro para a linha de baixo.
-              <>{" "}<span style={{ whiteSpace: "nowrap" }}>· {rotuloEsforco(l.rpe, "RPE")} · {rotuloEsforco(l.rpe, "RIR")}</span></>
+              <>{" "}<span>· {rotuloEsforco(l.rpe, "RPE")} · {rotuloEsforco(l.rpe, "RIR")}</span></>
             )}
-          </span>
+          </UltimoTreinoValor>
         </UltimoTreinoLinha>
       ))}
 
-      <div style={{ fontSize: 10, color: "#0284c7", marginTop: 4 }}>
-        {linhas.length} série(s) · volume {volume} kg·reps
-      </div>
+      <Avisos avisos={avisos} />
 
-      {ultimo.obs && (
-        <p style={{ fontSize: 11, color: "#0369a1", margin: "4px 0 0", fontStyle: "italic" }}>“{ultimo.obs}”</p>
+      {temSeries && (
+        <UltimoTreinoRodape>
+          {linhas.length} série(s) · volume {volume} kg·reps
+        </UltimoTreinoRodape>
       )}
+      {temSeries && ultimo.obs && <UltimoTreinoObs>“{ultimo.obs}”</UltimoTreinoObs>}
     </UltimoTreinoBox>
   );
 }

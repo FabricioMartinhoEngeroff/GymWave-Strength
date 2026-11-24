@@ -69,6 +69,31 @@ describe("Blocos da sessão", () => {
     expect(screen.getByText(/Deload registrado — não conta para progressão/)).toBeInTheDocument();
   });
 
+  it("Deload é escolha: texto e status em cinza (RG29)", () => {
+    render(<DeloadBlock {...escala} ex={EX} state={estado({ isDeload: true, topSetConfirmed: true })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
+    expect(screen.getByText(/Deload — apenas 1 série válida/)).toHaveStyle({ color: "#6b7280" });
+    expect(screen.getByText(/Deload registrado/).parentElement).toHaveStyle({ color: "#6b7280" });
+  });
+
+  describe("status do Top Set 1: descreve, sem mandar (RG21, RG29)", () => {
+    const CONSOLIDAR = "Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.";
+    it.each<[string, string, number | null, string, string]>([
+      ["teto dentro do alvo", "8", 8, "Teto de reps atingido dentro do alvo", "#166534"],
+      ["teto ainda sem esforço", "8", null, "Teto de reps atingido", "#166534"],
+      ["teto acima do alvo", "8", 9, CONSOLIDAR, "#1d4ed8"],
+      ["na faixa", "7", 8, "Na faixa de reps", "#1d4ed8"],
+      ["abaixo da faixa", "3", 8, "Abaixo da faixa", "#92400e"],
+    ])("%s", (_n, topSetReps, topSetRpe, texto, cor) => {
+      render(<TopSetBlock {...escala} ex={EX} state={estado({ topSetKg: "100", topSetReps, topSetRpe, topSetConfirmed: true })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
+      expect(screen.getByText(texto).parentElement).toHaveStyle({ color: cor });
+    });
+
+    it("consolidar em RIR", () => {
+      render(<TopSetBlock {...escala} escala="RIR" ex={EX} state={estado({ topSetKg: "100", topSetReps: "8", topSetRpe: 9, topSetConfirmed: true })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
+      expect(screen.getByText("Teto de reps com esforço acima do alvo (RIR 1, alvo 2–3): carga em consolidação.")).toBeInTheDocument();
+    });
+  });
+
   describe("aviso de esforço só na série que falta (RG27)", () => {
     const acoes = { aviso: false, onChange: vi.fn(), onConfirmar: vi.fn(), onEditar: vi.fn() };
     const cluster = estado({ tecnica: "RP", tecnicaConfirmed: true, clusterSeries: [{ kg: "80", reps: "4" }], clusterSeries2: [{ kg: "80", reps: "3" }] });

@@ -4,7 +4,7 @@
  */
 import { describe, it, expect } from "vitest";
 import {
-  deveSubirPeso, detectarFadiga, normalizarRpe, opcoesDeEsforco, passouDoAlvo, rotuloAlvo, rotuloChip, rotuloEsforco,
+  deveSubirPeso, ALERTA_MIN_DIAS, detectarFadiga, detectarRegressao, faixaAlvo, normalizarRpe, opcoesDeEsforco, passouDoAlvo, rotuloAlvo, rotuloChip, rotuloEsforco,
   rpeDaTela, RPES, type FaixaRpe,
 } from "../../utils/esforco";
 import type { RegistroExercicio } from "../../types/TrainingData";
@@ -62,6 +62,11 @@ describe("esforco — utils", () => {
     ] as const)("%j em %s → %s", (alvo, escala, esperado) => expect(rotuloAlvo(alvo, escala)).toBe(esperado));
   });
 
+  it("faixaAlvo: só os números, na escala", () => {
+    expect(faixaAlvo([7, 8], "RPE")).toBe("7–8");
+    expect(faixaAlvo([7, 8], "RIR")).toBe("2–3");
+  });
+
   describe("deveSubirPeso (progressão pelo esforço alvo, RG21)", () => {
     it.each([
       ["pesado: teto abaixo do alvo", true, 6, PESADO, true],
@@ -81,18 +86,18 @@ describe("esforco — utils", () => {
     });
   });
 
-  describe("detectarFadiga", () => {
-    const DIA = 24 * 60 * 60 * 1000;
-    const treino = (dia: number, rpe: number | undefined, over: Partial<RegistroExercicio> = {}): RegistroExercicio => {
-      const d = new Date(2026, 9, 1 + dia);
-      return {
-        exercicio: "Supino reto barra", treinoId: "UA", data: d.toLocaleDateString("pt-BR"), dataTs: d.getTime(),
-        topSetKg: 100, topSetReps: 7, topSetFaixaMin: 5, topSetFaixaMax: 8, topSetBateuTeto: false,
-        backoffKg: 100, backoffReps: 6, backoffFaixaMin: 8, backoffFaixaMax: 10,
-        seriesValidas: 2, progrediu: false, topSetRpe: rpe, ...over,
-      };
+  const DIA = 24 * 60 * 60 * 1000;
+  const treino = (dia: number, rpe: number | undefined, over: Partial<RegistroExercicio> = {}): RegistroExercicio => {
+    const d = new Date(2026, 9, 1 + dia);
+    return {
+      exercicio: "Supino reto barra", treinoId: "UA", data: d.toLocaleDateString("pt-BR"), dataTs: d.getTime(),
+      topSetKg: 100, topSetReps: 7, topSetFaixaMin: 5, topSetFaixaMax: 8, topSetBateuTeto: false,
+      backoffKg: 100, backoffReps: 6, backoffFaixaMin: 8, backoffFaixaMax: 10,
+      seriesValidas: 2, progrediu: false, topSetRpe: rpe, ...over,
     };
+  };
 
+  describe("detectarFadiga", () => {
     const alerta = (rpes: (number | undefined)[], alvo: FaixaRpe = PESADO) =>
       detectarFadiga(rpes.map((rpe, i) => treino(i * 7, rpe)), "UA", alvo);
 
@@ -175,6 +180,103 @@ describe("esforco — utils", () => {
       const lista = [treino(0, 8), treino(50, 9), treino(62, 9)];
       expect((lista[2]!.dataTs - lista[0]!.dataTs) / DIA).toBeGreaterThan(42);
       expect(detectarFadiga(lista, "UA", PESADO)).toBeNull();
+    });
+  });
+
+  describe("detectarRegressao (RG30)", () => {
+    /** Um treino por semana com as reps (e RPEs) dadas. */
+    const semanal = (reps: number[], rpes: (number | undefined)[] = reps.map(() => 9), passo = 7) =>
+      reps.map((topSetReps, i) => treino(i * passo, rpes[i], { topSetReps }));
+    const alerta = (...args: Parameters<typeof semanal>) => detectarRegressao(semanal(...args), "UA");
+
+    it("mesma carga, reps caindo em 2 treinos seguidos com RPE 9 ou 10", () => {
+      expect(alerta([10, 9, 8], [9, 9, 10])).toEqual({ kg: 100, reps: [10, 9, 8] });
+    });
+
+    it.each<[string, number[], (number | undefined)[] | undefined, number[]]>([
+      ["4 treinos caindo", [11, 10, 9, 8], undefined, [11, 10, 9, 8]],
+      ["estável antes da queda", [10, 10, 9, 8], undefined, [10, 9, 8]],
+      ["subiu antes da queda", [8, 10, 9, 8], undefined, [10, 9, 8]],
+      ["queda de mais de 1 rep", [12, 9, 5], undefined, [12, 9, 5]],
+      ["RPE baixo só no treino que abriu", [10, 9, 8], [6, 9, 9], [10, 9, 8]],
+      ["meio ponto antigo", [10, 9, 8], [9, 9.5, 9.5], [10, 9, 8]],
+    ])("alerta: %s", (_n, reps, rpes, esperado) => expect(alerta(reps, rpes)?.reps).toEqual(esperado));
+
+    it.each<[string, number[], (number | undefined)[] | undefined]>([
+      ["RPE 8 no último", [10, 9, 8], [9, 9, 8]],
+      ["RPE 8 no penúltimo", [10, 9, 8], [9, 8, 9]],
+      ["RPE 8.5 no último", [10, 9, 8], [9, 9, 8.5]],
+      ["só 2 treinos", [10, 8], undefined],
+      ["1 queda só", [10, 10, 9], undefined],
+      ["caiu e estabilizou", [10, 9, 9], undefined],
+      ["caiu e recuperou", [10, 8, 9], undefined],
+      ["caiu duas vezes e recuperou", [10, 9, 8, 9], undefined],
+      ["estável", [9, 9, 9], undefined],
+      ["reps subindo", [8, 9, 10], undefined],
+      ["sem RPE", [10, 9, 8], [undefined, undefined, undefined]],
+      ["histórico vazio", [], undefined],
+    ])("não alerta: %s", (_n, reps, rpes) => expect(alerta(reps, rpes)).toBeNull());
+
+    it("mínimo de dias é o mesmo da fadiga: 10 alerta, 9 não", () => {
+      expect(ALERTA_MIN_DIAS).toBe(10);
+      const caindo = (total: number) => [treino(0, 9, { topSetReps: 10 }), treino(4, 9, { topSetReps: 9 }), treino(total, 9, { topSetReps: 8 })];
+      expect(detectarRegressao(caindo(ALERTA_MIN_DIAS - 1), "UA")).toBeNull();
+      expect(detectarRegressao(caindo(ALERTA_MIN_DIAS), "UA")).not.toBeNull();
+      const pesando = (total: number) => [treino(0, 8), treino(4, 9), treino(total, 9)];
+      expect(detectarFadiga(pesando(ALERTA_MIN_DIAS - 1), "UA", PESADO)).toBeNull();
+      expect(detectarFadiga(pesando(ALERTA_MIN_DIAS), "UA", PESADO)).not.toBeNull();
+    });
+
+    it("exercício em duas sessões: uma semana ruim sozinha não alerta, duas alertam", () => {
+      const lista = [0, 3, 7, 10].map((dia, i) => treino(dia, 9, { topSetReps: 12 - i, treinoId: i % 2 ? "UB" : "UA" }));
+      expect(detectarRegressao(lista.slice(0, 3), "UA")).toBeNull();
+      expect(detectarRegressao(lista, "UA")?.reps).toEqual([12, 11, 10, 9]);
+      expect(detectarRegressao(lista, "UB")?.reps).toEqual([12, 11, 10, 9]);
+    });
+
+    it("janela de 42 dias: o treino a 42 entra, a 43 não", () => {
+      const lista = (primeiro: number) => [treino(primeiro, 9, { topSetReps: 10 }), treino(35, 9, { topSetReps: 9 }), treino(42, 9, { topSetReps: 8 })];
+      expect(detectarRegressao(lista(0), "UA")?.reps).toEqual([10, 9, 8]);
+      expect(detectarRegressao(lista(-1), "UA")).toBeNull();
+    });
+
+    it("deload no meio ou no fim zera a contagem", () => {
+      const [a, b, c] = semanal([10, 9, 8]) as [RegistroExercicio, RegistroExercicio, RegistroExercicio];
+      expect(detectarRegressao([a, treino(3, 6, { isDeload: true }), b, c], "UA")).toBeNull();
+      expect(detectarRegressao([a, b, c, treino(20, 6, { isDeload: true })], "UA")).toBeNull();
+      expect(detectarRegressao([treino(-3, 6, { isDeload: true }), a, b, c], "UA")).not.toBeNull();
+    });
+
+    it("mudar a carga encerra o alerta", () => {
+      expect(detectarRegressao([...semanal([10, 9, 8]), treino(21, 9, { topSetKg: 95, topSetReps: 10 })], "UA")).toBeNull();
+    });
+
+    it("ignora outra carga, cluster, treino sem RPE e sem reps no meio", () => {
+      expect(detectarRegressao([
+        ...semanal([10, 9, 8]), treino(2, 9, { topSetKg: 60, topSetReps: 15 }), treino(4, undefined, { tecnica: "RP", topSetReps: 4 }),
+        treino(9, undefined, { topSetReps: 12 }), treino(11, 9, { topSetReps: 0 }),
+      ], "UA")?.reps).toEqual([10, 9, 8]);
+    });
+
+    it("outra sessão com outra carga não apaga o alerta; sessão sem histórico usa o último treino", () => {
+      const lista = [...semanal([10, 9, 8]), treino(16, 9, { treinoId: "UB", topSetKg: 70 })];
+      expect(detectarRegressao(lista, "UA")?.kg).toBe(100);
+      expect(detectarRegressao(lista, "UB")).toBeNull();
+      expect(detectarRegressao(semanal([10, 9, 8]), "S2SEG")?.kg).toBe(100);
+    });
+
+    it("a ordem da lista não importa", () => {
+      const [a, b, c] = semanal([10, 9, 8]) as [RegistroExercicio, RegistroExercicio, RegistroExercicio];
+      expect(detectarRegressao([c, a, b], "UA")?.reps).toEqual([10, 9, 8]);
+    });
+
+    it("nunca junto com a fadiga", () => {
+      const reps = [7, 8, 9, 10], rpes = [8, 9, 10];
+      for (const r1 of reps) for (const r2 of reps) for (const r3 of reps)
+        for (const e1 of rpes) for (const e2 of rpes) for (const e3 of rpes) {
+          const lista = semanal([r1, r2, r3], [e1, e2, e3]);
+          expect(detectarFadiga(lista, "UA", PESADO) && detectarRegressao(lista, "UA")).toBeNull();
+        }
     });
   });
 });

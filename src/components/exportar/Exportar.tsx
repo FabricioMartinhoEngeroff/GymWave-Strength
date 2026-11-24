@@ -5,12 +5,14 @@ import Papa from "papaparse";
 import type { PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
 import { carregarDados, carregarRegistros, emTransacao, fotografarRegistros, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
 import { hojeBR, parseDataBR } from "../../utils/datas";
+import type { FaixaRpe } from "../../utils/esforco";
 import { exportarCSV } from "../../utils/registros";
-import { blocosCluster, mesclarRepetidos, prefixoAba, rotuloSessao } from "../../utils/planilhaSessoes";
+import { blocosCluster, lerRpeAlvo, mesclarRepetidos, prefixoAba, rotuloSessao, type RpeAlvoLido } from "../../utils/planilhaSessoes";
 import { nomeCanonico } from "../../data/exerciseAliases";
 import { montarBackup } from "../../utils/backupJson";
 import { baixarArquivo } from "../../utils/baixarArquivo";
 import { avisarErro } from "../mensagens/avisarErro";
+import { avisarRpeAlvoIlegivel } from "../mensagens/avisarRpeAlvoIlegivel";
 import { lerPlanilha } from "../mensagens/lerPlanilha";
 import { mensagens } from "../mensagens/mensagens";
 import ImportarBackupJson from "./ImportarBackupJson";
@@ -128,7 +130,7 @@ const ImportSection = styled.div`
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
-interface ImportRow {
+interface ImportRow extends RpeAlvoLido {
   sessao: string;
   cue: string;
   ordem: number;
@@ -162,6 +164,7 @@ const CICLO_COLS: { col: keyof ImportRow; cicloId: string }[] = [
 
 const COLUMN_MAP: [RegExp, string][] = [
   [/^id$/i,                   "id_sessao"],  // Logbook: "ID" (UA, SEG…)
+  [/^rpe[\s_-]*alvo$/i,       "rpe_alvo"],   // opcional: "7-8"
   [/cue|foco/i,               "cue"],        // Logbook: "Cue / foco"
   [/sess[aã]o/i,              "sessao"],
   [/^treino$/i,               "sessao"],   // v4 logbook usa "Treino" em vez de "Sessão"
@@ -285,6 +288,7 @@ function normalizeRows(raw: Record<string, unknown>[], prefixoSemana: string | n
       return {
       sessao: rotuloSessao(String(r.sessao ?? ""), String(r.id_sessao ?? ""), prefixoSemana),
       cue: String(r.cue ?? "").trim(),
+      ...lerRpeAlvo(r.rpe_alvo),
       ordem: Number(r.ordem ?? 0),
       exercicio: nomeCanonico(NOME_MAP[nomeRaw] ?? nomeRaw),
       musculo_primario: String(r.musculo_primario ?? ""),
@@ -487,7 +491,7 @@ export default function Exportar() {
       nome: string; grupo: string;
       faixaTopSet: [number, number]; faixaBackoff: [number, number];
       backoffPct: number; seriesValidas: SeriesValidas;
-      tecnica: "RP" | null; cue: string; clusterBlocos?: number;
+      tecnica: "RP" | null; cue: string; clusterBlocos?: number; rpeAlvo?: FaixaRpe;
     }[]> = {};
     const porSessao: Record<string, number> = {};
     let total = 0;
@@ -520,6 +524,7 @@ export default function Exportar() {
         tecnica: null,
         cue: row.cue,
         ...(blocosCluster(row.cue) && { clusterBlocos: blocosCluster(row.cue) }),
+        ...(row.rpe_alvo && { rpeAlvo: row.rpe_alvo }),
       });
 
       CICLO_COLS.forEach(({ col, cicloId }) => {
@@ -575,6 +580,7 @@ export default function Exportar() {
     localStorage.removeItem(storageKey("rascunho_treino"));
     setResult({ total, preservados, porSessao });
     mensagens.mostrar("importacao_concluida");
+    avisarRpeAlvoIlegivel(rows);
     setCanUndo(true);
     setRows([]);
     setFileName(null);

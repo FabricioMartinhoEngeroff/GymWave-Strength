@@ -183,35 +183,35 @@ describe("TreinoSessao — RPE/RIR por série", () => {
   });
 
   describe("progressão pelo esforço alvo (RG21)", () => {
-    it("pesado: teto no limite do alvo (RPE 8) manda subir", () => {
+    it("pesado: teto no limite do alvo (RPE 8)", () => {
       abrir();
       topSet("100", "8", "RPE 8");
-      expect(screen.getByText(/Teto atingido — sobe peso no próximo/)).toBeInTheDocument();
+      expect(screen.getByText("Teto de reps atingido dentro do alvo")).toBeInTheDocument();
     });
 
-    it("pesado: teto acima do alvo pede para repetir a carga e não conta no resumo", () => {
+    it("pesado: teto acima do alvo fica em consolidação e não conta no resumo", () => {
       abrir();
       topSet("100", "8", "RPE 9");
-      expect(screen.getByText(/Teto atingido com RPE 9 — repete a carga/)).toBeInTheDocument();
+      expect(screen.getByText("Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.")).toBeInTheDocument();
       topSet2("6", "RPE 9");
       salvar();
-      expect(screen.queryByText(/sobem de peso/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/no teto de reps/)).not.toBeInTheDocument();
     });
 
-    it("isolador: teto com RPE 10 está no alvo, manda subir e conta no resumo", () => {
+    it("isolador: teto com RPE 10 está no alvo e conta no resumo", () => {
       planoDeUmExercicio({ rpeAlvo: [9, 10] });
       abrir();
       topSet("100", "8", "RPE 10");
-      expect(screen.getByText(/Teto atingido — sobe peso no próximo/)).toBeInTheDocument();
+      expect(screen.getByText("Teto de reps atingido dentro do alvo")).toBeInTheDocument();
       topSet2("6", "RPE 10");
       salvar();
-      expect(screen.getByText(/1 exercício\(s\) sobem de peso/)).toBeInTheDocument();
+      expect(screen.getByText("1 exercício(s) no teto de reps dentro do alvo")).toBeInTheDocument();
     });
 
     it("subir é só aviso: o campo abre com o mesmo peso e reps do último treino (RG5.1)", () => {
       historico(7, { topSetReps: 8, topSetBateuTeto: true, topSetRpe: 7 });
       abrir();
-      expect(screen.getByText(/SUBIR PESO HOJE/)).toBeInTheDocument();
+      expect(screen.getByTestId("aviso-subir")).toBeInTheDocument();
       expect(screen.getByLabelText(/Top Set 1 kg/)).toHaveValue(100);
       expect(screen.getByLabelText(/Top Set 1 reps/)).toHaveValue(8);
     });
@@ -223,27 +223,27 @@ describe("TreinoSessao — RPE/RIR por série", () => {
       expect(screen.getByText(/alvo RIR 2–3/)).toBeInTheDocument();
     });
 
-    it("na abertura: banner de subir ou de consolidar conforme o RPE do último treino", () => {
+    it("na abertura: aviso de subir ou de consolidar conforme o RPE do último treino", () => {
       historico(7, { topSetReps: 8, topSetBateuTeto: true, topSetRpe: 7 });
       abrir();
-      expect(screen.getByText(/SUBIR PESO HOJE/)).toBeInTheDocument();
+      expect(screen.getByTestId("aviso-subir")).toHaveTextContent("Bateu o teto de reps dentro do alvo (RPE 7). Dá para subir a carga.");
       cleanup();
       planoDeUmExercicio();
       historico(7, { topSetReps: 8, topSetBateuTeto: true, topSetRpe: 9 });
       abrir();
-      expect(screen.queryByText(/SUBIR PESO HOJE/)).not.toBeInTheDocument();
-      expect(screen.getByText(/CONSOLIDAR CARGA/)).toHaveTextContent("RPE 9");
+      expect(screen.queryByTestId("aviso-subir")).toBeNull();
+      expect(screen.getByTestId("aviso-consolidar")).toHaveTextContent("Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.");
     });
   });
 
   describe("alerta de fadiga (RG22)", () => {
     const tresTreinos = (...rpes: [number, number, number]) => rpes.forEach((rpe, i) => historico(15 - 7 * i, { topSetRpe: rpe }));
-    const fadiga = () => screen.queryByTestId("alerta-fadiga");
+    const fadiga = () => screen.queryByTestId("aviso-fadiga");
 
     it("aparece com a mesma carga e reps acima do alvo por 2 treinos seguidos", () => {
       tresTreinos(8, 9, 10);
       abrir();
-      expect(fadiga()).toHaveTextContent(/100kg.*RPE 8.*RPE 10.*3 treinos/);
+      expect(fadiga()).toHaveTextContent("Mesma carga (100 kg), esforço subindo: RPE 8 → 10 em 3 treinos.");
     });
 
     it("isolador: de 9 para 10 por 2 treinos seguidos alerta", () => {
@@ -412,7 +412,7 @@ describe("TreinoSessao — RPE/RIR por série", () => {
     it("histórico antigo sem RPE continua abrindo e sugerindo pelo teto", () => {
       historico(7, { topSetReps: 8, topSetBateuTeto: true });
       abrir();
-      expect(screen.getByText(/SUBIR PESO HOJE/)).toBeInTheDocument();
+      expect(screen.getByTestId("aviso-subir")).toHaveTextContent("Bateu o teto de reps. Dá para subir a carga.");
     });
   });
 });

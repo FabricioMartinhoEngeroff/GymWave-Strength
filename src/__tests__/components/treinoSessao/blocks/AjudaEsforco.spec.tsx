@@ -81,8 +81,9 @@ describe("AjudaEsforco", () => {
     render(<Serie />);
     fireEvent.click(ajuda());
     expect(balao()).toHaveTextContent(
-      "bateu o teto de reps no Top Set 1 com esforço igual ou abaixo do alvo do exercício, sobe o peso; se passou do alvo, repete a carga",
+      "bateu o teto de reps no Top Set 1 com esforço igual ou abaixo do alvo do exercício, dá para subir a carga; se passou do alvo, carga em consolidação",
     );
+    expect(balao()).not.toHaveTextContent(/sobe o peso|repete a carga/);
     expect(balao()).toHaveTextContent("o peso não muda sozinho");
     expect(balao()).toHaveTextContent("2 treinos seguidos");
   });

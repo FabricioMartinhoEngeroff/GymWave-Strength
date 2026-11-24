@@ -47,6 +47,7 @@ export const AVISOS = avisos({
   armazenamento_bloqueado: { tipo: "erro", titulo: "Armazenamento bloqueado", texto: "O navegador não deixou acessar os dados. Saia do modo anônimo ou libere o armazenamento do site." },
   sem_conexao: { tipo: "erro", titulo: "Sem conexão", texto: "Verifique sua internet e tente novamente. Seus treinos continuam no aparelho." },
   arquivo_invalido: { tipo: "erro", titulo: "Arquivo não reconhecido", texto: "Não foi possível ler o arquivo. Nada foi alterado." },
+  rpe_alvo_ilegivel: { tipo: "erro", titulo: "Esforço alvo não lido", texto: "Há exercícios sem o alvo da planilha. Use o formato 7-8." },
   dados_ilegiveis: { tipo: "erro", titulo: "Dados ilegíveis", texto: "Não foi possível ler essas informações. Tente recarregar a página." },
   erro_inesperado: { tipo: "erro", titulo: "Algo deu errado", texto: "Seus dados estão salvos. Tente novamente." },
   conquista_recorde: { tipo: "conquista", titulo: "Novo recorde!", texto: "Você superou o seu melhor." },

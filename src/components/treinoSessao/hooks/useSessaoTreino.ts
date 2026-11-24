@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ExercicioSessao } from "../../../data/sessionExercises";
 import { hojeBR, parseDataBR } from "../../../utils/datas";
 import { calcEpley, extractReferenceBlock } from "../../../utils/epleyCalc";
-import { detectarFadiga, deveSubirPeso } from "../../../utils/esforco";
+import { detectarFadiga, detectarRegressao, deveSubirPeso } from "../../../utils/esforco";
 import { idDaSessao, listarSessoes } from "../../../utils/planilhaSessoes";
 import {
   carregarDados,
@@ -216,6 +216,7 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
     () => (currentEx ? detectarFadiga(historico, treinoId, rpeAlvoDoExercicio(currentEx)) : null),
     [historico, treinoId, currentEx],
   );
+  const regressao = useMemo(() => detectarRegressao(historico, treinoId), [historico, treinoId]);
   const ultimo = useMemo(() => (currentEx ? ultimoTreinoNormal(currentEx.nome, treinoId) : null), [currentEx, treinoId]);
   // Valores que voltam aos campos ao trocar de modo.
   const referencia = useMemo(() => (currentEx ? referenciaDoExercicio(currentEx.nome, treinoId) : null), [currentEx, treinoId]);
@@ -399,7 +400,7 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
     sessao, sessoesDisponiveis, data, setData, treinoId, exercicios,
     alternarSessao: (s: string) => setSessao(sessao === s ? null : s),
     // exercício aberto
-    currentIdx, currentEx, state, states, ultimo, prAtivo, fadiga, escala, alternarEscala, avisos, isLastExercise,
+    currentIdx, currentEx, state, states, ultimo, prAtivo, fadiga, regressao, escala, alternarEscala, avisos, isLastExercise,
     semEsforco: avisos.esforco ? camposSemEsforco(state) : [],
     concluido: (nome: string) => exercicioConcluido(states[nome]),
     // edição

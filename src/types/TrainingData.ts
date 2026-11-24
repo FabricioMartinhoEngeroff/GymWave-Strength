@@ -55,7 +55,7 @@ export interface RegistroExercicio {
   topSetReps: number;
   topSetFaixaMin: number;
   topSetFaixaMax: number;
-  topSetBateuTeto: boolean; // reps >= faixaMax -> sobe peso
+  topSetBateuTeto: boolean; // reps >= faixaMax
 
   // Top Set 2 (slot histórico "backoff")
   backoffKg: number;

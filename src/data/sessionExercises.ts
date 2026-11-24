@@ -12,7 +12,7 @@ export interface ExercicioSessao {
   seriesValidas: SeriesValidas;    // 1 = só Top Set 1 | 2 = 2 Top Sets | 3 = + Back-off | 4 = + Série 3 e Série 4
   tecnica?: "RP" | null;
   clusterBlocos?: number;          // blocos por série no Cluster Set (padrão 4), ex.: 24 reps em blocos de 4 → 6
-  rpeAlvo?: FaixaRpe;              // esforço alvo em RPE, ex.: [7, 8]; plano importado não traz (ver rpeAlvoDoExercicio)
+  rpeAlvo?: FaixaRpe;              // esforço alvo em RPE, ex.: [7, 8]; no plano importado, vem da coluna rpe_alvo (ver rpeAlvoDoExercicio)
   cue: string;
 }
 

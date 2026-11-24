@@ -43,6 +43,17 @@ Qualquer usuário autenticado possui acesso.
   - **Exercício parecido** (`PARECIDO_COM`) mantém o próprio nome, mas usa o vídeo/GIF do semelhante.
   - **Exercício novo** entra no catálogo com grupo muscular. Fica sem vídeo até alguém cadastrar um em `src/data/exerciseVideos.ts`; IDs de vídeo não são inventados.
   - *Motivo:* aproveitar vídeos, grupos musculares e histórico já existentes sem duplicar exercícios.
+- **RG14** – **Esforço alvo pela planilha:** a coluna opcional `rpe_alvo` define o esforço alvo do exercício naquela sessão (EF_02 RG28), em RPE, no formato `mínimo-máximo` (ex.: `7-8`). É gravada como `rpeAlvo` em `sessoes_config` e sobrepõe a regra automática.
+  - **Formatos aceitos:** `7-8`, `7 - 8`, `7–8` e `7 a 8`. Meio ponto com vírgula ou ponto (`7,5-8`).
+  - **Excel que troca `7-8` por data:** a célula chega como 7 de agosto (ou 8 de julho). A importação lê o dia e o mês de volta como `7-8`, nos dois idiomas. Só em `.xlsx`; em `.csv` a data vem como texto (`07/ago`) e entra na mensagem de célula ilegível.
+  - **Validação:** a mesma do app (`faixaValida` e `normalizarRpe`): de 6 a 10, mínimo menor ou igual ao máximo.
+  - **Sem a coluna ou célula vazia:** vale a regra automática, sem mensagem.
+  - **Célula que não pôde ser lida** (`8-7`, `5-8`, `8`, `07/ago`, texto): a linha é importada normalmente, sem `rpeAlvo`, e vale a regra automática. Depois de confirmar, `[rpe_alvo_ilegivel]` (EF_09) lista cada exercício que ficou sem alvo, com a sessão, na ordem da pré-visualização. Não bloqueia a importação.
+  - **Exercício repetido no dia (RG11):** vale o primeiro alvo **válido**, na ordem da planilha. Só entra na mensagem se nenhuma das linhas tiver alvo válido e alguma for ilegível.
+  - Reimportar sem a coluna volta à regra automática (o plano é substituído, RG5). "Desfazer importação" restaura o alvo anterior (RG8).
+  - Não muda o histórico: o dado gravado na série continua sendo o RPE.
+  - *Motivo:* o plano importado só reconhece agachamento, supino e terra como composto; stiff, búlgaro, remada e banco romano caíam em 9–10.
+  - Implementação: `lerRpeAlvo` em `utils/planilhaSessoes.ts` e `avisarRpeAlvoIlegivel` em `mensagens/`.
 
 ---
 
@@ -93,6 +104,7 @@ O sistema reconhece automaticamente as colunas da planilha pelos seguintes padr�
 | Sessão | `sessão`, `sessao`, `treino` (v4 logbook) |
 | ID da sessão | `id` (ex.: `UA`, `SEG`, `SEX` — usado para o dia no protocolo por semana, RG9) |
 | Cue / foco | `cue`, `foco` |
+| Esforço alvo | `rpe_alvo`, `rpe alvo`, `rpe-alvo` (célula inteira, RG14) |
 | Ordem | `ord.`, `ordem` |
 | Exercício | `exercício`, `exercicio` |
 | Grupo/Músculo | `grupo`, `músculo`, `musculo` |
@@ -141,6 +153,7 @@ Após confirmação bem-sucedida, exibe card com:
 | Rep mín / Rep máx | Faixa de repetições | Não |
 | Séries | Número de séries válidas (1–4) | Não (padrão: 3) |
 | Cue / foco | Instrução do exercício; pode descrever o cluster (RG12) | Não |
+| rpe_alvo | Esforço alvo em RPE, ex.: `7-8` (RG14). Formate a coluna como Texto no Excel | Não (padrão: regra automática, EF_02 RG28) |
 | Séries C1–C4 | Séries válidas por ciclo específico | Não |
 | Peso C1–C4 (kg) | Peso inicial sugerido por ciclo | Não |
 

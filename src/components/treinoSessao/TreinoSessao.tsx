@@ -55,7 +55,7 @@ export default function TreinoSessao({ onUnsavedChanges }: TreinoSessaoProps = {
             </p>
             {resumo.subirPeso > 0 && (
               <p style={{ fontSize: 12, color: "#16a34a", margin: "4px 0" }}>
-                {resumo.subirPeso} exercício(s) sobem de peso no próximo ciclo
+                {resumo.subirPeso} exercício(s) no teto de reps dentro do alvo
               </p>
             )}
           </Card>

@@ -31,6 +31,12 @@ export function dataBRparaDate(data: string): Date | null {
   return ts === null ? null : new Date(ts);
 }
 
+/** Número de série de data do Excel → dia e mês (sem fuso: o Excel guarda dias corridos). */
+export function diaEMesDoExcel(serial: number): [dia: number, mes: number] {
+  const d = new Date(Date.UTC(1899, 11, 30 + Math.round(serial)));
+  return [d.getUTCDate(), d.getUTCMonth() + 1];
+}
+
 // ─── Escrita ──────────────────────────────────────────────────────────────────
 
 export function formatarBR(ts: number): string {

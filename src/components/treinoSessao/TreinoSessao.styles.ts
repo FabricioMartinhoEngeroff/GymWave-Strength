@@ -483,7 +483,7 @@ const TONS = {
   verde: { fundo: "#dcfce7", borda: "#86efac", texto: "#166534" },
   azul: { fundo: "#eff6ff", borda: "#bfdbfe", texto: "#1d4ed8" },
   ambar: { fundo: "#fefce8", borda: "#fde68a", texto: "#92400e" },
-  vermelho: { fundo: "#fef2f2", borda: "#fecaca", texto: "#991b1b" },
+  cinza: { fundo: "#f9fafb", borda: "#d1d5db", texto: "#6b7280" },
 };
 
 export type Tom = keyof typeof TONS;
@@ -506,22 +506,6 @@ export const StatusBox = styled.div<{ $tom: Tom }>`
   }
 `;
 
-export const BannerBox = styled.div<{ $tom: Tom }>`
-  background: ${(p) => TONS[p.$tom].fundo};
-  border: 1px solid ${(p) => TONS[p.$tom].borda};
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12px;
-  color: ${(p) => TONS[p.$tom].texto};
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  svg {
-    flex-shrink: 0;
-  }
-`;
-
 export const PrBox = styled.div`
   background: linear-gradient(135deg, #166534, #d97706);
   border: 1px solid #d4af37;
@@ -534,11 +518,31 @@ export const PrBox = styled.div`
 /* ── Painel "Último treino" ──────────────────────────────────── */
 
 export const UltimoTreinoBox = styled.div`
-  background: #f0f9ff;
-  border: 0.5px solid #bae6fd;
+  background: ${TONS.azul.fundo};
+  border: 0.5px solid ${TONS.azul.borda};
   border-radius: 8px;
   padding: 8px 10px;
   margin-bottom: 8px;
+`;
+
+export const UltimoTreinoTopo = styled.div`
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+`;
+
+export const UltimoTreinoTitulo = styled.span`
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: ${TONS.azul.texto};
+`;
+
+export const UltimoTreinoData = styled.span`
+  font-size: 10px;
+  color: ${TONS.azul.texto};
 `;
 
 export const UltimoTreinoLinha = styled.div`
@@ -548,8 +552,80 @@ export const UltimoTreinoLinha = styled.div`
   gap: 8px;
   padding: 3px 0;
   & + & {
-    border-top: 0.5px solid #d8eefc;
+    border-top: 0.5px solid ${TONS.azul.borda};
   }
+`;
+
+export const UltimoTreinoSerie = styled.span`
+  font-size: 11px;
+  color: ${TONS.azul.texto};
+`;
+
+export const UltimoTreinoValor = styled.span`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${TONS.azul.texto};
+  text-align: right;
+  span {
+    white-space: nowrap;
+  }
+`;
+
+export const UltimoTreinoRodape = styled.div`
+  font-size: 10px;
+  color: ${TONS.cinza.texto};
+  margin-top: 4px;
+`;
+
+export const UltimoTreinoObs = styled.p`
+  font-size: 11px;
+  font-style: italic;
+  color: ${TONS.cinza.texto};
+  margin: 4px 0 0;
+`;
+
+export const AvisoLista = styled.ul`
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+`;
+
+/** Sem fundo: a cor fica na barra lateral, na marca e no texto. */
+export const AvisoLinha = styled.li<{ $tom: Tom }>`
+  display: flex;
+  gap: 6px;
+  padding-left: 8px;
+  border-left: 3px solid ${(p) => TONS[p.$tom].borda};
+  color: ${(p) => TONS[p.$tom].texto};
+  font-size: 12px;
+  line-height: 1.4;
+`;
+
+/* && vence o button:hover global (index.css). */
+export const VerMaisBtn = styled.button`
+  && {
+    width: auto;
+    margin: 2px 0 0;
+    padding: 4px 0;
+    border: none;
+    background: transparent;
+    color: ${TONS.cinza.texto};
+    font-size: 11px;
+    font-weight: 400;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+`;
+
+/** Textos do modo Deload: escolha do atleta, não erro. */
+export const TextoDeload = styled.p`
+  font-size: 12px;
+  font-weight: 500;
+  color: ${TONS.cinza.texto};
+  margin: 0 0 8px;
 `;
 
 export const TextoApoio = styled.p`

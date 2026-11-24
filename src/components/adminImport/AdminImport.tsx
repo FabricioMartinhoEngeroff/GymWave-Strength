@@ -3,6 +3,8 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino, SeriesValidas } from "../../types/TrainingData";
 import { hojeBR } from "../../utils/datas";
+import type { FaixaRpe } from "../../utils/esforco";
+import { lerRpeAlvo, type RpeAlvoLido } from "../../utils/planilhaSessoes";
 import { normalizarSeriesValidas } from "../../utils/seriesValidas";
 import {
   carregarDados,
@@ -16,6 +18,7 @@ import {
   storageKey,
 } from "../../utils/storage";
 import { avisarErro } from "../mensagens/avisarErro";
+import { avisarRpeAlvoIlegivel } from "../mensagens/avisarRpeAlvoIlegivel";
 import { lerPlanilha } from "../mensagens/lerPlanilha";
 import { mensagens } from "../mensagens/mensagens";
 import TextImport from "./TextImport";
@@ -49,7 +52,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface ImportRow {
+interface ImportRow extends RpeAlvoLido {
   treino_id: string;
   treino: string;
   ordem: number;
@@ -100,6 +103,7 @@ const COLUMN_MAP: [RegExp, string][] = [
   [/back.*off.*kg/i,           "backoff_kg"],
   [/t[eé]cnica/i,             "tecnica"],
   [/back.*off.*%/i,            "backoff_pct"],
+  [/^rpe[\s_-]*alvo$/i,       "rpe_alvo"],   // opcional: "7-8"
   [/cue|foco/i,               "cue"],
   // Legacy C1-C4 columns mapping
   [/peso\s*c1/i,              "top_set_kg"],
@@ -253,6 +257,7 @@ function normalizeRows(raw: Record<string, unknown>[]): ImportRow[] {
         tecnica: String(r.tecnica ?? ""),
         backoff_pct: String(r.backoff_pct ?? "85%"),
         cue: String(r.cue ?? ""),
+        ...lerRpeAlvo(r.rpe_alvo),
       };
     })
     .filter((r) => r.exercicio !== "")
@@ -394,7 +399,7 @@ export default function AdminImport() {
         nome: string; grupo: string;
         faixaTopSet: [number, number]; faixaBackoff: [number, number];
         backoffPct: number; seriesValidas: SeriesValidas;
-        tecnica: "RP" | null; cue: string;
+        tecnica: "RP" | null; cue: string; rpeAlvo?: FaixaRpe;
       }[]> = {};
 
       rows.forEach((row) => {
@@ -417,6 +422,7 @@ export default function AdminImport() {
           seriesValidas: seriesCount,
           tecnica: String(row.tecnica ?? "").toUpperCase() === "RP" ? "RP" : null,
           cue: String(row.cue ?? ""),
+          ...(row.rpe_alvo && { rpeAlvo: row.rpe_alvo }),
         });
       });
 
@@ -472,6 +478,7 @@ export default function AdminImport() {
 
     setResult({ total, porTreino });
     mensagens.mostrar("importacao_concluida");
+    avisarRpeAlvoIlegivel(rows.map((r) => ({ ...r, sessao: r.treino || r.treino_id })));
     setCanUndo(true);
     setRows([]);
     setFileName(null);

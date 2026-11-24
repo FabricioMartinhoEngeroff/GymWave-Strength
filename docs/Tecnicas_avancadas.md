@@ -103,7 +103,7 @@ O tooltip dessas sessões exibe **"⬇ Deload (1 série)"** em vermelho, além d
 
 ### Tela de revisão pré-save
 
-Na lista de exercícios da tela de revisão, exercícios registrados em modo Deload exibem a etiqueta **"· Deload"** em vermelho ao lado do status.
+Na lista de exercícios da tela de revisão, exercícios registrados em modo Deload exibem a etiqueta **"· Deload"** em cinza ao lado do status (EF_02 4.11).
 
 ---
 

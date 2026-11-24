@@ -141,7 +141,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       selecionarSessao("Upper A");
       // Supino reto barra faixa [5,9] -> 9 reps = teto
       confirmarTopSet("100", "9");
-      expect(screen.getByText(/teto atingido/i)).toBeInTheDocument();
+      expect(screen.getByText(/teto de reps atingido/i)).toBeInTheDocument();
     });
 
     it("abaixo da faixa mostra badge vermelho", () => {
@@ -246,10 +246,10 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
   // ── Primeiro registro ───────────────────────────────────────────────────
 
   describe("Banners de progressao", () => {
-    it("primeiro registro exibe banner azul", () => {
+    it("primeiro registro exibe aviso no card do ultimo treino", () => {
       renderFresh();
       selecionarSessao("Upper A");
-      expect(screen.getByText(/primeiro registro/i)).toBeInTheDocument();
+      expect(screen.getByTestId("ultimo-treino-detalhe")).toHaveTextContent("Primeiro registro deste exercício nesta sessão.");
     });
   });
 

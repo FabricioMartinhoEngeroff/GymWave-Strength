@@ -28,7 +28,7 @@ Componente: `AdminImport`
 - **RG1** – Permite importar planilhas de configuração de plano de treino (`.xlsx` / `.csv`).
 - **RG2** – Os dados importados são gravados diretamente no `localStorage` (`planoTreino`, `dadosTreino`).
 - **RG3** – Backup automático é gerado antes de qualquer importação.
-- **RG4** – As mesmas regras de mapeamento de colunas da tela de Exportar se aplicam aqui (ver EF_06).
+- **RG4** – As mesmas regras de mapeamento de colunas da tela de Exportar se aplicam aqui (ver EF_06), inclusive a coluna opcional `rpe_alvo` (EF_06 RG14).
 - **RG4.1** – Os exercícios importados são ordenados pelo campo `ordem` dentro de cada sessão antes de exibir a pré-visualização e salvar o plano.
 - **RG4.2** – Nomes descritivos da planilha (ex.: "Pull-around cabo polia baixa", "Remada peito apoiado halteres (livre)") são normalizados automaticamente para os nomes canônicos do app via `NOME_MAP`.
 - **RG5** – O resultado da importação é exibido imediatamente após a confirmação.
