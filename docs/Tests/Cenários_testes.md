@@ -340,6 +340,26 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
+### 3.3 exerciseDbService — fetchExerciseGif
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | Chave da API vazia ou nao definida | Retorna null e nao chama a API |
+| 2 | Chave definida depois de o arquivo carregar | Usa a chave nova (lida a cada chamada) |
+| 3 | Requisicao | URL com o termo em ingles; chave e host nos cabecalhos |
+| 4 | Exercicio sem termo de busca | Retorna null e nao chama a API |
+| 5 | Exercicio com outro nome (`Extensão de pernas`) | Usa o termo do catalogo (`leg extension`) |
+| 6 | Resposta em lista ou em `{ data: [...] }` | Retorna o `gifUrl` |
+| 7 | Varios exercicios na resposta | Usa o primeiro |
+| 8 | Lista vazia, sem `gifUrl`, `gifUrl` vazio, formato inesperado ou null | Retorna null |
+| 9 | Resposta nao-ok, mesmo com GIF no corpo | Retorna null |
+| 10 | Falha de rede | Repassa o erro para quem chamou |
+| 11 | Segunda busca do mesmo exercicio | Vem do cache, sem chamar a API |
+| 12 | Exercicios diferentes | Cada um com o proprio GIF |
+| 13 | Busca que falhou | Nao fica no cache; a proxima tenta de novo |
+
+---
+
 ## 4. CONTEXTS
 
 ### 4.1 AuthContext (4 testes)
