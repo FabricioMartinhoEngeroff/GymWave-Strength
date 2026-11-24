@@ -66,6 +66,46 @@ describe("Salvar treino", () => {
     expect(screen.queryByText("Treino completo!")).toBeNull();
   });
 
+  it.each(["", "abc", "04/11/26", "31/02/2026"])("data inválida (%j): não grava, avisa e mantém o rascunho (EF_02 RG26)", (data) => {
+    abrir(); fazerTopSets();
+    digitar(/Data do treino/, data);
+    tentarSalvar();
+    expect(screen.getByText("Confira a data do treino")).toBeInTheDocument();
+    expect(screen.queryByText("Treino finalizado!")).toBeNull();
+    expect(localStorage.getItem("registros")).toBeNull();
+    expect(localStorage.getItem("dadosTreino")).toBeNull();
+    expect(localStorage.getItem("rascunho_treino")).not.toBeNull();
+  });
+
+  it("data inválida é avisada antes da lista de séries não feitas", () => {
+    plano(3);
+    abrir(); fazerTopSets();
+    digitar(/Data do treino/, "abc");
+    tentarSalvar();
+    expect(dialogo()).toBeNull();
+    expect(screen.getByText("Confira a data do treino")).toBeInTheDocument();
+  });
+
+  it("data trocada para inválida na hora de substituir: mantém o treino do dia", () => {
+    historico();
+    const antes = localStorage.getItem("registros");
+    abrir(); fazerTopSets();
+    digitar(/Data do treino/, "01/10/2026");
+    tentarSalvar();
+    digitar(/Data do treino/, "abc");
+    fireEvent.click(screen.getByText(/Substituir/, { selector: "button" }));
+    expect(screen.getByText("Confira a data do treino")).toBeInTheDocument();
+    expect(localStorage.getItem("registros")).toBe(antes);
+  });
+
+  it("dia e mês com 1 dígito: grava com 2 no registro e no dadosTreino", () => {
+    abrir(); fazerTopSets();
+    digitar(/Data do treino/, "4/1/2026");
+    tentarSalvar();
+    expect(carregarRegistros()[0]?.data).toBe("2026-01-04");
+    expect(JSON.parse(localStorage.getItem("dadosTreino")!)[EX].UA.data).toBe("04/01/2026");
+  });
+
   it("nada feito: não grava, avisa e mantém o rascunho", () => {
     abrir(); digitar(/Top Set 1 kg/, "100"); tentarSalvar();
     expect(screen.getByText("Nenhuma série feita")).toBeInTheDocument();

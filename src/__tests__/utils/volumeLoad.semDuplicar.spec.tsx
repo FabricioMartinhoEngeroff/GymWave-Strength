@@ -55,6 +55,15 @@ describe("Volume Load — cada treino conta uma vez só", () => {
     expect(semanas("Ombro")?.semanas.at(-1)).toMatchObject({ volume: 200, series: 2 });
   });
 
+  it("data sem zero à esquerda no dadosTreino é o mesmo dia do registro: não soma em dobro", () => {
+    salvarComoATela("Elevação lateral livre", "UA", "2026-06-08", 10, [10, 10]);
+    const db = carregarDados();
+    db["Elevação lateral livre"]!.UA!.data = "8/6/2026";
+    salvarDados(db);
+    expect(grupo("Ombro")).toMatchObject({ volumeAtual: 200, seriesAtual: 2 });
+    expect(semanas("Ombro")?.semanas.at(-1)).toMatchObject({ volume: 200, series: 2 });
+  });
+
   it("+1 repetição no ombro: 400 → 410 (+3%), não 400 → 820", () => {
     // semana passada: Upper A (seg) e Upper B (qui)
     salvarComoATela("Elevação lateral livre", "UA", "2026-06-01", 10, [10, 10]);

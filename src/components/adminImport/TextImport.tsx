@@ -8,6 +8,7 @@ import {
   setCurrentUser,
   storageKey,
 } from "../../utils/storage";
+import { hojeBR } from "../../utils/datas";
 import { normalizarSeriesValidas } from "../../utils/seriesValidas";
 import type { ExercicioSessao } from "../../data/sessionExercises";
 import type { SeriesValidas } from "../../types/TrainingData";
@@ -205,7 +206,7 @@ export default function TextImport() {
       const planoNovo: Record<string, Record<string, { ordem: number; series_validas: number }>> = {};
       let totalEx = 0;
 
-      const today = new Date().toLocaleDateString("pt-BR");
+      const today = hojeBR();
       const todayTs = Date.now();
 
       sessions.forEach(({ sessao, exercicios }) => {

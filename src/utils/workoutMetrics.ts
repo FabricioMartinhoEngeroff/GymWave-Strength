@@ -1,4 +1,5 @@
 import type { DadosTreino, RegistroTreino, Logbook, RegistroExercicio } from "../types/TrainingData";
+import { parseDataBR } from "./datas";
 import { carregarLogbookCompleto } from "./storage";
 
 export type SessionPoint = {
@@ -13,17 +14,6 @@ export type SessionPoint = {
   backoff2Reps: number;
 };
 
-export function parseDataBRToTs(data: string): number | null {
-  const [diaRaw, mesRaw, anoRaw] = data.split("/");
-  const dia = Number(diaRaw);
-  const mes = Number(mesRaw);
-  const ano = Number(anoRaw);
-  if (!dia || !mes || !ano) return null;
-  const d = new Date(ano, mes - 1, dia);
-  const ts = d.getTime();
-  return Number.isNaN(ts) ? null : ts;
-}
-
 function toNumArray(arr: string[] | undefined): number[] {
   return (arr ?? []).map((v) => Number(String(v).trim())).map((n) => (Number.isFinite(n) ? n : 0));
 }
@@ -37,8 +27,8 @@ export function computeSessionPoint(
   exercicio: string,
   reg: RegistroTreino
 ): SessionPoint | null {
-  const ts = parseDataBRToTs(reg.data);
-  if (!ts) return null;
+  const ts = parseDataBR(reg.data);
+  if (ts === null) return null;
 
   const pesosAll = toNumArray(reg.pesos);
   const repsAll = toNumArray(reg.reps);

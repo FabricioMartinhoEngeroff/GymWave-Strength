@@ -59,6 +59,16 @@ describe("PowerliftingChart — EF_07", () => {
       expect(screen.getByText(/sem registros para listar/i)).toBeInTheDocument();
     });
 
+    it("data que nao existe (2026-02-31) fica fora do grafico", () => {
+      localStorage.setItem("registros", JSON.stringify([
+        { id: "a", data: "2026-02-31", sessao: "UA", exercicio: "supino-reto-barra", nome: "Supino reto barra", series: [{ tipo: "top1", kg: 200, reps: 5 }] },
+        { id: "b", data: "2026-06-01", sessao: "UA", exercicio: "supino-reto-barra", nome: "Supino reto barra", series: [{ tipo: "top1", kg: 100, reps: 7 }] },
+      ]));
+      render(<PowerliftingChart />);
+      expect(screen.getByTestId("stats-rm1")).toHaveTextContent("123.33 kg");
+      expect(screen.queryByText(/233\.33/)).not.toBeInTheDocument();
+    });
+
     it("registro modo padrao (100kg x 7reps) exibe 1RM = 123.33", () => {
       setLogbook([
         makeRegistro({

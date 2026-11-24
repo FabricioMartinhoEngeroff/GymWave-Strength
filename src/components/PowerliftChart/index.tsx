@@ -56,6 +56,7 @@ interface ChartPoint {
 
 function buildChartPoints(registros: RegistroExercicio[]): ChartPoint[] {
   const points: ChartPoint[] = registros
+    .filter((r) => r.dataTs > 0) // 0 = data inválida
     .map((r) => {
       const ref = extractReferenceBlock(r);
       if (!ref || ref.peso <= 0) return null;

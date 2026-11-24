@@ -95,6 +95,7 @@ Cartão central sobre fundo escurecido: ícone, título, texto, lista de itens (
 | `[registro_excluido]` | Sucesso | Registro excluído | O registro saiu do relatório. |
 | `[rascunho_restaurado]` | Informação | Treino retomado | Continuamos de onde você parou. |
 | `[nenhuma_serie_feita]` | Aviso | Nenhuma série feita | Confirme ao menos uma série para salvar. Seu rascunho continua guardado. |
+| `[data_invalida]` | Aviso | Confira a data do treino | Use dia/mês/ano, como 04/11/2026. Seu rascunho continua guardado. |
 | `[rascunho_nao_salvo]` | Aviso | Rascunho não guardado | O aparelho não deixou guardar o rascunho. Salve o treino antes de sair desta tela. |
 | `[planilha_vazia]` | Aviso | Nada para importar | Não encontramos exercícios neste arquivo. Confira as colunas e tente de novo. |
 | `[preencha_registro]` | Aviso | Falta preencher | Preencha ao menos um peso, repetição ou observação. |

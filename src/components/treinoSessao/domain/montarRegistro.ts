@@ -1,6 +1,6 @@
 import type { ExercicioSessao } from "../../../data/sessionExercises";
 import type { RegistroExercicio, RegistroTreino } from "../../../types/TrainingData";
-import { parseDateBRToTs } from "./datas";
+import { formatarBR, parseDataBR } from "../../../utils/datas";
 import { seriesFeitas, type SerieDoTreino } from "./seriesFeitas";
 import { blocoValido, type BlocoCluster, type ExerciseState } from "./estadoExercicio";
 
@@ -24,9 +24,10 @@ const int = (v: string) => parseInt(v) || 0;
 const paraBlocos = (blocos: BlocoCluster[]) =>
   blocos.filter(blocoValido).map((b) => ({ kg: num(b.kg), reps: int(b.reps) }));
 
-/** Registro do exercício feito, ou null quando não há nada a salvar (pulado, sem confirmar, sem série feita). */
+/** Registro do exercício feito, ou null quando não há nada a salvar (pulado, sem confirmar, sem série feita, data inválida). */
 export function montarRegistro({ ex, state, treinoId, data, ultimo }: Entrada): Saida | null {
-  if (state.skipped) return null;
+  const dataTs = parseDataBR(data);
+  if (state.skipped || dataTs === null) return null;
   const emCluster = state.tecnica !== null && state.tecnicaConfirmed;
 
   const cluster1 = emCluster ? paraBlocos(state.clusterSeries) : [];
@@ -46,13 +47,14 @@ export function montarRegistro({ ex, state, treinoId, data, ultimo }: Entrada): 
   const topKg = top1.kg ?? 0;
   const topReps = top1.reps ?? 0;
   const obs = state.obs.trim();
+  const dia = formatarBR(dataTs);
 
   return {
     registro: {
       exercicio: ex.nome,
       treinoId,
-      data,
-      dataTs: parseDateBRToTs(data),
+      data: dia,
+      dataTs,
       topSetKg: topKg,
       topSetReps: topReps,
       topSetFaixaMin: ex.faixaTopSet[0],
@@ -83,7 +85,7 @@ export function montarRegistro({ ex, state, treinoId, data, ultimo }: Entrada): 
       obs: obs || undefined,
     },
     legado: {
-      data,
+      data: dia,
       pesos: feitas.map((s) => String(s.kg)),
       reps: feitas.map((s) => String(s.reps)),
       obs,

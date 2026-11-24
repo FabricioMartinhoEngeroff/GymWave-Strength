@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
 import { carregarDados, carregarRegistros, emTransacao, fotografarRegistros, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
+import { hojeBR, parseDataBR } from "../../utils/datas";
 import { exportarCSV } from "../../utils/registros";
 import { blocosCluster, mesclarRepetidos, prefixoAba, rotuloSessao } from "../../utils/planilhaSessoes";
 import { nomeCanonico } from "../../data/exerciseAliases";
@@ -324,19 +325,7 @@ function parsePeso(val: unknown): string | null {
   return String(n);
 }
 
-function getTodayBR(): string {
-  return new Date().toLocaleDateString("pt-BR");
-}
-
 // ─── Export helpers ────────────────────────────────────────────────────────────
-
-function parseDateBR(data: string): number | null {
-  const parts = data.split("/");
-  if (parts.length !== 3) return null;
-  const [d, m, y] = parts.map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d).getTime();
-}
 
 function useStats() {
   return useMemo(() => {
@@ -350,8 +339,8 @@ function useStats() {
       Object.values(ciclos).forEach((reg) => {
         count++;
         if (reg.data) {
-          const ts = parseDateBR(reg.data);
-          if (ts) {
+          const ts = parseDataBR(reg.data);
+          if (ts !== null) {
             if (ts < minTs) minTs = ts;
             if (ts > maxTs) maxTs = ts;
           }
@@ -503,7 +492,7 @@ export default function Exportar() {
     const porSessao: Record<string, number> = {};
     let total = 0;
     let preservados = 0;
-    const today = getTodayBR();
+    const today = hojeBR();
     const todayTs = Date.now();
 
     rows.forEach((row) => {

@@ -116,6 +116,11 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - O texto é o mesmo nas duas escalas e o limite de subir carga vem de `RPE_LIMITE_SUBIR` (RG21), para nunca divergir da regra.
   - É só leitura: não marca esforço, não troca a escala, não grava nada e não entra no rascunho (RG12).
   - Implementação: `treinoSessao/blocks/AjudaEsforco.tsx`.
+- **RG26** – **Data do treino:** a data precisa estar no formato `DD/MM/AAAA` e **existir no calendário** (regra única do sistema, ver "Formato de Data" no INDICE).
+  - **Data inválida não salva:** vazia, texto, ano com 2 dígitos ou dia que não existe (`31/02/2026`) mostra `[data_invalida]` (EF_09), nada é gravado e o rascunho continua guardado. A data **nunca** é trocada por hoje em silêncio.
+  - Dia e mês podem ter 1 dígito (`4/11/2026`). O treino é gravado sempre com 2 (`04/11/2026`).
+  - *Motivo:* um treino salvo com data ilegível não volta na leitura do histórico, e o atleta veria "Treino finalizado!" para um treino perdido.
+  - Implementação: `utils/datas.ts`.
 
 ---
 
@@ -124,7 +129,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
 ### 4.1 Barra Superior (TopBar)
 
 - Título: **GymWave Strength**
-- Campo data do treino: editável, formato `DD/MM/AAAA`, valor padrão = data atual.
+- Campo data do treino: editável, formato `DD/MM/AAAA`, valor padrão = data atual. Data inválida impede salvar (RG26).
 - Informação de dias desde o último treino da sessão selecionada.
 
 ### 4.2 Seletor de Sessão

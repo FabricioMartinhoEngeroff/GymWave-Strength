@@ -5,12 +5,11 @@ import {
   Bloco,
   MensagemMotivacional,
 } from "./CycleCard.styles";
+import { dataBRparaDate, formatarBR } from "../../utils/datas";
 import { storageKey } from "../../utils/storage";
 
 import {
   useCycleCardLogic,
-  parseData,
-  formatarData,
   useSugestaoDePeso
 } from "./CycleCard.logic";
 
@@ -138,8 +137,8 @@ export default function CycleCard({ value, onSave }: CycleCardProps) {
 </MensagemMotivacional>
 
       <DatePicker
-  selected={parseData(data)}
-  onChange={(date) => setData(date ? formatarData(date) : "")}
+  selected={dataBRparaDate(data)}
+  onChange={(date) => setData(date ? formatarBR(date.getTime()) : "")}
 />
 
      {[0, 1, 2].map((i) => (

@@ -64,6 +64,13 @@ Cada usuário tem as próprias chaves, no formato `gw:{id do usuário}:{chave}`.
 
 Na tela, as datas aparecem e são digitadas no formato `DD/MM/AAAA` (pt-BR). Os `registros` guardam a data como `AAAA-MM-DD` (ISO), que ordena corretamente e é a mesma do CSV exportado.
 
+**Regra única:** toda conversão de data passa por `utils/datas.ts`. Nenhuma tela lê ou monta data por conta própria.
+
+- Uma data é válida quando tem dia, mês e ano com 4 dígitos e **existe no calendário**. `31/02/2026` e `04/11/26` são inválidas. `4/11/2026` é válida e é o mesmo dia que `04/11/2026`.
+- Data inválida se comporta igual em todo o app: fica **fora** dos gráficos, do volume e do período. Nunca vira hoje nem outro dia.
+- O registro com data inválida **não é apagado**. Nos Relatórios ele aparece no fim da lista, em qualquer período, para poder ser corrigido (EF_05).
+- Treino novo com data inválida não é salvo (EF_02 RG26).
+
 ### Dados pessoais
 
 O sistema guarda o mínimo possível: o cadastro pede só e-mail e senha, e o treino fica no aparelho do próprio usuário (EF_01 RG13 e RG14).

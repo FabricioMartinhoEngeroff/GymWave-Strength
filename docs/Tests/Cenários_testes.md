@@ -217,6 +217,24 @@
 | 4 | RPE invalido vindo de importacao | Campo descartado; treino mantido |
 | 5 | Exportar CSV | Coluna `rpe` no fim; vazia quando nao anotado |
 
+### 1.12 datas — regra unica (INDICE "Formato de Data")
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 1 | `parseDataBR` com `04/11/2026`, `4/1/2026`, espacos em volta, 29/02 bissexto | Meia-noite local do dia |
+| 2 | `parseDataBR` com vazio, texto, incompleta, ano de 2 digitos, ISO, `31/02/2026`, `29/02/2025`, dia/mes 0 ou 13 | null (nunca vira hoje nem outro dia) |
+| 3 | `dataBRparaDate` (calendario) | Date do dia; invalida retorna null |
+| 4 | `parseDataISO` valida / invalida | Timestamp / null |
+| 5 | `formatarBR` | Zero a esquerda; ida e volta preserva a data |
+| 6 | `hojeBR` as 23h30 | Dia local |
+| 7 | `diasDesde` | Dias inteiros |
+| 8 | `dataBRparaISO` / `dataISOparaBR` | Trocam a escrita; o que nao entendem volta igual |
+| 9 | Arquivos de `src/` fora de `datas.ts` | Nenhum quebra nem monta data por conta propria |
+| 10 | `dadosTreino` com `31/02/2026`, `03/03/26`, `abc` | Fora do grafico, do volume do periodo e do volume por semana |
+| 11 | Registro guardado com `2026-02-31` | Fora de graficos, volume e Powerlifter, sem ser apagado |
+| 12 | Relatorios com data invalida | No fim da lista, em qualquer periodo |
+| 13 | `8/6/2026` no `dadosTreino` e `08/06/2026` no registro | Mesmo treino: volume nao dobra |
+
 ---
 
 ## 2. DATA
@@ -759,6 +777,15 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 129 | Sair da tela com o balao aberto | Ouvintes do documento removidos |
 | 130 | Top Set 1, Top Set 2, Back-off, Serie 3, Serie 4 e Cluster Set | Todos tem o `?` |
 
+**Data do treino (EF_02 RG26)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 131 | Salvar com data vazia, `abc`, `04/11/26` ou `31/02/2026` | `[data_invalida]`; nada gravado; rascunho mantido |
+| 132 | Data invalida com series nao feitas | Avisa a data antes; dialogo nao abre |
+| 133 | Data fica invalida na hora de substituir o treino do dia | Treino do dia mantido |
+| 134 | Data `4/1/2026` | Gravada como `2026-01-04` no registro e `04/01/2026` no `dadosTreino` |
+
 ---
 
 ### 9.2 CycleCard (5 testes)
@@ -773,19 +800,9 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 9.3 CycleCard.logic (9 testes)
+### 9.3 CycleCard.logic
 
-| # | Cenario | Resultado Esperado |
-|---|---------|-------------------|
-| 1 | `parseData("15/06/2026")` | Date com dia 15, mes 5, ano 2026 |
-| 2 | `parseData("01/01/2025")` | Date com dia 1, mes 0, ano 2025 |
-| 3 | `parseData("")` | Retorna null |
-| 4 | `parseData("15/06")` (incompleto) | Retorna null |
-| 5 | `parseData("15062026")` (sem barra) | Retorna null |
-| 6 | `formatarData(15/jun/2026)` | Retorna `15/06/2026` |
-| 7 | `formatarData(5/jan/2026)` | Retorna `05/01/2026` (zero a esquerda) |
-| 8 | `formatarData(31/dez/2025)` | Retorna `31/12/2025` |
-| 9 | Parse + format ida e volta | Preserva a data original |
+As funcoes de data (`parseData`, `formatarData`) foram para `utils/datas.ts`. Os cenarios estao em 1.12.
 
 ---
 

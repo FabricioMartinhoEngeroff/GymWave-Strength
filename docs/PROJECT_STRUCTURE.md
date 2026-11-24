@@ -68,7 +68,7 @@ src/
 │   │   ├── ProgressBanner.tsx      # PR, subir/consolidar carga, fadiga
 │   │   ├── UltimoTreinoPanel.tsx · NavegacaoExercicios.tsx · RevisaoTreino.tsx · DiasDesdeUltimo.tsx
 │   │   ├── blocks/                 # Um bloco por modo: TopSet, TopSet2, Backoff, SeriesExtras, Cluster, Deload + EsforcoInput e AjudaEsforco
-│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, sessoes, ultimoTreino, datas
+│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, sessoes, ultimoTreino
 │   │   ├── hooks/                  # useSessaoTreino (sugestão, espelho, rascunho, salvar), useEscalaEsforco
 │   │   └── TreinoSessao.styles.ts  # Styled-components
 │   │
@@ -145,6 +145,7 @@ src/
     ├── handleApiError.ts       # Tratamento padronizado de erros de API
     ├── backupEmergencia.ts     # Backup da tela de erro, com o conteúdo bruto do que estiver ilegível
     ├── baixarArquivo.ts        # Download de texto
+    ├── datas.ts                # Regra única de data: parseDataBR(), formatarBR(), hojeBR(), BR ↔ ISO
     ├── epleyCalc.ts            # calcEpley(), estimar1RM() pelo esforço, extractReferenceBlock()
     ├── esforco.ts              # RPE/RIR: rótulos, deveSubirPeso(), detectarFadiga()
     ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, exercício repetido

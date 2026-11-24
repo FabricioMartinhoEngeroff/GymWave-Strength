@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { EXERCICIOS } from "../../data/exercise";
 import type { TreinoRotacao } from "../../data/cycles";
+import { hojeBR } from "../../utils/datas";
 import { carregarDados, storageKey } from "../../utils/storage";
 import { mensagens } from "../mensagens/mensagens";
 
@@ -23,7 +24,7 @@ interface CycleLogicParams {
 }
 
 export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
-  const dataAtual = new Date().toLocaleDateString("pt-BR");
+  const dataAtual = hojeBR();
 
   const [salvando, setSalvando] = useState(false);
   const [pesos, setPesos] = useState<string[]>(["", "", ""]);
@@ -115,21 +116,6 @@ export function useCycleCardLogic({ ciclo, value, onSave }: CycleLogicParams) {
     salvar,
     salvando,
   };
-}
-
-// --- Funções utilitárias de data ---
-export function parseData(data: string): Date | null {
-  if (!data) return null;
-  const [day, month, year] = data.split("/");
-  if (!day || !month || !year) return null;
-  return new Date(Number(year), Number(month) - 1, Number(day));
-}
-
-export function formatarData(date: Date): string {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
 }
 
 // --- Hook para sugestão de carga baseado no topset ---

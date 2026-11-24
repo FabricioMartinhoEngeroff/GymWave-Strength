@@ -1,5 +1,6 @@
 import { grupoMuscular } from "../data/muscleMap";
 import type { Logbook, RegistroExercicio } from "../types/TrainingData";
+import { dataBRparaISO, parseDataBR } from "./datas";
 import { volumeESeriesDoRegistro } from "./seriesValidas";
 import { slugExercicio } from "./registros";
 import { carregarDados, carregarLogbookCompleto } from "./storage";
@@ -31,9 +32,9 @@ function clusterVolAndSets(reg: RegistroExercicio): { vol: number; sets: number 
 
 // Salvar treino grava o mesmo treino em "registros" (lido como logbook) e no resumo
 // "dadosTreino". Para não somar duas vezes, a entrada do dadosTreino só conta quando
-// não há registro do mesmo exercício, sessão e data (histórico antigo, só legado).
+// não há registro do mesmo exercício, sessão e dia (histórico antigo, só legado).
 export const chaveTreino = (exercicio: string, sessao: string, data: string) =>
-  `${slugExercicio(exercicio)}|${sessao}|${data}`;
+  `${slugExercicio(exercicio)}|${sessao}|${dataBRparaISO(data)}`;
 
 export function treinosDoLogbook(logbook: Logbook): Set<string> {
   const chaves = new Set<string>();
@@ -70,14 +71,6 @@ function getMonthBounds(monthsAgo: number): { start: number; end: number } {
   const start = new Date(year, month, 1, 0, 0, 0, 0);
   const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
   return { start: start.getTime(), end: end.getTime() };
-}
-
-function parseDateBR(data: string): number | null {
-  const parts = data.split("/");
-  if (parts.length !== 3) return null;
-  const [d, m, y] = parts.map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d).getTime();
 }
 
 function calcVolumeEntry(pesos: string[], reps: string[]): number {
@@ -135,8 +128,8 @@ export function calcVolumeLoad(granularity: "week" | "month" = "week", weeks: nu
     Object.entries(ciclos).forEach(([sessao, reg]) => {
       if (!reg.data || !reg.pesos) return;
       if (jaNoLogbook.has(chaveTreino(exercicio, sessao, reg.data))) return;
-      const ts = parseDateBR(reg.data);
-      if (!ts) return;
+      const ts = parseDataBR(reg.data);
+      if (ts === null) return;
       const vol = calcVolumeEntry(reg.pesos || [], reg.reps || []);
       if (vol <= 0) return;
 
@@ -257,8 +250,8 @@ export function calcVolumeLoadPerWeek(weeks: number): VolumeMusculoSemanal[] {
     Object.entries(ciclos).forEach(([sessao, reg]) => {
       if (!reg.data || !reg.pesos) return;
       if (jaNoLogbook.has(chaveTreino(exercicio, sessao, reg.data))) return;
-      const ts = parseDateBR(reg.data);
-      if (!ts) return;
+      const ts = parseDataBR(reg.data);
+      if (ts === null) return;
       const vol = calcVolumeEntry(reg.pesos || [], reg.reps || []);
       if (vol <= 0) return;
       addToSlot(musculo, ts, vol, countValidSets(reg.pesos || [], reg.reps || []));

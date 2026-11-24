@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ExercicioSessao } from "../../../data/sessionExercises";
+import { hojeBR, parseDataBR } from "../../../utils/datas";
 import { calcEpley, extractReferenceBlock } from "../../../utils/epleyCalc";
 import { detectarFadiga, deveSubirPeso } from "../../../utils/esforco";
 import { idDaSessao, listarSessoes } from "../../../utils/planilhaSessoes";
@@ -20,7 +21,6 @@ import { useEscalaEsforco } from "./useEscalaEsforco";
 import { avisarErro } from "../../mensagens/avisarErro";
 import { mensagens } from "../../mensagens/mensagens";
 import { conquistasDoTreino } from "../domain/conquistas";
-import { getTodayBR } from "../domain/datas";
 import {
   ativarCluster,
   ativarDeload,
@@ -60,7 +60,7 @@ const VAZIO = emptyExerciseState();
 /** Sessão de treino: sugestão do último treino, espelho de peso, rascunho, navegação e salvamento. */
 export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
   const [sessao, setSessao] = useState<string | null>(null);
-  const [data, setData] = useState(getTodayBR);
+  const [data, setData] = useState(hojeBR);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [states, setStates] = useState<EstadosDaSessao>({});
   // As 4 sessões fixas, ou as sessões da planilha importada (ex.: protocolo de 6 dias).
@@ -303,8 +303,15 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
 
   // ── Salvar ────────────────────────────────────────────────────────────────
 
+  /** Data inválida não salva (RG26): o treino sumiria do histórico. */
+  function dataServe(): boolean {
+    const serve = parseDataBR(data) !== null;
+    if (!serve) mensagens.mostrar("data_invalida");
+    return serve;
+  }
+
   function salvar(forcarSubstituicao = false) {
-    if (!sessao) return;
+    if (!sessao || !dataServe()) return;
 
     if (!forcarSubstituicao && existeTreinoNaData(treinoId, data)) {
       setConfirmarSubstituir(true);
@@ -354,6 +361,7 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
 
   /** Antes de salvar, avisa o que ficou por fazer (EF_09 RG8). */
   function pedirSalvar() {
+    if (!dataServe()) return;
     const algumaFeita = exercicios.some((ex) => {
       const st = states[ex.nome];
       return st && montarRegistro({ ex, state: st, treinoId, data, ultimo: null });

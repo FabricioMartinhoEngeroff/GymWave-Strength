@@ -55,7 +55,7 @@ Qualquer usuário autenticado com dados registrados possui acesso.
 
 ### 4.3 Lista de Registros (ReportList)
 
-Exibe uma linha por sessão registrada, ordenada por data decrescente.
+Exibe uma linha por sessão registrada, ordenada por data decrescente. Linha com data inválida (ver "Formato de Data" no INDICE) fica no fim e aparece em qualquer período, para poder ser corrigida.
 
 Dados exibidos por linha:
 

@@ -3,6 +3,7 @@ import { MESMO_EXERCICIO } from "../data/exerciseAliases";
 import { EXERCISE_VIDEOS } from "../data/exerciseVideos";
 import { MUSCLE_MAP } from "../data/muscleMap";
 import { SESSOES } from "../data/sessionExercises";
+import { dataBRparaISO, dataISOparaBR, parseDataISO } from "./datas";
 import { normalizarRpe } from "./esforco";
 import type { Logbook, RegistroExercicio, SeriesValidas } from "../types/TrainingData";
 
@@ -87,28 +88,6 @@ export function nomeExercicio(slug: string, nomeGuardado?: string): string {
 /** Registro gravado antes de o nome ser sempre guardado ganha o nome do catálogo. */
 export function comNome(reg: Registro): Registro {
   return reg.nome ? reg : { ...reg, nome: nomeExercicio(reg.exercicio) };
-}
-
-// ─── Datas ────────────────────────────────────────────────────────────────────
-
-const pad = (n: number) => String(n).padStart(2, "0");
-
-export function dataBRparaISO(data: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(data)) return data;
-  const [d, m, y] = data.split("/").map(Number);
-  if (!d || !m || !y) return data;
-  return `${y}-${pad(m)}-${pad(d)}`;
-}
-
-export function dataISOparaBR(data: string): string {
-  const [y, m, d] = data.split("-").map(Number);
-  if (!d || !m || !y) return data;
-  return `${pad(d)}/${pad(m)}/${y}`;
-}
-
-function tsDeISO(data: string): number {
-  const [y, m, d] = data.split("-").map(Number);
-  return y && m && d ? new Date(y, m - 1, d).getTime() : 0;
 }
 
 // ─── RegistroExercicio → Registro ─────────────────────────────────────────────
@@ -200,7 +179,7 @@ export function deRegistro(reg: Registro, anterior?: Registro): RegistroExercici
     exercicio: nomeExercicio(reg.exercicio, reg.nome),
     treinoId: reg.sessao,
     data: dataISOparaBR(reg.data),
-    dataTs: tsDeISO(reg.data),
+    dataTs: parseDataISO(reg.data) ?? 0, // 0 = data inválida
     topSetKg: topKg,
     topSetReps: top1?.reps ?? 0,
     topSetFaixaMin: reg.faixa?.[0] ?? 0,

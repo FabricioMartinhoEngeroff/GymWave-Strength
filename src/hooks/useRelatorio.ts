@@ -2,17 +2,13 @@ import { useState, useEffect, useMemo } from "react";
 import { carregarDados, salvarDados } from "../utils/storage";
 import { ROTACAO } from "../data/cycles";
 import type { DadosTreino, LinhaRelatorio, SerieInfo } from "../types/TrainingData";
+import { parseDataBR } from "../utils/datas";
 import { getCutoffTs, type TimeInterval } from "../utils/timeFilter";
 
 export function useRelatorio() {
   const [linhas, setLinhas] = useState<LinhaRelatorio[]>([]);
   const [exercicioSelecionado, setExercicioSelecionado] = useState<string>("");
   const [intervalo, setIntervalo] = useState<TimeInterval>("Tudo");
-
-  function parseDataBR(data: string): Date {
-    const [dia, mes, ano] = data.split("/");
-    return new Date(`${ano}-${mes}-${dia}`);
-  }
 
   useEffect(() => {
     const bruto: DadosTreino = carregarDados();
@@ -35,7 +31,7 @@ export function useRelatorio() {
     });
 
     geradas.sort(
-      (a, b) => parseDataBR(b.data).getTime() - parseDataBR(a.data).getTime()
+      (a, b) => (parseDataBR(b.data) ?? 0) - (parseDataBR(a.data) ?? 0) // data inválida vai para o fim
     );
 
     setLinhas(geradas);
@@ -112,17 +108,6 @@ export function useRelatorio() {
 
   const linhasFiltradas = useMemo(
     () => {
-      const parseToTs = (data: string): number | null => {
-        const [diaRaw, mesRaw, anoRaw] = data.split("/");
-        const dia = Number(diaRaw);
-        const mes = Number(mesRaw);
-        const ano = Number(anoRaw);
-        if (!dia || !mes || !ano) return null;
-        const d = new Date(ano, mes - 1, dia);
-        const ts = d.getTime();
-        return Number.isNaN(ts) ? null : ts;
-      };
-
       const base = exercicioSelecionado
         ? linhas.filter((l) => l.exercicio === exercicioSelecionado)
         : linhas;
@@ -130,14 +115,14 @@ export function useRelatorio() {
       if (intervalo === "Tudo") return base;
 
       const tsValidos = base
-        .map((l) => parseToTs(l.data))
+        .map((l) => parseDataBR(l.data))
         .filter((ts): ts is number => typeof ts === "number");
       const nowTs = tsValidos.length ? Math.max(...tsValidos) : 0;
       const cutoff = getCutoffTs(intervalo, nowTs);
 
       return base.filter((l) => {
-        const ts = parseToTs(l.data);
-        if (!ts) return true;
+        const ts = parseDataBR(l.data);
+        if (ts === null) return true;
         return ts >= cutoff;
       });
     },

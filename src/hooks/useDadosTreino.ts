@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { RegistroTreino } from "../types/TrainingData";
+import { formatarBR, parseDataBR } from "../utils/datas";
 import { serieFeita, volumeESeriesDoRegistro } from "../utils/seriesValidas";
 import { carregarDados, carregarLogbookCompleto } from "../utils/storage";
 import { chaveTreino, treinosDoLogbook } from "../utils/volumeLoadCalc";
@@ -33,23 +34,6 @@ function calcVolumeLoadLegacy(pesos: string[] = [], reps: string[] = []): number
   return total;
 }
 
-function parseDataBR(data: string): { normalizada: string; ts: number } | null {
-  const [diaRaw, mesRaw, anoRaw] = data.split("/");
-  const dia = Number(diaRaw);
-  const mes = Number(mesRaw);
-  const ano = Number(anoRaw);
-  if (!dia || !mes || !ano) return null;
-
-  const d = new Date(ano, mes - 1, dia);
-  if (Number.isNaN(d.getTime())) return null;
-
-  const normalizada = `${String(dia).padStart(2, "0")}/${String(mes).padStart(
-    2,
-    "0"
-  )}/${ano}`;
-  return { normalizada, ts: d.getTime() };
-}
-
 function normalizarCicloId(cicloKey: string): string {
   if (cicloKey.startsWith("Ciclo ")) {
     const n = cicloKey.split(" ")[1];
@@ -65,13 +49,13 @@ function montarRegistroGrafico(
   const pesosNum = parsePesos(reg.pesos);
   if (pesosNum.length === 0) return null;
 
-  const dataInfo = parseDataBR(reg.data);
-  if (!dataInfo) return null;
+  const dataTs = parseDataBR(reg.data);
+  if (dataTs === null) return null;
 
   const topSet = Math.max(...pesosNum);
   return {
-    data: dataInfo.normalizada,
-    dataTs: dataInfo.ts,
+    data: formatarBR(dataTs),
+    dataTs,
     cicloId: normalizarCicloId(cicloKey),
     pesos: pesosNum,
     topSet,
@@ -111,8 +95,8 @@ export function useDadosTreino(): DadosAgrupados {
           (!!reg.clusterSeries2 && reg.clusterSeries2.length > 0);
         if (reg.topSetKg <= 0 && !temClusterSeries) return;
 
-        const dataInfo = parseDataBR(reg.data);
-        if (!dataInfo) return;
+        const dataTs = parseDataBR(reg.data);
+        if (dataTs === null) return;
 
         let volumeLoad = 0;
         let topSet: number;
@@ -136,8 +120,8 @@ export function useDadosTreino(): DadosAgrupados {
 
         if (!porExe[exercicio]) porExe[exercicio] = [];
         porExe[exercicio].push({
-          data: dataInfo.normalizada,
-          dataTs: dataInfo.ts,
+          data: formatarBR(dataTs),
+          dataTs,
           cicloId: reg.treinoId,
           pesos,
           topSet,

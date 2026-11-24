@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { RegistroExercicio, PlanoTreino, SeriesValidas } from "../../types/TrainingData";
+import { hojeBR } from "../../utils/datas";
 import { normalizarSeriesValidas } from "../../utils/seriesValidas";
 import {
   carregarDados,
@@ -270,10 +271,6 @@ function parsePeso(val: unknown): number | null {
   return n;
 }
 
-function getTodayBR(): string {
-  return new Date().toLocaleDateString("pt-BR");
-}
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AdminImport() {
@@ -387,7 +384,7 @@ export default function AdminImport() {
 
       const porTreino: Record<string, number> = {};
       let total = 0;
-      const today = getTodayBR();
+      const today = hojeBR();
       const todayTs = Date.now();
 
       const legacyDb = carregarDados();

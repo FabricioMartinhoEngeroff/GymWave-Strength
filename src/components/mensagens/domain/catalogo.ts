@@ -35,6 +35,7 @@ export const AVISOS = avisos({
   registro_excluido: { tipo: "sucesso", titulo: "Registro excluído", texto: "O registro saiu do relatório." },
   rascunho_restaurado: { tipo: "info", titulo: "Treino retomado", texto: "Continuamos de onde você parou." },
   nenhuma_serie_feita: { tipo: "aviso", titulo: "Nenhuma série feita", texto: "Confirme ao menos uma série para salvar. Seu rascunho continua guardado." },
+  data_invalida: { tipo: "aviso", titulo: "Confira a data do treino", texto: "Use dia/mês/ano, como 04/11/2026. Seu rascunho continua guardado." },
   rascunho_nao_salvo: { tipo: "aviso", titulo: "Rascunho não guardado", texto: "O aparelho não deixou guardar o rascunho. Salve o treino antes de sair desta tela." },
   planilha_vazia: { tipo: "aviso", titulo: "Nada para importar", texto: "Não encontramos exercícios neste arquivo. Confira as colunas e tente de novo." },
   preencha_registro: { tipo: "aviso", titulo: "Falta preencher", texto: "Preencha ao menos um peso, repetição ou observação." },

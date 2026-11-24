@@ -1,9 +1,9 @@
+import { dataBRparaISO } from "./datas";
 import { deveSubirPeso } from "./esforco";
 import { serieFeita } from "./seriesValidas";
 import type { DadosTreino, Logbook, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
 import {
   comIdUnico,
-  dataBRparaISO,
   logbookParaRegistros,
   nomeExercicio,
   paraRegistro,

@@ -4,9 +4,8 @@
  * nunca sobrescrita. Converte de/para o RegistroExercicio que o resto do app usa.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { dataBRparaISO, dataISOparaBR } from "../../utils/datas";
 import {
-  dataBRparaISO,
-  dataISOparaBR,
   exportarCSV,
   logbookParaRegistros,
   nomeExercicio,

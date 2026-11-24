@@ -5,6 +5,7 @@ import { Input } from "../ui/Input";
 import { Button } from "../ui/Button";
 import { DatePicker } from "../ui/DatePicker";
 import styled from "styled-components";
+import { dataBRparaDate, formatarBR } from "../../utils/datas";
 
 const Label = styled.label`
   font-weight: bold;
@@ -78,24 +79,14 @@ export function EditRow({
 }: EditRowProps) {
   const getSeries = (): SerieInfo[] => linhaEditada.series ?? linha.series;
 
-  const parseDate = (text: string): Date | null => {
-    const [day, month, year] = text.split("/").map(Number);
-    if (!day || !month || !year) return null;
-    return new Date(year, month - 1, day);
-  };
-
-  const formatDate = (date: Date): string => {
-    return date.toLocaleDateString("pt-BR");
-  };
-
   return (
     <div className="report-card">
        <EditContainer>
       <FieldGroup>
         <DatePicker
-          selected={parseDate(linhaEditada.data ?? linha.data)}
+          selected={dataBRparaDate(linhaEditada.data ?? linha.data)}
           onChange={(date) => {
-            setLinhaEditada((prev) => ({ ...prev, data: date ? formatDate(date) : "" }));
+            setLinhaEditada((prev) => ({ ...prev, data: date ? formatarBR(date.getTime()) : "" }));
           }}
           label="Data"
         />
