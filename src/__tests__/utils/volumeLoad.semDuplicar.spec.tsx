@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../components/treinoSessao/TreinoSessao";
+import { marcarEsforco } from "../components/treinoSessao/helpers";
 import { grupoMuscular } from "../../data/muscleMap";
 import { carregarDados, salvarDados, salvarRegistro } from "../../utils/storage";
 import { calcQuedaCargaMusculo, calcVolumeLoad, calcVolumeLoadPerWeek } from "../../utils/volumeLoadCalc";
@@ -123,6 +124,7 @@ describe("Volume Load — cada treino conta uma vez só", () => {
     fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: "70" } });
     fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: "10" } });
     fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+    marcarEsforco();
     fireEvent.click(screen.getByText("Ver Resumo"));
     fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 

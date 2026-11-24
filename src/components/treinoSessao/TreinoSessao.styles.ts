@@ -590,8 +590,8 @@ export const EscalaBtn = styled.button`
     gap: 4px;
     border: none;
     border-radius: 8px;
-    background: #eff6ff;
-    color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
     font-size: 11px;
     font-weight: 500;
     cursor: pointer;
@@ -622,7 +622,8 @@ const botaoDeIcone = css`
 export const AjudaBtn = styled.button`
   && {
     ${botaoDeIcone}
-    color: #2563eb;
+    background: #2563eb;
+    color: #ffffff;
   }
 `;
 
@@ -681,20 +682,18 @@ export const AjudaFecharBtn = styled.button`
 
 export const EsforcoChips = styled.div`
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 4px;
 `;
 
-const COR_ESFORCO = { leve: "#16a34a", moderado: "#d97706", alto: "#dc2626" };
-
-export const EsforcoChip = styled.button<{ $ativo: boolean; $nivel: keyof typeof COR_ESFORCO }>`
+export const EsforcoChip = styled.button<{ $ativo: boolean }>`
   && {
     width: 100%;
     margin: 0;
     padding: 10px 0;
-    border: 1px solid ${(p) => (p.$ativo ? COR_ESFORCO[p.$nivel] : "rgba(0,0,0,0.10)")};
+    border: 1px solid ${(p) => (p.$ativo ? "#2563eb" : "rgba(0,0,0,0.10)")};
     border-radius: 10px;
-    background: ${(p) => (p.$ativo ? COR_ESFORCO[p.$nivel] : "#ffffff")};
+    background: ${(p) => (p.$ativo ? "#2563eb" : "#ffffff")};
     color: ${(p) => (p.$ativo ? "#ffffff" : "#6b7280")};
     font-size: 12px;
     font-weight: ${(p) => (p.$ativo ? 600 : 400)};

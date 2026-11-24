@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { marcarEsforco } from "./helpers";
 import { carregarRegistros } from "../../../utils/storage";
 
 function exercicio(nome: string, seriesValidas: number, extra: Record<string, unknown> = {}) {
@@ -40,6 +41,7 @@ function topSet1(kg: string, reps: string) {
 }
 
 function salvar() {
+  marcarEsforco();
   fireEvent.click(screen.getByText("Ver Resumo"));
   fireEvent.click(screen.getByText("Confirmar e Salvar Treino"));
 }

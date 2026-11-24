@@ -42,8 +42,10 @@ import {
   type PatchExercicio,
 } from "../domain/estadoExercicio";
 import { montarRegistro } from "../domain/montarRegistro";
-import { pendenciasDoTreino } from "../domain/pendencias";
+import { pendenciasDoTreino, seriesSemEsforco } from "../domain/pendencias";
 import { clearDraft, loadDraft, rascunhoCombina, saveDraft, type EstadosDaSessao } from "../domain/rascunho";
+import { rpeAlvoDoExercicio } from "../domain/rpeAlvo";
+import { camposSemEsforco } from "../domain/seriesFeitas";
 import { exerciciosDaSessao, lerSessoesConfig } from "../domain/sessoes";
 
 export interface ResumoTreino {
@@ -52,7 +54,7 @@ export interface ResumoTreino {
   subirPeso: number;
 }
 
-const SEM_AVISOS = { topSet: false, backoff: false, tecnica: false };
+const SEM_AVISOS = { topSet: false, backoff: false, tecnica: false, esforco: false };
 type Avisos = typeof SEM_AVISOS;
 
 const VAZIO = emptyExerciseState();
@@ -210,7 +212,10 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
     !!currentEx && !state.isDeload && !state.topSetConfirmed && topKg > 0 && topReps > 0 &&
     (topReps >= currentEx.faixaTopSet[1] || superaPr);
 
-  const fadiga = useMemo(() => detectarFadiga(historico, treinoId), [historico, treinoId]);
+  const fadiga = useMemo(
+    () => (currentEx ? detectarFadiga(historico, treinoId, rpeAlvoDoExercicio(currentEx)) : null),
+    [historico, treinoId, currentEx],
+  );
   const ultimo = useMemo(() => (currentEx ? ultimoTreinoNormal(currentEx.nome, treinoId) : null), [currentEx, treinoId]);
   // Valores que voltam aos campos ao trocar de modo.
   const referencia = useMemo(() => (currentEx ? referenciaDoExercicio(currentEx.nome, treinoId) : null), [currentEx, treinoId]);
@@ -275,6 +280,17 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
     nextExercise();
   }
 
+  /** Série feita precisa do esforço (RG27); senão avisa na própria série. */
+  function esforcoCompleto(): boolean {
+    const falta = camposSemEsforco(state).length > 0;
+    avisar("esforco", falta);
+    return !falta;
+  }
+
+  function abrirRevisao() {
+    if (esforcoCompleto()) setMostrarRevisao(true);
+  }
+
   function avancar() {
     if (state.tecnica) {
       if (!state.tecnicaConfirmed) return avisar("tecnica", true);
@@ -288,7 +304,7 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
         return avisar("backoff", true);
       }
     }
-    nextExercise();
+    if (esforcoCompleto()) nextExercise();
   }
 
   function editarDaRevisao(idx: number) {
@@ -347,7 +363,11 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
         totalTreinos: new Set(carregarRegistros().map((r) => `${r.sessao}|${r.data}`)).size,
       }).forEach(({ id, ...texto }) => mensagens.mostrar(id, texto));
 
-      const subirPeso = salvos.filter((r) => deveSubirPeso(r.topSetBateuTeto, r.topSetRpe)).length;
+      const alvos = new Map(exercicios.map((ex) => [ex.nome, rpeAlvoDoExercicio(ex)]));
+      const subirPeso = salvos.filter((r) => {
+        const alvo = alvos.get(r.exercicio);
+        return alvo !== undefined && deveSubirPeso(r.topSetBateuTeto, r.topSetRpe, alvo);
+      }).length;
       setConfirmarSubstituir(false);
       setMostrarRevisao(false);
       setResumo({ feitos: salvos.length, total: exercicios.length, subirPeso });
@@ -367,6 +387,8 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
       return st && montarRegistro({ ex, state: st, treinoId, data, ultimo: null });
     });
     if (!algumaFeita) return mensagens.mostrar("nenhuma_serie_feita");
+    const semEsforco = seriesSemEsforco(exercicios, states);
+    if (semEsforco.length > 0) return mensagens.mostrar("esforco_faltando", { texto: semEsforco.join(" · ") });
     const itens = pendenciasDoTreino(exercicios, states);
     if (itens.length === 0) return salvar();
     mensagens.confirmar("series_nao_feitas", { itens, aoConfirmar: () => salvar() });
@@ -378,13 +400,14 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
     alternarSessao: (s: string) => setSessao(sessao === s ? null : s),
     // exercício aberto
     currentIdx, currentEx, state, states, ultimo, prAtivo, fadiga, escala, alternarEscala, avisos, isLastExercise,
+    semEsforco: avisos.esforco ? camposSemEsforco(state) : [],
     concluido: (nome: string) => exercicioConcluido(states[nome]),
     // edição
     atualizar, editarTopSet, editarTopSet2,
     confirmTopSet, confirmBackoff, abrirSerieCluster, confirmTecnica, alternarCluster, alternarDeload,
     // navegação
     irPara, nextExercise, prevExercise, skipExercise, avancar,
-    mostrarRevisao, abrirRevisao: () => setMostrarRevisao(true), fecharRevisao, editarDaRevisao,
+    mostrarRevisao, abrirRevisao, fecharRevisao, editarDaRevisao,
     // salvar
     salvar, pedirSalvar, resumo, confirmarSubstituir,
     cancelarSubstituicao: () => setConfirmarSubstituir(false),

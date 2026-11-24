@@ -4,7 +4,7 @@ import { SerieInputs } from "./SerieInputs";
 import type { BlocoConfirmavelProps } from "./tipos";
 
 /** Top Set 2 (slot "backoff" no modelo v6): segunda série pesada, na faixa do Top Set. */
-export function TopSet2Block({ ex, state, aviso, onChange, onConfirmar, onEditar, escala, onTrocarEscala }: BlocoConfirmavelProps) {
+export function TopSet2Block({ ex, state, aviso, onChange, onConfirmar, onEditar, escala, onTrocarEscala, semEsforco }: BlocoConfirmavelProps) {
   return (
     <Card style={{ background: "#fafafa" }}>
       <Label>Top Set 2</Label>
@@ -25,6 +25,7 @@ export function TopSet2Block({ ex, state, aviso, onChange, onConfirmar, onEditar
         onChange={(rpe) => onChange({ backoffRpe: rpe })}
         escala={escala}
         onTrocarEscala={onTrocarEscala}
+        aviso={semEsforco.includes("backoffRpe")}
       />
 
       {!state.backoffConfirmed ? (

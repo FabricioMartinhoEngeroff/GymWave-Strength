@@ -68,7 +68,7 @@ src/
 │   │   ├── ProgressBanner.tsx      # PR, subir/consolidar carga, fadiga
 │   │   ├── UltimoTreinoPanel.tsx · NavegacaoExercicios.tsx · RevisaoTreino.tsx · DiasDesdeUltimo.tsx
 │   │   ├── blocks/                 # Um bloco por modo: TopSet, TopSet2, Backoff, SeriesExtras, Cluster, Deload + EsforcoInput e AjudaEsforco
-│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, sessoes, ultimoTreino
+│   │   ├── domain/                 # Regras puras: estadoExercicio, seriesFeitas, pendencias, conquistas, montarRegistro, rascunho, rpeAlvo, sessoes, ultimoTreino
 │   │   ├── hooks/                  # useSessaoTreino (sugestão, espelho, rascunho, salvar), useEscalaEsforco
 │   │   └── TreinoSessao.styles.ts  # Styled-components
 │   │
@@ -147,7 +147,7 @@ src/
     ├── baixarArquivo.ts        # Download de texto
     ├── datas.ts                # Regra única de data: parseDataBR(), formatarBR(), hojeBR(), BR ↔ ISO
     ├── epleyCalc.ts            # calcEpley(), estimar1RM() pelo esforço, extractReferenceBlock()
-    ├── esforco.ts              # RPE/RIR: rótulos, deveSubirPeso(), detectarFadiga()
+    ├── esforco.ts              # RPE/RIR: escala, rótulos, passouDoAlvo(), deveSubirPeso(), detectarFadiga()
     ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, exercício repetido
     ├── registros.ts            # Formato v3 do histórico: slug do exercício, conversões, CSV
     ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), referenciaDoExercicio(), exercicioDeveSubirPeso()
@@ -184,7 +184,7 @@ src/__tests__/
 │   │   └── ReportPage.spec.tsx     # 5 testes — título, filtros, dados
 │   ├── treinoSessao/
 │   │   ├── domain/ · hooks/ · blocks/      # regras puras, useSessaoTreino e cada bloco
-│   │   ├── TreinoSessao.esforco.spec.tsx   # RPE/RIR, progressão pelo esforço, fadiga
+│   │   ├── TreinoSessao.esforco.spec.tsx   # RPE/RIR, progressão pelo esforço alvo, fadiga, esforço obrigatório
 │   │   └── TreinoSessao.spec.tsx   # 22 testes — sessão, ciclo, navegação, auto-fill, conclusão
 │   ├── ui/
 │   │   └── Input.spec.tsx          # 6 testes — Input (3) e Button (3)
@@ -276,7 +276,7 @@ Cada exercício tem **Top Set** (PR work) + **Back-off** (85% do Top Set) e opci
 |--------------------|-------------------------------------------------------------|
 | `seriesValidas: 2` | Top Set + Back-off (padrão para compostos e máquinas)       |
 | `seriesValidas: 3` | Top Set + Back-off + Série Extra (isoladores de alto volume)|
-| `topSetBateuTeto`  | reps ≥ faixaTopSet[1]; sobe peso se o RPE do Top Set for < 8 ou não anotado (EF_02 RG21) |
+| `topSetBateuTeto`  | reps ≥ faixaTopSet[1]; sobe peso se o RPE do Top Set não passar do alvo do exercício (`rpeAlvo`) ou não foi anotado (EF_02 RG21) |
 
 ### Exercícios com `seriesValidas = 3` (definidos em `sessionExercises.ts`)
 

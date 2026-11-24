@@ -1,9 +1,10 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { CircleHelp, X } from "lucide-react";
-import { RPE_LIMITE_SUBIR, rotuloChip } from "../../../utils/esforco";
+import { RPE_ALVO } from "../../../data/sessionExercises";
+import { rotuloAlvo, type FaixaRpe } from "../../../utils/esforco";
 import { AjudaBalao, AjudaBtn, AjudaFecharBtn, AjudaTitulo } from "../TreinoSessao.styles";
 
-const RIR_LIMITE_SUBIR = rotuloChip(RPE_LIMITE_SUBIR, "RIR");
+const nasDuasEscalas = (alvo: FaixaRpe) => `${rotuloAlvo(alvo, "RPE")} (${rotuloAlvo(alvo, "RIR")})`;
 
 /** Botão "?" com o balão que explica RPE e RIR (RG25). Só leitura: não mexe no treino. */
 export function AjudaEsforco() {
@@ -61,11 +62,15 @@ export function AjudaEsforco() {
           <p><strong>RIR</strong> (reps na reserva): quantas reps ainda sairiam. 0 é a falha.</p>
           <p>É a mesma medida: RIR = 10 − RPE. Ex.: RPE 8 = RIR 2.</p>
           <p>
-            <strong>Para que serve:</strong> bateu o teto de reps no Top Set 1 com RPE abaixo de {RPE_LIMITE_SUBIR} (RIR acima
-            de {RIR_LIMITE_SUBIR}), sobe o peso; com RPE {RPE_LIMITE_SUBIR} ou mais, repete a carga. A mesma carga pesando cada
-            vez mais gera o alerta de fadiga.
+            <strong>Para que serve:</strong> bateu o teto de reps no Top Set 1 com esforço igual ou abaixo do alvo do
+            exercício, sobe o peso; se passou do alvo, repete a carga. É só um aviso: o peso não muda sozinho.
           </p>
-          <p>Opcional: marque ao terminar a série.</p>
+          <p>
+            <strong>Alvo:</strong> agacho, supino, terra e barra fixa, {nasDuasEscalas(RPE_ALVO.composto)}. Máquinas, cabos e
+            isoladores, {nasDuasEscalas(RPE_ALVO.isolador)}.
+          </p>
+          <p>A mesma carga e as mesmas reps pesando mais por 2 treinos seguidos geram o alerta de fadiga.</p>
+          <p>Obrigatório: marque ao terminar a série.</p>
         </AjudaBalao>
       )}
     </span>

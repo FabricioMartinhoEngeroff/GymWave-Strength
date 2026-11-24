@@ -118,8 +118,12 @@ describe("estadoExercicio — domain", () => {
     expect(exercicioConcluido(estado(over as Partial<ExerciseState>))).toBe(esperado);
   });
 
-  it.each([[7.5, "teto"], [8, "consolidar"], [10, "consolidar"], [null, "teto"]] as const)("teto com RPE %s → %s", (rpe, esperado) => {
-    expect(statusTopSet(EX, estado({ topSetConfirmed: true, topSetReps: "8", topSetRpe: rpe }))).toBe(esperado);
+  it.each([
+    [6, [7, 8], "teto"], [8, [7, 8], "teto"], [9, [7, 8], "consolidar"], [10, [7, 8], "consolidar"], [null, [7, 8], "teto"],
+    [9, [9, 10], "teto"], [10, [9, 10], "teto"],
+  ] as const)("teto com RPE %s e alvo %j → %s (RG21)", (rpe, alvo, esperado) => {
+    const ex = { ...EX, rpeAlvo: [alvo[0], alvo[1]] as [number, number] };
+    expect(statusTopSet(ex, estado({ topSetConfirmed: true, topSetReps: "8", topSetRpe: rpe }))).toBe(esperado);
   });
 
   it("o RPE nunca vem do último treino e zera ao trocar de modo", () => {
@@ -131,7 +135,11 @@ describe("estadoExercicio — domain", () => {
 
   it("rascunho antigo (sem RPE) ou com RPE inválido abre com RPE vazio", () => {
     expect(sanitizeExerciseState({ topSetKg: "90" }).topSetRpe).toBeNull();
-    expect(sanitizeExerciseState({ topSetRpe: 42, backoffRpe: 8.5 })).toMatchObject({ topSetRpe: null, backoffRpe: 8.5 });
+    expect(sanitizeExerciseState({ topSetRpe: 42, backoffRpe: 8 })).toMatchObject({ topSetRpe: null, backoffRpe: 8 });
+  });
+
+  it("rascunho com meio ponto volta vazio: a tela não tem mais esse botão (RG20)", () => {
+    expect(sanitizeExerciseState({ topSetRpe: 7.5, backoffRpe: 8.5, extraRpe: 9.5 })).toMatchObject({ topSetRpe: null, backoffRpe: null, extraRpe: null });
   });
 
   it.each([["8", "teto"], ["6", "faixa"], ["4", "abaixo"], ["", null]])("statusTopSet com %s reps → %s", (reps, esperado) => {

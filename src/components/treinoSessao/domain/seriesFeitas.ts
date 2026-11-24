@@ -1,5 +1,5 @@
 import { serieFeita } from "../../../utils/seriesValidas";
-import { temTopSet2, topSetFeito, topSet2Feito, type ExerciseState } from "./estadoExercicio";
+import { serieClusterTemBloco, temTopSet2, topSetFeito, topSet2Feito, type CampoRpe, type ExerciseState } from "./estadoExercicio";
 
 export interface SerieDoTreino {
   tipo: "top1" | "top2" | "extra" | "serie4";
@@ -26,4 +26,19 @@ export function seriesFeitas(s: ExerciseState): SerieDoTreino[] {
     ...(blocosAbertos && s.seriesValidas >= 3 ? serie("extra", s.extraKg, s.extraReps, s.extraRpe) : []),
     ...(blocosAbertos && s.seriesValidas === 4 ? serie("serie4", s.serie4Kg, s.serie4Reps, s.serie4Rpe) : []),
   ];
+}
+
+const CAMPO_RPE = { top1: "topSetRpe", top2: "backoffRpe", extra: "extraRpe", serie4: "serie4Rpe" } as const;
+
+/** Séries feitas que ainda não têm esforço, pelo campo (RG27). */
+export function camposSemEsforco(s: ExerciseState): CampoRpe[] {
+  if (s.tecnica) {
+    if (s.skipped || !s.tecnicaConfirmed) return [];
+    const feitas: CampoRpe[] = [
+      ...(serieClusterTemBloco(s.clusterSeries) ? (["clusterRpe"] as const) : []),
+      ...(serieClusterTemBloco(s.clusterSeries2) ? (["clusterRpe2"] as const) : []),
+    ];
+    return feitas.filter((campo) => s[campo] === null);
+  }
+  return seriesFeitas(s).filter((f) => f.rpe === null).map((f) => CAMPO_RPE[f.tipo]);
 }

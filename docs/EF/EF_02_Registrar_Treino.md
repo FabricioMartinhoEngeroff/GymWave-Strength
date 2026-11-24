@@ -71,11 +71,12 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - O exercício é identificado pelo slug do catálogo (ex.: `puxador_frente_pegada_neutra`). Assim, nomes escritos de jeitos diferentes caem no mesmo histórico.
   - Cada registro também guarda o **nome legível** do exercício (`nome`, ex.: "Puxador frente pegada neutra"), na grafia do catálogo. *Motivo:* quem lê o JSON exportado (uma pessoa ou uma IA fazendo análise) entende qual é o exercício e consegue classificar o grupo muscular sem precisar do código do app. Registros antigos sem `nome` recebem o nome do catálogo na exportação.
   - Na primeira abertura após a mudança, o `logbook` antigo é convertido automaticamente para `registros`. Uma cópia do original fica em `logbook_v1_backup`.
-- **RG17** – **Painel "Último treino":** sempre que existe histórico do exercício no treino selecionado, o card exibe um painel com **todas as séries do último treino**, não só o Top Set 1. O painel lista, em ordem de execução, `Top Set 1`, `Top Set 2` e `Back-off` (ou, quando aquele treino foi em Cluster Set, cada bloco das duas séries: `Cluster S1 · B1`, `Cluster S1 · B2`, `Cluster S2 · B1`…), cada linha com peso × reps e, quando anotado, o esforço (ex.: `100kg × 8 reps · RPE 8.5`). Exibe também a data do treino, a contagem de séries, o volume total em kg·reps e a observação escrita naquele dia, quando houver. Séries com peso ou reps zerados são omitidas; um Top Set 1 registrado em Deload aparece como `Top Set 1 (deload)`. O painel é meramente informativo — serve para o atleta decidir entre subir a carga ou manter e buscar mais repetições — e convive com os banners de status (RG13 e Banner de Progressão), aparecendo abaixo deles, inclusive quando o `[banner_pr]` está ativo.
-- **RG20** – **Esforço por série (RPE ou RIR):** cada série pode receber o esforço percebido, ou seja, quão perto da falha ela foi.
-  - O dado gravado é sempre **RPE**, de **6 a 10**, de 0,5 em 0,5. **RIR** (repetições na reserva) é só outra forma de ler: `RIR = 10 − RPE` (RPE 8 = 2 reps na reserva; RPE 10 = falha).
+- **RG17** – **Painel "Último treino":** sempre que existe histórico do exercício no treino selecionado, o card exibe um painel com **todas as séries do último treino**, não só o Top Set 1. O painel lista, em ordem de execução, `Top Set 1`, `Top Set 2` e `Back-off` (ou, quando aquele treino foi em Cluster Set, cada bloco das duas séries: `Cluster S1 · B1`, `Cluster S1 · B2`, `Cluster S2 · B1`…), cada linha com peso × reps e, quando anotado, o esforço **nas duas escalas** (ex.: `100kg × 8 reps · RPE 8 · RIR 2`), seja qual for a escala escolhida na tela (RG20). Série sem esforço não mostra nenhuma das duas. Exibe também a data do treino, a contagem de séries, o volume total em kg·reps e a observação escrita naquele dia, quando houver. Séries com peso ou reps zerados são omitidas; um Top Set 1 registrado em Deload aparece como `Top Set 1 (deload)`. O painel é meramente informativo — serve para o atleta decidir entre subir a carga ou manter e buscar mais repetições — e convive com os banners de status (RG13 e Banner de Progressão), aparecendo abaixo deles, inclusive quando o `[banner_pr]` está ativo.
+- **RG20** – **Esforço por série (RPE ou RIR):** cada série feita recebe o esforço percebido, ou seja, quão perto da falha ela foi.
+  - O dado gravado é sempre **RPE**, inteiro, de **6 a 10** (meio ponto durante a série é chute). **RIR** (repetições na reserva) é só outra forma de ler: `RIR = 10 − RPE` (RPE 8 = 2 reps na reserva; RPE 10 = falha).
   - A opção **≤6** (RIR **4+**) significa "6 ou menos" e grava 6.
-  - **É opcional:** nenhum botão ou validação depende dele. Sem marcar, o registro é salvo exatamente como antes, sem o campo `rpe`.
+  - **Meio ponto antigo** (7,5, 8,5, 9,5) continua válido e visível no histórico, nos gráficos e no backup. Num **rascunho**, volta vazio: a tela não tem mais esse botão e o atleta marca de novo.
+  - **É obrigatório** em toda série válida feita (RG27).
   - **Nunca vem preenchido** do último treino: é a medida de hoje. É a única exceção à RG5.1. O valor anterior aparece só no painel "Último treino" (RG17).
   - Existe em todas as séries: Top Set 1, Top Set 2, Back-off, Série 3, Série 4 e, no Cluster Set, **um por série cluster** (gravado no último bloco da série).
   - Ativar ou desativar o Cluster Set, ou ativar o Deload, limpa os esforços marcados no exercício. O rascunho (RG12) guarda os esforços.
@@ -83,17 +84,19 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - Um `rpe` inválido vindo de importação é descartado; o resto do treino é mantido.
   - Um botão **?** explica as duas escalas (RG25).
   - Implementação: `utils/esforco.ts` e `treinoSessao/blocks/EsforcoInput.tsx`.
-- **RG21** – **Progressão pelo esforço:** o sistema só manda subir a carga quando o Top Set 1 **bate o teto de reps com RPE abaixo de 8** (mais de 2 reps na reserva).
-  - Teto com **RPE < 8** → "Teto atingido — sobe peso no próximo" e, no treino seguinte, `[subir_peso]`.
-  - Teto com **RPE ≥ 8** → "Teto atingido com RPE X — repete a carga no próximo" e, no treino seguinte, `[consolidar_carga]`. Não conta no resumo "sobem de peso" (RG10).
-  - Teto **sem RPE** → vale a regra antiga: sobe.
-  - O fato `bateuTeto` continua gravado só pelas reps (usado na análise de estagnação da aba Volume). O sistema nunca altera a carga sozinho (RG5.1, RG7).
-  - Implementação: `deveSubirPeso` (limite em `RPE_LIMITE_SUBIR`).
-- **RG22** – **Alerta de fadiga:** aparece quando a **mesma carga** no Top Set 1 passa a custar mais esforço ao longo das semanas. Todas as condições precisam valer:
-  - pelo menos **3 treinos** seguidos com RPE anotado naquela carga;
-  - em nenhum deles o RPE caiu nem as reps subiram em relação ao anterior (mais reps com RPE maior é progresso, não fadiga);
-  - alta total de pelo menos **1 ponto** de RPE;
+- **RG21** – **Progressão pelo esforço:** quando o Top Set 1 **bate o teto de reps**, o sistema compara o esforço com o **alvo do exercício** (RG28).
+  - Esforço **igual ou abaixo do alvo** → "Teto atingido — sobe peso no próximo" e, no treino seguinte, `[subir_peso]`.
+  - Esforço **acima do alvo** → "Teto atingido com RPE X — repete a carga no próximo" e, no treino seguinte, `[consolidar_carga]`. Não conta no resumo "sobem de peso" (RG10).
+  - O alvo é uma faixa; o limite é o **valor de cima** (alvo 7 a 8: RPE 8 sobe, RPE 9 repete). Com alvo 9 a 10, bater o teto sempre sobe.
+  - Teto **sem RPE** (registro antigo) → vale a regra antiga: sobe.
+  - O fato `bateuTeto` continua gravado só pelas reps (usado na análise de estagnação da aba Volume). É só aviso: o sistema nunca altera a carga sozinho (RG5.1, RG7).
+  - Implementação: `deveSubirPeso` e `passouDoAlvo` em `utils/esforco.ts`.
+- **RG22** – **Alerta de fadiga:** aparece quando a **mesma carga com as mesmas reps** no Top Set 1 passa a custar mais esforço e isso **se repete em 2 treinos seguidos** (um dia ruim sozinho não alerta). Todas as condições precisam valer:
+  - os treinos comparados têm **a mesma carga, as mesmas reps** e RPE anotado;
+  - nos **2 últimos treinos** o RPE está pelo menos **1 ponto** acima do treino que abriu a sequência, e não caiu do penúltimo para o último;
+  - nos 2 últimos treinos o RPE **passou do alvo** do exercício (RG28) ou chegou à **falha (RPE 10)**. Ex.: alvo 7 a 8: 8 → 9 → 9 alerta; 7 → 8 → 8 não. Alvo 9 a 10: 9 → 10 → 10 alerta; 9 → 10 ainda não;
   - pelo menos **10 dias** entre o primeiro e o último, dentro de uma janela de **6 semanas**.
+  - Reps diferentes encerram a sequência (mais reps com RPE maior é progresso).
   - A carga de referência é a do último treino daquela sessão. Na sessão ainda sem histórico, vale o último treino do exercício.
   - Cluster Set, treinos sem RPE e outras cargas não entram na sequência. Um **Deload zera a contagem**. Mudar a carga encerra o alerta.
   - É só um aviso: não ativa o Deload nem bloqueia nada. Implementação: `detectarFadiga`.
@@ -113,7 +116,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - **Fecha** ao tocar de novo no **?**, no **X**, fora do balão ou com a tecla **Esc**. Rolar a tela não fecha.
   - Só **um balão** fica aberto por vez: abrir o de outra série fecha o anterior.
   - Flutua abaixo da linha do esforço, sem empurrar os campos. Se não couber na tela, a tela rola até ele aparecer.
-  - O texto é o mesmo nas duas escalas e o limite de subir carga vem de `RPE_LIMITE_SUBIR` (RG21), para nunca divergir da regra.
+  - O texto é o mesmo nas duas escalas e os alvos vêm de `RPE_ALVO` (RG28), para nunca divergir da regra.
   - É só leitura: não marca esforço, não troca a escala, não grava nada e não entra no rascunho (RG12).
   - Implementação: `treinoSessao/blocks/AjudaEsforco.tsx`.
 - **RG26** – **Data do treino:** a data precisa estar no formato `DD/MM/AAAA` e **existir no calendário** (regra única do sistema, ver "Formato de Data" no INDICE).
@@ -121,6 +124,18 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - Dia e mês podem ter 1 dígito (`4/11/2026`). O treino é gravado sempre com 2 (`04/11/2026`).
   - *Motivo:* um treino salvo com data ilegível não volta na leitura do histórico, e o atleta veria "Treino finalizado!" para um treino perdido.
   - Implementação: `utils/datas.ts`.
+- **RG27** – **Esforço obrigatório:** toda série válida **feita** (RG24) precisa do esforço, num toque. Sem ele a sugestão (RG21) e o alerta (RG22) não funcionam.
+  - Vale para Top Set 1, Top Set 2, Back-off, Série 3, Série 4, Deload (1 válida) e cada série do Cluster Set. Série não feita, vazia ou zerada, e exercício pulado **não** pedem esforço.
+  - **"Próximo"** e **"Ver Resumo"**: se faltar, não avança e cada série sem esforço mostra `[aviso_esforco]`, que some ao marcar. Peso e reps são validados antes (RG4).
+  - **Confirmar** a série não exige o esforço: pode ser marcado no descanso. No Cluster confirmado, o campo continua na tela até ser marcado.
+  - **"Confirmar e Salvar Treino"**: quem chegou à revisão pelas setas vê `[esforco_faltando]` (EF_09) com a lista por exercício; nada é gravado e o rascunho continua guardado.
+  - Registros antigos e importados sem `rpe` continuam válidos.
+  - Implementação: `camposSemEsforco` em `treinoSessao/domain/seriesFeitas.ts` e `seriesSemEsforco` em `pendencias.ts`.
+- **RG28** – **Esforço alvo do exercício:** cada exercício tem um RPE alvo (`rpeAlvo`, faixa), cadastrado em `sessionExercises.ts` junto da faixa de reps e do cue. Aparece no cabeçalho do card, na escala escolhida.
+  - **Multiarticulares pesados** (preset `COMPOSTO`: agacho, supino, terra e barra fixa): **7 a 8**. O supino técnico do Upper B usa faixa de reps de isolador, mas alvo 7 a 8.
+  - **Máquinas, cabos e isoladores** (preset `ISOLADOR`): **9 a 10**.
+  - **Plano importado ou salvo sem alvo:** usa o alvo do mesmo exercício no cadastro (nome ou apelido do catálogo). Fora do cadastro, agachamento, supino e terra livres usam 7 a 8; os demais, 9 a 10. Alvo em formato inválido é ignorado.
+  - Implementação: `RPE_ALVO` em `sessionExercises.ts` e `rpeAlvoDoExercicio` em `treinoSessao/domain/rpeAlvo.ts`.
 
 ---
 
@@ -158,11 +173,12 @@ Exibe por exercício:
 | Cue técnico | Dica de execução |
 | Faixa de reps dos Top Sets | Ex.: 5–8 reps (vale para o Top Set 1 e o Top Set 2) |
 | Faixa de reps do Back-off | Ex.: 8–10 reps, exibida com o percentual de carga: "Back-off (90%)" — só quando `seriesValidas === 3` |
+| Esforço alvo | Ex.: `alvo RPE 7–8` (ou `alvo RIR 2–3`), ao lado da faixa de reps dos Top Sets (RG28) |
 | Badge treino | Identificador da sessão (UA, UB…) |
 | Badge séries | "1 válida", "2 válidas", "3 válidas" ou "4 válidas" |
 | Banner de progressão | Informa se deve subir peso, consolidar a carga (RG21) ou primeiro registro. Durante o preenchimento do Top Set 1 assume o estado `[banner_pr]` quando o PR histórico é superado ou o teto de reps é atingido em tempo real (ver RG13) |
 | Alerta de fadiga | `[alerta_fadiga]`, quando a mesma carga custa RPE cada vez maior (RG22) |
-| Painel "Último treino" | Lista todas as séries do treino anterior (peso × reps), data, volume e observação — ver RG17 |
+| Painel "Último treino" | Lista todas as séries do treino anterior (peso × reps e esforço em RPE e RIR), data, volume e observação — ver RG17 |
 
 ### 4.5 Chips de modo avançado (Cluster Set / Deload — sempre visíveis, topo do card)
 
@@ -253,18 +269,19 @@ Visível quando `seriesValidas === 3` e o Top Set 2 está confirmado. É a séri
 - Não há botão de confirmar. Os valores são salvos diretamente ao salvar o treino.
 - Texto de apoio abaixo dos campos: *"Tira ~10% da carga do Top Set — mais técnica, mesmas reps ou mais, até a falha · X–Y+ reps · não conta para teto"*.
 
-### 4.8.1 Esforço da série (opcional, em todos os blocos)
+### 4.8.1 Esforço da série (obrigatório nas séries feitas, em todos os blocos)
 
 Fica logo abaixo de peso e repetições de cada série (ver RG20).
 
 | Nº | Campo | Tipo | Opções | Obrig. |
 |---|---|---|---|---|
-| 01 | Esforço | 8 chips de um toque | RPE: ≤6, 7, 7.5, 8, 8.5, 9, 9.5, 10 · RIR: 4+, 3, 2.5, 2, 1.5, 1, 0.5, 0 | Não |
+| 01 | Esforço | 5 chips de um toque | RPE: ≤6, 7, 8, 9, 10 · RIR: 0, 1, 2, 3, 4+ (nessa ordem) | Sim, se a série foi feita (RG27) |
 | 02 | Trocar escala | Botão com ícone de setas | Mostra a outra escala (RPE ⇄ RIR) | — |
 | 03 | Ajuda | Botão **?**, à direita do botão de trocar escala | Abre e fecha o balão `[ajuda_esforco]` (RG25) | — |
 
 - Tocar no chip marcado **desmarca**.
-- Cor do chip marcado: **verde** (abaixo de RPE 8), **laranja** (8 e 8.5), **vermelho** (9 ou mais). O número é sempre visível, então a informação não depende só da cor.
+- Chip marcado, botão de trocar escala e botão **?**: **azul do sistema** (`#2563eb`) com texto e ícone brancos, nas duas escalas. O chip não usa verde, laranja nem vermelho: RPE 9 é o esperado num isolador e alto num agacho.
+- Série feita sem esforço, ao tentar avançar: `[aviso_esforco]` abaixo dos chips (RG27).
 - Ícones `lucide-react`, os mesmos da barra de navegação: `Gauge` (esforço), `ArrowLeftRight` (trocar escala), `CircleHelp` (ajuda), `X` (fechar ajuda), `TrendingUp` (subir), `Repeat` (consolidar), `Equal` (na faixa), `TrendingDown` (abaixo), `BatteryWarning` (fadiga), `Layers` (Cluster Set), `BatteryCharging` (Deload).
 - Acessibilidade: cada grupo tem o nome da série e do exercício, e o chip marcado usa `aria-pressed`. O **?** usa `aria-expanded`, e fechar com **Esc** ou no **X** devolve o foco para ele.
 
@@ -278,14 +295,14 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 | Botão | Ação | Regras |
 |---|---|---|
 | **Pular** | Marca exercício como pulado e avança | — |
-| **Próximo** | Avança para o próximo exercício | Modo padrão: valida Top Set 1 e Top Set 2. Modo Cluster Set: valida as 2 séries confirmadas ("Confirmar Cluster"). Modo Deload: valida apenas o Top Set 1 confirmado. |
-| **Ver Resumo** | Abre tela de revisão pré-salvamento | Mesma validação do Próximo para o exercício atual. |
+| **Próximo** | Avança para o próximo exercício | Modo padrão: valida Top Set 1 e Top Set 2. Modo Cluster Set: valida as 2 séries confirmadas ("Confirmar Cluster"). Modo Deload: valida apenas o Top Set 1 confirmado. Em todos: valida o esforço das séries feitas (RG27). |
+| **Ver Resumo** | Abre tela de revisão pré-salvamento | Valida o esforço das séries feitas do exercício atual (RG27). O que ficou por fazer aparece ao salvar (EF_09 RG8). |
 
 ### 4.11 Tela de Revisão (Pré-save)
 
 - Lista todos os exercícios com status (✓ concluído / ○ não preenchido / "Pulado").
 - Exibe dados resumidos: modo padrão → `Top 1: Xkg × Nreps · Top 2: Xkg × Nreps · Back-off: Xkg × Nreps`; modo técnica Cluster Set → `Cluster S1 — B1: Xkg × Nreps · B2: … | Cluster S2 — B1: Xkg × Nreps · …` (só as séries preenchidas); modo Deload → exibe `Top 1: Xkg × Nreps` seguido da etiqueta **"· Deload"** em vermelho.
-- Séries com esforço anotado mostram `@ RPE X` (ou `@ RIR X`) depois das reps.
+- As séries mostram `@ RPE X` (ou `@ RIR X`) depois das reps.
 - Ao clicar em um exercício, retorna para edição.
 - Botão **"Confirmar e Salvar Treino"**: avisa se houver séries não feitas (EF_09 RG8) e salva todos os exercícios concluídos no localStorage do usuário. Cada exercício vira um registro novo em `registros` (RG19), e o resumo por ciclo continua em `dadosTreino`.
 - Botão **"Voltar ao exercício"**: fecha a revisão sem salvar.
@@ -293,7 +310,7 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 ### 4.12 Resumo pós-save
 
 - Exibe: `X/Y exercícios registrados`.
-- Se houver exercícios que atingiram o teto de reps com folga (RG21): `Z exercícios sobem de peso no próximo ciclo`.
+- Se houver exercícios que atingiram o teto de reps dentro do esforço alvo (RG21): `Z exercícios sobem de peso no próximo ciclo`.
 
 ---
 
@@ -303,6 +320,7 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 |---|---|---|---|---|
 | `[aviso_top_set]` | Aviso inline | Laranja | ⚠ | Preencha o peso e as repetições do Top Set 1 antes de confirmar. |
 | `[aviso_backoff]` | Aviso inline | Laranja | ⚠ | Preencha o peso e as repetições do Top Set 2 antes de confirmar. |
+| `[aviso_esforco]` | Aviso inline | Laranja | ⚠ | Marque o esforço desta série para avançar. |
 | `[aviso_tecnica]` | Aviso inline | Laranja | ⚠ | Preencha pelo menos um bloco (peso e reps) em cada série. |
 | — | — | — | — | Sucesso, erro, conquista e confirmações desta tela estão no catálogo da EF_09 (`[treino_salvo]`, `[treino_nao_salvo]`, `[treino_em_andamento]`, `[series_nao_feitas]`…) |
 | `[banner_pr]` | Destaque motivacional | Verde/Dourado pulsante | 🔥 Ritmo de Recorde Pessoal! | Confirme para validar o PR. (exibido em tempo real durante preenchimento do Top Set 1, ver RG13) |
@@ -310,5 +328,5 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 | `[subir_peso]` | Banner | Âmbar | — | SUBIR PESO HOJE (teto atingido: Xkg x Nreps) |
 | `[consolidar_carga]` | Banner | Azul | — | CONSOLIDAR CARGA (teto com RPE X: Xkg x Nreps) |
 | `[alerta_fadiga]` | Banner | Vermelho | Sinal de fadiga | Xkg foi de RPE A para RPE B em N treinos. Considere um deload. |
-| `[ajuda_esforco]` | Balão | Branco | RPE e RIR: quão perto da falha | **RPE** (esforço percebido): nota de 6 a 10. 10 é a falha, não sairia mais nenhuma rep. · **RIR** (reps na reserva): quantas reps ainda sairiam. 0 é a falha. · É a mesma medida: RIR = 10 − RPE. Ex.: RPE 8 = RIR 2. · **Para que serve:** bateu o teto de reps no Top Set 1 com RPE abaixo de 8 (RIR acima de 2), sobe o peso; com RPE 8 ou mais, repete a carga. A mesma carga pesando cada vez mais gera o alerta de fadiga. · Opcional: marque ao terminar a série. |
-| `[ultimo_treino]` | Painel informativo | Azul claro | ÚLTIMO TREINO · DD/MM/AAAA | Todas as séries do treino anterior (peso × reps), contagem de séries, volume em kg·reps e observação do dia, quando houver (ver RG17) |
+| `[ajuda_esforco]` | Balão | Branco | RPE e RIR: quão perto da falha | **RPE** (esforço percebido): nota de 6 a 10. 10 é a falha, não sairia mais nenhuma rep. · **RIR** (reps na reserva): quantas reps ainda sairiam. 0 é a falha. · É a mesma medida: RIR = 10 − RPE. Ex.: RPE 8 = RIR 2. · **Para que serve:** bateu o teto de reps no Top Set 1 com esforço igual ou abaixo do alvo do exercício, sobe o peso; se passou do alvo, repete a carga. É só um aviso: o peso não muda sozinho. · **Alvo:** agacho, supino, terra e barra fixa, RPE 7–8 (RIR 2–3). Máquinas, cabos e isoladores, RPE 9–10 (RIR 0–1). · A mesma carga e as mesmas reps pesando mais por 2 treinos seguidos geram o alerta de fadiga. · Obrigatório: marque ao terminar a série. |
+| `[ultimo_treino]` | Painel informativo | Azul claro | ÚLTIMO TREINO · DD/MM/AAAA | Todas as séries do treino anterior (peso × reps · RPE X · RIR Y), contagem de séries, volume em kg·reps e observação do dia, quando houver (ver RG17) |

@@ -1,6 +1,6 @@
 
 import { describe, it, expect } from "vitest";
-import { SESSOES, SESSOES_LABELS } from "../../data/sessionExercises";
+import { RPE_ALVO, SESSOES, SESSOES_LABELS } from "../../data/sessionExercises";
 
 describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
   describe("Estrutura geral", () => {
@@ -75,6 +75,36 @@ describe("SessionExercises — Sessoes Upper / Lower / Braco (Saizen)", () => {
     it("backoffPct padrao eh 0.9 (90%)", () => {
       Object.values(SESSOES).flat().forEach((ex) => {
         expect(ex.backoffPct).toBe(0.9);
+      });
+    });
+  });
+
+  describe("Esforco alvo (EF_02 RG28)", () => {
+    const alvos = (nome: string) => Object.values(SESSOES).flat().filter((e) => e.nome === nome).map((e) => e.rpeAlvo);
+
+    it("todo exercicio tem alvo cadastrado dentro da escala, com min <= max", () => {
+      Object.values(SESSOES).flat().forEach((ex) => {
+        expect(ex.rpeAlvo, ex.nome).toBeDefined();
+        const [min, max] = ex.rpeAlvo!;
+        expect(min).toBeGreaterThanOrEqual(6);
+        expect(max).toBeLessThanOrEqual(10);
+        expect(min).toBeLessThanOrEqual(max);
+      });
+    });
+
+    it("agacho, supino (Upper A e Upper B), terra e barra fixa: 7 a 8", () => {
+      expect(RPE_ALVO.composto).toEqual([7, 8]);
+      expect(alvos("Agachamento livre")).toEqual([[7, 8]]);
+      expect(alvos("Supino reto barra")).toEqual([[7, 8], [7, 8]]);
+      expect(alvos("Terra sumô")).toEqual([[7, 8]]);
+      expect(alvos("Barra fixa")).toEqual([[7, 8]]);
+    });
+
+    it("os demais (maquinas, cabos e isoladores): 9 a 10", () => {
+      const basicos = ["Agachamento livre", "Supino reto barra", "Terra sumô", "Barra fixa"];
+      expect(RPE_ALVO.isolador).toEqual([9, 10]);
+      Object.values(SESSOES).flat().filter((e) => !basicos.includes(e.nome)).forEach((ex) => {
+        expect(ex.rpeAlvo, ex.nome).toEqual([9, 10]);
       });
     });
   });

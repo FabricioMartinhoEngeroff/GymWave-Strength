@@ -1,6 +1,6 @@
 import type { ExercicioSessao } from "../../../data/sessionExercises";
-import { exercicioConcluido, serieClusterTemBloco, temTopSet2, type ExerciseState } from "./estadoExercicio";
-import { seriesFeitas, type SerieDoTreino } from "./seriesFeitas";
+import { exercicioConcluido, serieClusterTemBloco, temTopSet2, type CampoRpe, type ExerciseState } from "./estadoExercicio";
+import { camposSemEsforco, seriesFeitas, type SerieDoTreino } from "./seriesFeitas";
 
 /** Séries previstas que o atleta não fez, por nome. */
 function seriesFaltando(s: ExerciseState): string[] {
@@ -27,5 +27,26 @@ export function pendenciasDoTreino(exercicios: ExercicioSessao[], states: Record
     if (!s || !feitoEmParte(s)) return [`${ex.nome}: não preenchido`];
     const faltando = seriesFaltando(s);
     return faltando.length > 0 ? [`${ex.nome}: ${faltando.join(", ")}`] : [];
+  });
+}
+
+function nomeDaSerie(campo: CampoRpe, s: ExerciseState): string {
+  const nomes: Record<CampoRpe, string> = {
+    topSetRpe: "Top Set 1",
+    backoffRpe: "Top Set 2",
+    extraRpe: s.seriesValidas === 4 ? "Série 3" : "Back-off",
+    serie4Rpe: "Série 4",
+    clusterRpe: "Cluster Série 1",
+    clusterRpe2: "Cluster Série 2",
+  };
+  return nomes[campo];
+}
+
+/** Séries feitas sem esforço, por exercício (EF_02 RG27). Bloqueia o salvamento. */
+export function seriesSemEsforco(exercicios: ExercicioSessao[], states: Record<string, ExerciseState>): string[] {
+  return exercicios.flatMap((ex) => {
+    const s = states[ex.nome];
+    const campos = s ? camposSemEsforco(s) : [];
+    return s && campos.length > 0 ? [`${ex.nome}: ${campos.map((c) => nomeDaSerie(c, s)).join(", ")}`] : [];
   });
 }

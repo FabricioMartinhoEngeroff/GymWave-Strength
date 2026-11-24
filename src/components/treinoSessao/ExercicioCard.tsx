@@ -1,5 +1,6 @@
 import { BatteryCharging, Layers } from "lucide-react";
 import type { ExercicioSessao } from "../../data/sessionExercises";
+import { rotuloAlvo } from "../../utils/esforco";
 import { ExerciseGif } from "./ExerciseGif";
 import { ProgressBanner } from "./ProgressBanner";
 import {
@@ -12,6 +13,7 @@ import { DeloadBlock } from "./blocks/DeloadBlock";
 import { SeriesExtrasBlock } from "./blocks/SeriesExtrasBlock";
 import { TopSet2Block } from "./blocks/TopSet2Block";
 import { TopSetBlock } from "./blocks/TopSetBlock";
+import { rpeAlvoDoExercicio } from "./domain/rpeAlvo";
 import type { SessaoTreino } from "./hooks/useSessaoTreino";
 
 const COR_BADGE = {
@@ -25,16 +27,15 @@ const COR_BADGE = {
 export function ExercicioCard({ treino, ex }: { treino: SessaoTreino; ex: ExercicioSessao }) {
   const { state, avisos, treinoId, atualizar } = treino;
   const escala = { escala: treino.escala, onTrocarEscala: treino.alternarEscala };
+  const rpeAlvo = rpeAlvoDoExercicio(ex);
+  const bloco = { ...escala, ex, state, onChange: atualizar, semEsforco: treino.semEsforco };
   const topSet = {
-    ...escala,
-    ex,
-    state,
+    ...bloco,
     aviso: avisos.topSet,
     onChange: treino.editarTopSet,
     onConfirmar: treino.confirmTopSet,
     onEditar: () => atualizar({ topSetConfirmed: false, prConfirmado: false }),
   };
-  const bloco = { ...escala, ex, state, onChange: atualizar };
   const topSetsFeitos = state.topSetConfirmed && state.backoffConfirmed;
 
   return (
@@ -47,7 +48,7 @@ export function ExercicioCard({ treino, ex }: { treino: SessaoTreino; ex: Exerci
           </ExName>
           <ExSub>{ex.grupo} · {ex.cue}</ExSub>
           <ExSub>
-            Top Sets: {ex.faixaTopSet[0]}–{ex.faixaTopSet[1]} reps
+            Top Sets: {ex.faixaTopSet[0]}–{ex.faixaTopSet[1]} reps · alvo {rotuloAlvo(rpeAlvo, treino.escala)}
             {state.seriesValidas === 3 && ` · Back-off (${Math.round(ex.backoffPct * 100)}%): ${ex.faixaBackoff[0]}–${ex.faixaBackoff[1]} reps`}
             {state.seriesValidas === 4 && " · Séries 3 e 4: mesma carga e reps do último treino"}
           </ExSub>
@@ -65,7 +66,7 @@ export function ExercicioCard({ treino, ex }: { treino: SessaoTreino; ex: Exerci
 
       <ExerciseGif exerciseName={ex.nome} />
 
-      <ProgressBanner ultimo={treino.ultimo} prAtivo={treino.prAtivo} fadiga={treino.fadiga} escala={treino.escala} />
+      <ProgressBanner ultimo={treino.ultimo} prAtivo={treino.prAtivo} fadiga={treino.fadiga} rpeAlvo={rpeAlvo} escala={treino.escala} />
 
       {/* Chips sempre visíveis; o Cluster substitui os Top Sets quando ativo */}
       <TecnicaCard style={{ background: "#fafafa" }}>

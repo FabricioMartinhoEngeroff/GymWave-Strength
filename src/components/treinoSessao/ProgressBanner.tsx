@@ -1,6 +1,6 @@
 import { BatteryWarning, Repeat, TrendingUp } from "lucide-react";
 import type { RegistroExercicio } from "../../types/TrainingData";
-import { deveSubirPeso, rotuloEsforco, type EscalaEsforco, type Fadiga } from "../../utils/esforco";
+import { deveSubirPeso, rotuloEsforco, type EscalaEsforco, type Fadiga, type FaixaRpe } from "../../utils/esforco";
 import { BannerBox, PrBox } from "./TreinoSessao.styles";
 import { UltimoTreinoPanel } from "./UltimoTreinoPanel";
 
@@ -8,13 +8,14 @@ interface ProgressBannerProps {
   ultimo: RegistroExercicio | null;
   prAtivo: boolean;
   fadiga: Fadiga | null;
+  rpeAlvo: FaixaRpe;
   escala: EscalaEsforco;
 }
 
-/** Teto no último treino: sobe a carga, ou consolida quando o esforço foi alto (RG21). */
-function BannerTeto({ ultimo, escala }: { ultimo: RegistroExercicio; escala: EscalaEsforco }) {
+/** Teto no último treino: sobe a carga, ou consolida quando o esforço passou do alvo (RG21). */
+function BannerTeto({ ultimo, rpeAlvo, escala }: { ultimo: RegistroExercicio; rpeAlvo: FaixaRpe; escala: EscalaEsforco }) {
   const feito = `${ultimo.topSetKg}kg x ${ultimo.topSetReps}reps`;
-  if (deveSubirPeso(ultimo.topSetBateuTeto, ultimo.topSetRpe)) {
+  if (deveSubirPeso(ultimo.topSetBateuTeto, ultimo.topSetRpe, rpeAlvo)) {
     return (
       <BannerBox $tom="ambar">
         <TrendingUp size={16} strokeWidth={1.8} aria-hidden />
@@ -32,7 +33,7 @@ function BannerTeto({ ultimo, escala }: { ultimo: RegistroExercicio; escala: Esc
   );
 }
 
-export function ProgressBanner({ ultimo, prAtivo, fadiga, escala }: ProgressBannerProps) {
+export function ProgressBanner({ ultimo, prAtivo, fadiga, rpeAlvo, escala }: ProgressBannerProps) {
   return (
     <>
       {prAtivo && (
@@ -41,7 +42,7 @@ export function ProgressBanner({ ultimo, prAtivo, fadiga, escala }: ProgressBann
         </PrBox>
       )}
       {!ultimo && <BannerBox $tom="azul">Primeiro registro — defina o peso</BannerBox>}
-      {ultimo?.topSetBateuTeto && <BannerTeto ultimo={ultimo} escala={escala} />}
+      {ultimo?.topSetBateuTeto && <BannerTeto ultimo={ultimo} rpeAlvo={rpeAlvo} escala={escala} />}
       {fadiga && (
         <BannerBox $tom="vermelho" data-testid="alerta-fadiga">
           <BatteryWarning size={16} strokeWidth={1.8} aria-hidden />
@@ -51,7 +52,7 @@ export function ProgressBanner({ ultimo, prAtivo, fadiga, escala }: ProgressBann
           </span>
         </BannerBox>
       )}
-      {ultimo && <UltimoTreinoPanel ultimo={ultimo} escala={escala} />}
+      {ultimo && <UltimoTreinoPanel ultimo={ultimo} />}
     </>
   );
 }

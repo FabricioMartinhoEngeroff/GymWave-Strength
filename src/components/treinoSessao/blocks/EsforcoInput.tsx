@@ -1,6 +1,6 @@
 import { ArrowLeftRight, Gauge } from "lucide-react";
-import { rotuloChip, rotuloEsforco, RPES } from "../../../utils/esforco";
-import { EscalaBtn, EsforcoAcoes, EsforcoChip, EsforcoChips, EsforcoTitulo, EsforcoTopo } from "../TreinoSessao.styles";
+import { opcoesDeEsforco, rotuloChip, rotuloEsforco } from "../../../utils/esforco";
+import { AvisoInline, EscalaBtn, EsforcoAcoes, EsforcoChip, EsforcoChips, EsforcoTitulo, EsforcoTopo } from "../TreinoSessao.styles";
 import { AjudaEsforco } from "./AjudaEsforco";
 import type { EscalaProps } from "./tipos";
 
@@ -9,12 +9,12 @@ interface EsforcoInputProps extends EscalaProps {
   exercicio: string;
   valor: number | null;
   onChange: (rpe: number | null) => void;
+  /** Série feita sem esforço: bloqueia o avanço (RG27). */
+  aviso?: boolean;
 }
 
-const nivel = (rpe: number) => (rpe < 8 ? "leve" : rpe < 9 ? "moderado" : "alto");
-
-/** Esforço da série num toque (RG20). Opcional: tocar no chip marcado desmarca. */
-export function EsforcoInput({ serie, exercicio, valor, onChange, escala, onTrocarEscala }: EsforcoInputProps) {
+/** Esforço da série num toque (RG20). Tocar no chip marcado desmarca. */
+export function EsforcoInput({ serie, exercicio, valor, onChange, escala, onTrocarEscala, aviso = false }: EsforcoInputProps) {
   const outra = escala === "RPE" ? "RIR" : "RPE";
 
   return (
@@ -33,12 +33,11 @@ export function EsforcoInput({ serie, exercicio, valor, onChange, escala, onTroc
         </EsforcoAcoes>
       </EsforcoTopo>
       <EsforcoChips>
-        {RPES.map((rpe) => (
+        {opcoesDeEsforco(escala).map((rpe) => (
           <EsforcoChip
             key={rpe}
             type="button"
             $ativo={valor === rpe}
-            $nivel={nivel(rpe)}
             aria-pressed={valor === rpe}
             aria-label={rotuloEsforco(rpe, escala)}
             onClick={() => onChange(valor === rpe ? null : rpe)}
@@ -47,6 +46,7 @@ export function EsforcoInput({ serie, exercicio, valor, onChange, escala, onTroc
           </EsforcoChip>
         ))}
       </EsforcoChips>
+      {aviso && <AvisoInline>⚠ Marque o esforço desta série para avançar.</AvisoInline>}
     </div>
   );
 }

@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { marcarEsforco } from "./helpers";
 import { carregarLogbookCompleto } from "../../../utils/storage";
 
 const EX = "Supino reto barra";
@@ -125,6 +126,7 @@ describe("TreinoSessao — 4 séries válidas", () => {
     fireEvent.change(screen.getByLabelText(/Série 3 reps/), { target: { value: "5" } });
     fireEvent.change(screen.getByLabelText(/Série 4 kg/), { target: { value: "95" } });
     fireEvent.change(screen.getByLabelText(/Série 4 reps/), { target: { value: "4" } });
+    marcarEsforco();
 
     fireEvent.click(screen.getByText("Próximo"));
     for (let i = 0; i < 10; i++) fireEvent.click(screen.getByText("Pular"));

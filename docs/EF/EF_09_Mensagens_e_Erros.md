@@ -43,6 +43,7 @@ Qualquer pessoa usando o app, logada ou não. "Baixar backup" só aparece para u
 - **RG8** – **Séries não feitas:** ao tocar em "Confirmar e Salvar Treino", se houver exercício não preenchido ou série não feita (EF_02 RG24), abre `[series_nao_feitas]` com a lista por exercício. O atleta escolhe **Voltar e preencher** ou **Salvar assim mesmo**; as séries listadas não entram no volume.
   - Exercício **pulado** e **Deload** não entram na lista.
   - Se **nenhuma** série foi feita, nada é gravado: aparece `[nenhuma_serie_feita]` e o rascunho continua guardado.
+  - Se alguma série feita está **sem esforço** (EF_02 RG27), nada é gravado: aparece `[esforco_faltando]` com a lista por exercício, antes da lista de séries não feitas. O rascunho continua guardado.
 - **RG9** – **Conquistas:** depois de salvar o treino, além de `[treino_salvo]`:
   - `[conquista_recorde]` — exercício cujo 1RM estimado (Epley, EF_02 RG13) superou o recorde anterior. Deload e primeiro registro não contam. Vários recordes viram uma mensagem só.
   - `[conquista_treino_completo]` — todos os exercícios da sessão feitos, sem pular e sem pendência da RG8.
@@ -95,6 +96,7 @@ Cartão central sobre fundo escurecido: ícone, título, texto, lista de itens (
 | `[registro_excluido]` | Sucesso | Registro excluído | O registro saiu do relatório. |
 | `[rascunho_restaurado]` | Informação | Treino retomado | Continuamos de onde você parou. |
 | `[nenhuma_serie_feita]` | Aviso | Nenhuma série feita | Confirme ao menos uma série para salvar. Seu rascunho continua guardado. |
+| `[esforco_faltando]` | Aviso | Falta marcar o esforço | Lista por exercício. Ex.: Supino reto barra: Top Set 1, Back-off |
 | `[data_invalida]` | Aviso | Confira a data do treino | Use dia/mês/ano, como 04/11/2026. Seu rascunho continua guardado. |
 | `[rascunho_nao_salvo]` | Aviso | Rascunho não guardado | O aparelho não deixou guardar o rascunho. Salve o treino antes de sair desta tela. |
 | `[planilha_vazia]` | Aviso | Nada para importar | Não encontramos exercícios neste arquivo. Confira as colunas e tente de novo. |

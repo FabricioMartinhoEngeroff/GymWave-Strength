@@ -10,8 +10,8 @@ import { SeriesExtrasBlock } from "../../../../components/treinoSessao/blocks/Se
 import { TopSet2Block } from "../../../../components/treinoSessao/blocks/TopSet2Block";
 import { TopSetBlock } from "../../../../components/treinoSessao/blocks/TopSetBlock";
 import { blocosVazios, emptyExerciseState, type ExerciseState } from "../../../../components/treinoSessao/domain/estadoExercicio";
-import type { ExercicioSessao } from "../../../../data/sessionExercises";
-import { RPE_LIMITE_SUBIR, rotuloChip, type EscalaEsforco } from "../../../../utils/esforco";
+import { RPE_ALVO, type ExercicioSessao } from "../../../../data/sessionExercises";
+import { rotuloAlvo, type EscalaEsforco } from "../../../../utils/esforco";
 
 const EX: ExercicioSessao = {
   nome: "Supino reto barra", grupo: "Peitoral", faixaTopSet: [5, 8], faixaBackoff: [8, 10],
@@ -73,15 +73,26 @@ describe("AjudaEsforco", () => {
     expect(balao()).toHaveTextContent("RIR (reps na reserva): quantas reps ainda sairiam. 0 é a falha.");
     expect(balao()).toHaveTextContent("RIR = 10 − RPE. Ex.: RPE 8 = RIR 2");
     expect(balao()).toHaveTextContent("alerta de fadiga");
-    expect(balao()).toHaveTextContent("Opcional");
+    expect(balao()).toHaveTextContent("Obrigatório: marque ao terminar a série.");
+    expect(balao()).not.toHaveTextContent("Opcional");
   });
 
-  it("o limite de subir carga é o da regra (RG21)", () => {
+  it("explica a sugestão pelo alvo e que o peso não muda sozinho (RG21)", () => {
     render(<Serie />);
     fireEvent.click(ajuda());
     expect(balao()).toHaveTextContent(
-      `RPE abaixo de ${RPE_LIMITE_SUBIR} (RIR acima de ${rotuloChip(RPE_LIMITE_SUBIR, "RIR")}), sobe o peso; com RPE ${RPE_LIMITE_SUBIR} ou mais, repete a carga`,
+      "bateu o teto de reps no Top Set 1 com esforço igual ou abaixo do alvo do exercício, sobe o peso; se passou do alvo, repete a carga",
     );
+    expect(balao()).toHaveTextContent("o peso não muda sozinho");
+    expect(balao()).toHaveTextContent("2 treinos seguidos");
+  });
+
+  it("os alvos do texto são os do cadastro (RG28)", () => {
+    render(<Serie />);
+    fireEvent.click(ajuda());
+    for (const alvo of [RPE_ALVO.composto, RPE_ALVO.isolador]) {
+      expect(balao()).toHaveTextContent(`${rotuloAlvo(alvo, "RPE")} (${rotuloAlvo(alvo, "RIR")})`);
+    }
   });
 
   describe("fechar", () => {
@@ -155,7 +166,7 @@ describe("AjudaEsforco", () => {
 
   describe("aparece em todas as séries", () => {
     const estado = (over: Partial<ExerciseState> = {}): ExerciseState => ({ ...emptyExerciseState(), ...over });
-    const base = { ex: EX, escala: "RPE" as const, onTrocarEscala, onChange };
+    const base = { ex: EX, escala: "RPE" as const, onTrocarEscala, onChange, semEsforco: [] };
     const confirmavel = { ...base, state: estado(), aviso: false, onConfirmar: vi.fn(), onEditar: vi.fn() };
     const cluster = estado({ tecnica: "RP", clusterSeries: blocosVazios(2), clusterSeries2: blocosVazios(2) });
 

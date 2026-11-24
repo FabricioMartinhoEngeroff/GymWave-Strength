@@ -190,22 +190,31 @@
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 1 | `normalizarRpe` com 6, 6.5, 7, 8.5, 10 | Aceita |
+| 1 | `normalizarRpe` com 6, 6.5, 7, 8.5, 10 | Aceita (meio ponto so em registro antigo) |
 | 2 | `normalizarRpe` com 5.5, 10.5, 8.2, NaN, texto, null | Retorna undefined |
-| 3 | Rotulos RPE 10 / 8 / 8.5 / 6 | RIR 0 / 2 / 1.5 / 4+ |
-| 4 | Teto com RPE 7.5 | Sobe peso |
-| 5 | Teto com RPE 8 (limite) ou 10 | Nao sobe |
-| 6 | Teto sem RPE | Sobe (regra antiga) |
-| 7 | Sem teto, mesmo com RPE 6 | Nao sobe |
-| 8 | Fadiga: 100kg x 7 com RPE 7 → 8 → 8.5 em 2 semanas | Alerta com kg, RPE inicial, RPE atual e 3 treinos |
-| 9 | Fadiga: menos reps com RPE maior | Alerta |
-| 10 | Fadiga: mais reps com RPE maior | Sem alerta (progresso) |
-| 11 | Fadiga: menos de 3 treinos / alta < 1 / RPE caiu / mesma semana / sem RPE | Sem alerta |
-| 12 | Fadiga: outra carga, cluster ou treino sem RPE no meio | Ignorados na sequencia |
-| 13 | Fadiga: mesmo exercicio em outra sessao com outra carga | Nao apaga o alerta da sessao original |
-| 14 | Fadiga: deload no meio ou no fim | Zera a contagem |
-| 15 | Fadiga: carga mudou no ultimo treino | Alerta encerrado |
-| 16 | Fadiga: primeiro treino fora das 6 semanas | Nao entra na sequencia |
+| 3 | Opcoes da tela em RPE / RIR | `≤6, 7, 8, 9, 10` / `0, 1, 2, 3, 4+` |
+| 4 | `rpeDaTela` com 6 a 10 inteiro / 7.5, 8.5, 9.5, fora da escala, texto | Aceita / null |
+| 5 | Rotulos RPE 10 / 8 / 8.5 / 6 | RIR 0 / 2 / 1.5 / 4+ |
+| 6 | `rotuloAlvo` 7 a 8 / 9 a 10 | `RPE 7–8`, `RIR 2–3` / `RPE 9–10`, `RIR 0–1` |
+| 7 | `passouDoAlvo`, alvo 7 a 8 | RPE 8 nao; 8.5, 9 e 10 sim |
+| 8 | `passouDoAlvo`, alvo 9 a 10 | Nunca passa |
+| 9 | Teto com RPE 6, 7 ou 8 e alvo 7 a 8 | Sobe peso |
+| 10 | Teto com RPE 8.5, 9 ou 10 e alvo 7 a 8 | Repete a carga |
+| 11 | Teto com RPE 8, 9 ou 10 e alvo 9 a 10 | Sobe peso |
+| 12 | Teto sem RPE (registro antigo) | Sobe |
+| 13 | Sem teto, mesmo com RPE 6 | Nao sobe |
+| 14 | Fadiga, alvo 7 a 8: 8 → 9 → 9, 8 → 9 → 10, 9 → 10 → 10, 7 → 8 → 9 → 9, 8 → 9 → 9 → 9 | Alerta com kg, RPE inicial, RPE atual e treinos |
+| 15 | Fadiga, alvo 9 a 10: 9 → 10 → 10, 8 → 10 → 10 | Alerta |
+| 16 | Fadiga: um dia ruim (8 → 9, 8 → 8 → 9, 8 → 9 → 8) | Sem alerta |
+| 17 | Fadiga: dentro do alvo (6 → 7 → 8, 7 → 8 → 8; alvo 9 a 10: 8 → 9 → 9) | Sem alerta |
+| 18 | Fadiga: passou do alvo so no ultimo (7 → 8 → 9; alvo 9 a 10: 8 → 9 → 10) | Sem alerta |
+| 19 | Fadiga: estavel (9 → 9 → 9), alta < 1, RPE caiu no ultimo, sem RPE, mesma semana | Sem alerta |
+| 20 | Fadiga: mais reps ou menos reps | Sem alerta (nao e a mesma comparacao) |
+| 21 | Fadiga: outra carga, cluster ou treino sem RPE no meio | Ignorados na sequencia |
+| 22 | Fadiga: mesmo exercicio em outra sessao com outra carga | Nao apaga o alerta da sessao original |
+| 23 | Fadiga: deload no meio ou no fim | Zera a contagem |
+| 24 | Fadiga: carga mudou no ultimo treino | Alerta encerrado |
+| 25 | Fadiga: primeiro treino fora das 6 semanas | Nao entra na sequencia |
 
 ### 1.11 registros — RPE por serie
 
@@ -296,7 +305,7 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 
 ---
 
-### 2.3 sessionExercises (11 testes)
+### 2.3 sessionExercises (14 testes)
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
@@ -311,6 +320,9 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 9 | Todos exercicios | Nome e musculo preenchidos |
 | 10 | Nomes vs catalogo | Todos existem no array EXERCICIOS |
 | 11 | Upper A | Contem exercicio de peito |
+| 12 | Todos exercicios | `rpeAlvo` cadastrado, dentro de 6 a 10 (EF_02 RG28) |
+| 13 | Agachamento livre, Supino reto barra (Upper A e Upper B), Terra sumo, Barra fixa | Alvo 7 a 8 |
+| 14 | Os demais | Alvo 9 a 10 |
 
 ---
 
@@ -685,23 +697,23 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 72 | Desativar Deload restaura Back-off com sugestao azul | `data-suggestion="true"` nos campos de Back-off restaurados |
 | 73 | Salvar com Deload — `seriesValidas=1` | Apenas Top Set no registro; backoff zerado |
 
-**Esforço por série — RPE/RIR (EF_02 RG20 a RG22)**
+**Esforço por série — RPE/RIR (EF_02 RG20 a RG22, RG28)**
 
 | # | Cenario | Resultado Esperado |
 |---|---------|-------------------|
-| 74 | Salvar sem marcar esforco | Series sem o campo `rpe` |
-| 75 | Marcar RPE 8 no Top Set 1 e 9.5 no Top Set 2 | Gravados em cada serie do registro |
+| 74 | Salvar com esforco em todas as series | `rpe` gravado em cada serie (obrigatorio: cenarios 135 a 151) |
+| 75 | Marcar RPE 8 no Top Set 1 e 9 no Top Set 2 | Gravados em cada serie do registro |
 | 76 | Tocar no chip marcado | Desmarca (`aria-pressed=false`) |
 | 77 | Trocar para RIR | RPE 8 vira RIR 2 em todas as series; escolha lembrada ao reabrir |
-| 78 | Historico com RPE 8.5 | Campo abre vazio; painel mostra `· RPE 8.5` |
+| 78 | Historico com RPE 8 / 6 / 10 / 8.5 | Campo abre vazio; painel mostra `· RPE 8 · RIR 2` / `≤6 · 4+` / `10 · 0` / `8.5 · 1.5` |
 | 79 | Fechar e reabrir o app | Esforco volta do rascunho |
 | 80 | Cluster Set | Um esforco por serie cluster, gravado no registro |
 | 81 | Revisao | Exibe `@ RPE X` depois das reps |
-| 82 | Teto com RPE 7.5 | `Teto atingido — sobe peso no próximo` |
-| 83 | Teto com RPE 9 | `Teto atingido com RPE 9 — repete a carga`; nao conta no resumo |
+| 82 | Teto com RPE 8 e alvo 7 a 8; teto com RPE 10 e alvo 9 a 10 | `Teto atingido — sobe peso no próximo`; conta no resumo; campos nao mudam |
+| 83 | Teto com RPE 9 e alvo 7 a 8 | `Teto atingido com RPE 9 — repete a carga`; nao conta no resumo |
 | 84 | Abrir com ultimo treino no teto, RPE 7 / RPE 9 | `SUBIR PESO HOJE` / `CONSOLIDAR CARGA` |
-| 85 | Mesma carga com RPE 7 → 8 → 9 em 3 treinos | `[alerta_fadiga]` exibido |
-| 86 | RPE estavel | Sem alerta |
+| 85 | Alvo 7 a 8 com 8 → 9 → 10; alvo 9 a 10 com 9 → 10 → 10 | `[alerta_fadiga]` exibido |
+| 86 | RPE estavel, um dia ruim so, subiu dentro do alvo | Sem alerta |
 
 **Estrutura — domain, hook e blocos**
 
@@ -767,8 +779,8 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 119 | Abrir a tela | Balao fechado (`aria-expanded=false`) |
 | 120 | Posicao do `?` | Logo a direita do botao de trocar escala |
 | 121 | Tocar no `?` | Abre o balao e rola ate ele aparecer |
-| 122 | Texto nas escalas RPE e RIR | Explica RPE, RIR, `RIR = 10 − RPE`, para que serve e que e opcional |
-| 123 | Limite de subir carga no texto | Vem de `RPE_LIMITE_SUBIR` (RG21) |
+| 122 | Texto nas escalas RPE e RIR | Explica RPE, RIR, `RIR = 10 − RPE`, para que serve e que e obrigatorio |
+| 123 | Alvos no texto | Vem de `RPE_ALVO` (RG28); sobe ate o alvo, repete acima, peso nao muda sozinho |
 | 124 | Tocar de novo no `?` / tocar fora | Fecha |
 | 125 | `X` / tecla Esc | Fecha e devolve o foco para o `?` |
 | 126 | Tocar dentro, rolar ou apertar outra tecla | Continua aberto |
@@ -785,6 +797,43 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 132 | Data invalida com series nao feitas | Avisa a data antes; dialogo nao abre |
 | 133 | Data fica invalida na hora de substituir o treino do dia | Treino do dia mantido |
 | 134 | Data `4/1/2026` | Gravada como `2026-01-04` no registro e `04/01/2026` no `dadosTreino` |
+
+**Esforço obrigatório (EF_02 RG27)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 135 | `Próximo` com Top Set 1 e 2 feitos sem esforco | Nao avanca; `[aviso_esforco]` nas duas series |
+| 136 | Antes de tentar avancar | Nenhum aviso |
+| 137 | Marcar o esforco da serie | Aviso dela some; com todas marcadas, `Próximo` avanca |
+| 138 | Desmarcar o chip | Volta a bloquear |
+| 139 | Falta peso/reps e esforco | Avisa peso e reps primeiro |
+| 140 | Top Set 2 apagado (nao fiz) | Nao pede esforco |
+| 141 | Back-off feito / vazio, sem reps ou zerado | Pede / nao pede |
+| 142 | 4 validas | Pede nas 4 series |
+| 143 | 1 valida e Deload | Pede so o do Top Set 1 |
+| 144 | Cluster confirmado sem esforco | Campo continua na tela; marca num toque, sem reabrir a tecnica |
+| 145 | Cluster com a Serie 2 vazia | Pede so o da Serie 1 |
+| 146 | `Pular` e exercicio pulado | Nao pede |
+| 147 | `Ver Resumo` no ultimo exercicio sem esforco | Nao abre a revisao |
+| 148 | `Ver Resumo` com o exercicio por preencher | Abre a revisao (EF_09 RG8) |
+| 149 | Chegar a revisao pelas setas e salvar | `[esforco_faltando]` com a lista; nada gravado; rascunho mantido |
+| 150 | Rascunho antigo com 7.5, 8.5 ou 9.5 | Volta vazio e pede de novo |
+| 151 | Historico antigo sem RPE | Continua valido; sugere pelo teto |
+
+**Escala, cor e alvo do esforço (EF_02 RG20, RG28 e 4.8.1)**
+
+| # | Cenario | Resultado Esperado |
+|---|---------|-------------------|
+| 152 | Chips em RPE / RIR | 5 opcoes inteiras, na ordem |
+| 153 | Marcar RIR 0, 1, 2, 3, 4+ | Grava RPE 10, 9, 8, 7, 6 |
+| 154 | Chip marcado em qualquer valor e escala | Azul `#2563eb` com texto branco |
+| 155 | Botao de trocar escala e `?` | Azul `#2563eb` com texto/icone branco |
+| 156 | Cabecalho do card | `alvo RPE 7–8`; em RIR, `alvo RIR 2–3` |
+| 157 | Plano importado sem alvo | Alvo do cadastro (nome ou apelido); fora dele, agachamento/supino/terra livres 7 a 8 e o resto 9 a 10 |
+| 158 | `rpeAlvo` invalido (texto, invertido, fora da escala) | Ignorado |
+| 159 | Painel do ultimo treino com a tela em RPE ou em RIR | Mostra as duas escalas do mesmo jeito |
+| 160 | Painel: cada serie com o seu esforco; serie sem esforco | Cada linha mostra o dela; sem esforco, nenhuma escala |
+| 161 | Painel com Cluster Set | Esforco no ultimo bloco de cada serie, nas duas escalas |
 
 ---
 

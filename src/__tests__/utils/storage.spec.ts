@@ -213,31 +213,32 @@ describe("Storage — Persistencia no localStorage", () => {
     it("subir peso olha o último treino normal", () => {
       em(1, { topSetBateuTeto: true });
       em(8, { isDeload: true, topSetBateuTeto: false });
-      expect(exercicioDeveSubirPeso("Supino reto barra", "UA")).toBe(true);
+      expect(exercicioDeveSubirPeso("Supino reto barra", "UA", [7, 8])).toBe(true);
     });
   });
 
   describe("exercicioDeveSubirPeso", () => {
     it("retorna false quando nao ha registros", () => {
-      expect(exercicioDeveSubirPeso("Inexistente", "UA")).toBe(false);
+      expect(exercicioDeveSubirPeso("Inexistente", "UA", [7, 8])).toBe(false);
     });
 
     it("retorna true quando ultimo registro bateu teto", () => {
       salvarRegistro(makeRegistro({ topSetBateuTeto: true }));
-      expect(exercicioDeveSubirPeso("Supino reto barra", "UA")).toBe(true);
+      expect(exercicioDeveSubirPeso("Supino reto barra", "UA", [7, 8])).toBe(true);
     });
 
-    it("teto com RPE abaixo de 8 sobe; com RPE 8 ou mais repete a carga", () => {
-      salvarRegistro(makeRegistro({ topSetBateuTeto: true, topSetRpe: 7.5 }));
-      expect(exercicioDeveSubirPeso("Supino reto barra", "UA")).toBe(true);
-      localStorage.clear();
-      salvarRegistro(makeRegistro({ topSetBateuTeto: true, topSetRpe: 8 }));
-      expect(exercicioDeveSubirPeso("Supino reto barra", "UA")).toBe(false);
+    it.each([
+      ["no limite do alvo", 8, [7, 8], true],
+      ["acima do alvo", 9, [7, 8], false],
+      ["na falha, com alvo 9 a 10", 10, [9, 10], true],
+    ] as const)("teto com esforço %s (RPE %s, alvo %j) → %s", (_n, topSetRpe, alvo, esperado) => {
+      salvarRegistro(makeRegistro({ topSetBateuTeto: true, topSetRpe }));
+      expect(exercicioDeveSubirPeso("Supino reto barra", "UA", [alvo[0], alvo[1]])).toBe(esperado);
     });
 
     it("retorna false quando ultimo registro nao bateu teto", () => {
       salvarRegistro(makeRegistro({ topSetBateuTeto: false }));
-      expect(exercicioDeveSubirPeso("Supino reto barra", "UA")).toBe(false);
+      expect(exercicioDeveSubirPeso("Supino reto barra", "UA", [7, 8])).toBe(false);
     });
   });
 

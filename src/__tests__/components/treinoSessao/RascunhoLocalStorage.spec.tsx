@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { marcarEsforco } from "./helpers";
 
 const DRAFT_KEY = "rascunho_treino";
 
@@ -24,11 +25,13 @@ function confirmarTopSet(kg = "100", reps = "7") {
   fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: kg } });
   fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: reps } });
   fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+  marcarEsforco();
 }
 
 function confirmarBackoff(reps = "12") {
   fireEvent.change(screen.getByLabelText(/Top Set 2 reps/i), { target: { value: reps } });
   fireEvent.click(screen.getByText("Confirmar Top Set 2"));
+  marcarEsforco();
 }
 
 function pularParaUltimo(total = 11) {

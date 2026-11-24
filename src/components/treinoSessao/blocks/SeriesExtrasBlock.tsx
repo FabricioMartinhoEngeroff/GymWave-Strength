@@ -9,7 +9,7 @@ const SERIES = [
 ] as const;
 
 /** Série 3 e Série 4 (só com 4 válidas): mesma carga e reps do último treino, sem reduzir. */
-export function SeriesExtrasBlock({ ex, state, onChange, escala, onTrocarEscala }: BlocoProps) {
+export function SeriesExtrasBlock({ ex, state, onChange, escala, onTrocarEscala, semEsforco }: BlocoProps) {
   return SERIES.map((serie) => (
     <Card key={serie.n} style={{ background: "#fafafa" }}>
       <Label>Série {serie.n}</Label>
@@ -29,6 +29,7 @@ export function SeriesExtrasBlock({ ex, state, onChange, escala, onTrocarEscala 
         onChange={(rpe) => onChange({ [serie.rpe]: rpe })}
         escala={escala}
         onTrocarEscala={onTrocarEscala}
+        aviso={semEsforco.includes(serie.rpe)}
       />
       {serie.n === 4 && (
         <TextoApoio>Mesma carga e reps do último treino — nenhuma série reduz peso com 4 válidas</TextoApoio>

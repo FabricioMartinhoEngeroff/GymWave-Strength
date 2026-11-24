@@ -98,22 +98,39 @@ function ClusterEmEdicao({ ex, state, aviso, onChange, onAbrirSerie, onFinalizar
   );
 }
 
-function ClusterConfirmado({ state, onChange, escala }: ClusterBlockProps) {
+function ClusterConfirmado({ ex, state, onChange, escala, onTrocarEscala, semEsforco }: ClusterBlockProps) {
+  const series = [
+    { n: 1, blocos: state.clusterSeries, chaveRpe: "clusterRpe" },
+    { n: 2, blocos: state.clusterSeries2, chaveRpe: "clusterRpe2" },
+  ] as const;
+
   return (
     <>
-      {[state.clusterSeries, state.clusterSeries2].map((blocos, si) => {
+      {series.map(({ n, blocos, chaveRpe }) => {
         const validos = blocos.filter(blocoValido);
         if (validos.length === 0) return null;
-        const rpe = si === 0 ? state.clusterRpe : state.clusterRpe2;
+        const rpe = state[chaveRpe];
         return (
-          <div key={si} style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>
-            <strong style={{ color: "#1d4ed8", marginRight: 6 }}>S{si + 1}:</strong>
+          <div key={n} style={{ fontSize: 12, color: "#374151", marginBottom: 6 }}>
+            <strong style={{ color: "#1d4ed8", marginRight: 6 }}>S{n}:</strong>
             {validos.map((b, i) => (
               <span key={i} style={{ marginRight: 8 }}>
                 B{i + 1}: {b.kg}kg × {b.reps}reps
               </span>
             ))}
-            {rpe !== null && <span style={{ color: "#6b7280" }}>@ {rotuloEsforco(rpe, escala)}</span>}
+            {rpe !== null ? (
+              <span style={{ color: "#6b7280" }}>@ {rotuloEsforco(rpe, escala)}</span>
+            ) : (
+              <EsforcoInput
+                serie={`Cluster Série ${n}`}
+                exercicio={ex.nome}
+                valor={rpe}
+                onChange={(v) => onChange({ [chaveRpe]: v })}
+                escala={escala}
+                onTrocarEscala={onTrocarEscala}
+                aviso={semEsforco.includes(chaveRpe)}
+              />
+            )}
           </div>
         );
       })}

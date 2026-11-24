@@ -72,10 +72,11 @@ describe("useSessaoTreino — hook", () => {
     act(() => result.current.editarTopSet({ topSetKg: "100", topSetReps: "8" }));
     act(() => result.current.confirmTopSet());
     act(() => result.current.editarTopSet2({ backoffKg: "", backoffKgWasUserEdited: true }));
+    act(() => result.current.editarTopSet({ topSetRpe: 8 }));
     act(() => result.current.avancar());
     expect(result.current.currentIdx).toBe(1);
     act(() => result.current.salvar());
-    expect(carregarRegistros()[0]?.series).toEqual([{ tipo: "top1", kg: 100, reps: 8 }]);
+    expect(carregarRegistros()[0]?.series).toEqual([{ tipo: "top1", kg: 100, reps: 8, rpe: 8 }]);
   });
 
   it("Top Set confirmado e depois zerado volta a pedir preenchimento (RG24)", () => {
@@ -127,6 +128,22 @@ describe("useSessaoTreino — hook", () => {
     act(() => result.current.skipExercise());
     expect(result.current.currentIdx).toBe(1);
     expect(result.current.avisos.topSet).toBe(false);
+  });
+
+  it("avisos: série feita sem esforço não avança; marcar libera (RG27)", () => {
+    const { result } = abrir();
+    act(() => result.current.editarTopSet({ topSetKg: "100", topSetReps: "7" }));
+    act(() => result.current.confirmTopSet());
+    act(() => result.current.editarTopSet2({ backoffReps: "6" }));
+    act(() => result.current.confirmBackoff());
+    expect(result.current.semEsforco).toEqual([]); // só depois de tentar avançar
+    act(() => result.current.avancar());
+    expect(result.current.currentIdx).toBe(0);
+    expect(result.current.semEsforco).toEqual(["topSetRpe", "backoffRpe"]);
+    act(() => result.current.atualizar({ topSetRpe: 8, backoffRpe: 9 }));
+    expect(result.current.semEsforco).toEqual([]);
+    act(() => result.current.avancar());
+    expect(result.current.currentIdx).toBe(1);
   });
 
   it("Cluster e Deload são mutuamente exclusivos", () => {

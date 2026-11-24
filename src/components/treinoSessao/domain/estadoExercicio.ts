@@ -1,7 +1,8 @@
 import type { ExercicioSessao } from "../../../data/sessionExercises";
 import type { RegistroExercicio, SeriesValidas } from "../../../types/TrainingData";
-import { deveSubirPeso, normalizarRpe } from "../../../utils/esforco";
+import { deveSubirPeso, rpeDaTela } from "../../../utils/esforco";
 import { normalizarSeriesValidas, sugestaoDoUltimoTreino } from "../../../utils/seriesValidas";
+import { rpeAlvoDoExercicio } from "./rpeAlvo";
 
 export interface BlocoCluster {
   kg: string;
@@ -68,6 +69,9 @@ const RPE_VAZIO = {
   clusterRpe2: null,
 };
 
+/** Campo do esforço de uma série. */
+export type CampoRpe = keyof typeof RPE_VAZIO;
+
 /** Returns a blank ExerciseState with all suggestion flags off. */
 export function emptyExerciseState(): ExerciseState {
   return {
@@ -116,7 +120,7 @@ const paraBlocos = (v: unknown): BlocoCluster[] =>
 export function sanitizeExerciseState(bruto: unknown): ExerciseState {
   const raw = objeto(bruto);
   const base = emptyExerciseState();
-  const rpes = Object.keys(RPE_VAZIO) as (keyof typeof RPE_VAZIO)[];
+  const rpes = Object.keys(RPE_VAZIO) as CampoRpe[];
   const saida: Record<string, unknown> = { ...base };
   for (const [campo, padrao] of Object.entries(base)) {
     const v = raw[campo];
@@ -125,7 +129,7 @@ export function sanitizeExerciseState(bruto: unknown): ExerciseState {
   }
   return {
     ...(saida as unknown as ExerciseState),
-    ...(Object.fromEntries(rpes.map((c) => [c, normalizarRpe(raw[c]) ?? null])) as typeof RPE_VAZIO),
+    ...(Object.fromEntries(rpes.map((c) => [c, rpeDaTela(raw[c])])) as typeof RPE_VAZIO),
     tecnica: raw.tecnica === "RP" ? "RP" : null,
     clusterSeries: paraBlocos(raw.clusterSeries),
     clusterSeries2: paraBlocos(raw.clusterSeries2),
@@ -358,7 +362,7 @@ export function temProgresso(s: ExerciseState): boolean {
   return (
     s.topSetConfirmed || s.backoffConfirmed || s.tecnicaConfirmed || s.skipped || s.isDeload || s.obs !== "" ||
     digitados.some(([valor, sugerido]) => valor !== "" && !sugerido) ||
-    (Object.keys(RPE_VAZIO) as (keyof typeof RPE_VAZIO)[]).some((c) => s[c] !== null) ||
+    (Object.keys(RPE_VAZIO) as CampoRpe[]).some((c) => s[c] !== null) ||
     [...s.clusterSeries, ...s.clusterSeries2].some((b) => b.kg !== "" || b.reps !== "")
   );
 }
@@ -370,7 +374,7 @@ export function statusTopSet(ex: ExercicioSessao, state: ExerciseState): StatusT
   if (!state.topSetConfirmed || state.isDeload) return null;
   const reps = parseInt(state.topSetReps);
   if (isNaN(reps)) return null;
-  if (reps >= ex.faixaTopSet[1]) return deveSubirPeso(true, state.topSetRpe) ? "teto" : "consolidar";
+  if (reps >= ex.faixaTopSet[1]) return deveSubirPeso(true, state.topSetRpe, rpeAlvoDoExercicio(ex)) ? "teto" : "consolidar";
   if (reps < ex.faixaTopSet[0]) return "abaixo";
   return "faixa";
 }

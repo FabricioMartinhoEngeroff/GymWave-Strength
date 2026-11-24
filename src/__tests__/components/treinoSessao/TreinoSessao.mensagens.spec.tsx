@@ -4,6 +4,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, screen, fireEvent } from "@testing-library/react";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { marcarEsforco } from "./helpers";
 import { carregarRegistros, salvarRegistro } from "../../../utils/storage";
 import { dialogo, noDialogo, renderComMensagens } from "../mensagens/helpers";
 
@@ -24,6 +25,7 @@ function fazerTopSets() {
   fireEvent.click(screen.getByText("Confirmar Top Set 1"));
   digitar(/Top Set 2 reps/, "6");
   fireEvent.click(screen.getByText("Confirmar Top Set 2"));
+  marcarEsforco();
 }
 function tentarSalvar() {
   fireEvent.click(screen.getByText("Ver Resumo"));
@@ -47,7 +49,7 @@ describe("Salvar treino", () => {
     expect(screen.getByText("Treino finalizado!")).toBeInTheDocument();
     expect(screen.getByText("Novo recorde!")).toBeInTheDocument();
     expect(screen.getByText("Treino completo!")).toBeInTheDocument();
-  });
+  }, 15_000); // renderiza a tela inteira; com a suíte toda rodando passa de 5 s
 
   it("série não feita: lista, e voltar não grava nada", () => {
     plano(3);

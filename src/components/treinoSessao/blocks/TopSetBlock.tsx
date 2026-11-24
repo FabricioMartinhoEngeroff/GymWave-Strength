@@ -23,7 +23,7 @@ function StatusDoTopSet({ status, rpe, escala }: { status: NonNullable<StatusTop
   );
 }
 
-export function TopSetBlock({ ex, state, aviso, onChange, onConfirmar, onEditar, escala, onTrocarEscala }: BlocoConfirmavelProps) {
+export function TopSetBlock({ ex, state, aviso, onChange, onConfirmar, onEditar, escala, onTrocarEscala, semEsforco }: BlocoConfirmavelProps) {
   const status = statusTopSet(ex, state);
 
   return (
@@ -46,6 +46,7 @@ export function TopSetBlock({ ex, state, aviso, onChange, onConfirmar, onEditar,
         onChange={(rpe) => onChange({ topSetRpe: rpe })}
         escala={escala}
         onTrocarEscala={onTrocarEscala}
+        aviso={semEsforco.includes("topSetRpe")}
       />
 
       {!state.topSetConfirmed ? (

@@ -1,5 +1,5 @@
 import { dataBRparaISO } from "./datas";
-import { deveSubirPeso } from "./esforco";
+import { deveSubirPeso, type FaixaRpe } from "./esforco";
 import { serieFeita } from "./seriesValidas";
 import type { DadosTreino, Logbook, RegistroExercicio, RegistroTreino } from "../types/TrainingData";
 import {
@@ -313,10 +313,10 @@ export function referenciaDoExercicio(exercicio: string, treinoId: string): Regi
 }
 
 
-export function exercicioDeveSubirPeso(exercicio: string, treinoId: string): boolean {
+export function exercicioDeveSubirPeso(exercicio: string, treinoId: string, alvo: FaixaRpe): boolean {
   const ultimo = ultimoTreinoNormal(exercicio, treinoId);
   if (!ultimo) return false;
-  return deveSubirPeso(ultimo.topSetBateuTeto, ultimo.topSetRpe);
+  return deveSubirPeso(ultimo.topSetBateuTeto, ultimo.topSetRpe, alvo);
 }
 
 

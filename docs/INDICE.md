@@ -54,7 +54,7 @@ Cada usuário tem as próprias chaves, no formato `gw:{id do usuário}:{chave}`.
 | `logbook_v1_backup` | Cópia do `logbook` antigo, feita na conversão automática para `registros` |
 | `dadosTreino` | Registros legados por exercício e ciclo |
 | `planoTreino` | Plano de treino importado via planilha (ordem e séries válidas por sessão) |
-| `sessoes_config` | Sessões e exercícios do plano importado (faixas, cue, `clusterBlocos`…). Define os botões de sessão da tela de treino (EF_02 RG1.3) |
+| `sessoes_config` | Sessões e exercícios do plano importado (faixas, cue, `clusterBlocos`, `rpeAlvo`…). Define os botões de sessão da tela de treino (EF_02 RG1.3) |
 | `escala_esforco` | Escala em que o atleta vê o esforço: `RPE` ou `RIR` (EF_02 RG20). O dado gravado é sempre RPE |
 | `registros_corrompido` / `dadosTreino_corrompido` | Cópia do original quando não pôde ser lido (EF_09 RG12) |
 | `dadosTreino_backup` | Backup automático gerado antes de importações |

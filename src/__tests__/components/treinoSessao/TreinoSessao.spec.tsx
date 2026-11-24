@@ -7,6 +7,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { renderComMensagens } from "../mensagens/helpers";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
+import { marcarEsforco } from "./helpers";
 import { carregarLogbookCompleto, carregarRegistros, salvarRegistro } from "../../../utils/storage";
 
 function renderFresh() {
@@ -23,12 +24,14 @@ function confirmarTopSet(kg = "100", reps = "7") {
   fireEvent.change(screen.getByLabelText(/Top Set 1 kg/i), { target: { value: kg } });
   fireEvent.change(screen.getByLabelText(/Top Set 1 reps/i), { target: { value: reps } });
   fireEvent.click(screen.getByText("Confirmar Top Set 1"));
+  marcarEsforco();
 }
 
 // Helper: confirm Back-off for current exercise
 function confirmarBackoff(reps = "12") {
   fireEvent.change(screen.getByLabelText(/Top Set 2 reps/i), { target: { value: reps } });
   fireEvent.click(screen.getByText("Confirmar Top Set 2"));
+  marcarEsforco();
 }
 
 // Navigate to last exercise of Upper A (11 exercises) via Pular
@@ -1064,6 +1067,7 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       preencherBloco(1, "95", "3");
       preencherBloco(2, "95", "2");
       fireEvent.click(screen.getByText("Confirmar Cluster"));
+      marcarEsforco();
 
       fireEvent.click(screen.getByText("Próximo"));
       pularParaUltimo(12);

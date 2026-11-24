@@ -4,7 +4,7 @@ import { SerieInputs } from "./SerieInputs";
 import type { BlocoProps } from "./tipos";
 
 /** Back-off (slot "extra", só com 3 válidas): ~90% da carga, até a falha. */
-export function BackoffBlock({ ex, state, onChange, escala, onTrocarEscala }: BlocoProps) {
+export function BackoffBlock({ ex, state, onChange, escala, onTrocarEscala, semEsforco }: BlocoProps) {
   const pct = Math.round(ex.backoffPct * 100);
   return (
     <Card style={{ background: "#fafafa" }}>
@@ -25,6 +25,7 @@ export function BackoffBlock({ ex, state, onChange, escala, onTrocarEscala }: Bl
         onChange={(rpe) => onChange({ extraRpe: rpe })}
         escala={escala}
         onTrocarEscala={onTrocarEscala}
+        aviso={semEsforco.includes("extraRpe")}
       />
       <TextoApoio>
         Tira ~{100 - pct}% da carga do Top Set — mais técnica, mesmas reps ou mais, até a falha · {ex.faixaBackoff[0]}–{ex.faixaBackoff[1]}+ reps · não conta para teto

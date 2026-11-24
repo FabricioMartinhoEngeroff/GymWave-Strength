@@ -1,4 +1,5 @@
 import type { SeriesValidas } from "../types/TrainingData";
+import type { FaixaRpe } from "../utils/esforco";
 
 export type SessaoTipo = "Upper A" | "Upper B" | "Lower A" | "Lower B";
 
@@ -11,6 +12,7 @@ export interface ExercicioSessao {
   seriesValidas: SeriesValidas;    // 1 = só Top Set 1 | 2 = 2 Top Sets | 3 = + Back-off | 4 = + Série 3 e Série 4
   tecnica?: "RP" | null;
   clusterBlocos?: number;          // blocos por série no Cluster Set (padrão 4), ex.: 24 reps em blocos de 4 → 6
+  rpeAlvo?: FaixaRpe;              // esforço alvo em RPE, ex.: [7, 8]; plano importado não traz (ver rpeAlvoDoExercicio)
   cue: string;
 }
 
@@ -18,7 +20,13 @@ export interface ExercicioSessao {
 // Modelo de séries:
 //   2 válidas → Top Set 1 + Top Set 2 (ambos pesados, na faixa do Top Set)
 //   3 válidas → Top Set 1 + Top Set 2 + Back-off (~90% da carga, mesmas reps ou mais, até a falha)
-type Preset = Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct" | "seriesValidas">;
+type Preset = Pick<ExercicioSessao, "faixaTopSet" | "faixaBackoff" | "backoffPct" | "seriesValidas" | "rpeAlvo">;
+
+/** Esforço alvo (RPE) por tipo de exercício. */
+export const RPE_ALVO = {
+  composto: [7, 8],
+  isolador: [9, 10],
+} satisfies Record<string, FaixaRpe>;
 
 // Multiarticulares pesados (terra, supino, agacho, barra fixa): faixa de força
 const COMPOSTO: Preset = {
@@ -26,6 +34,7 @@ const COMPOSTO: Preset = {
   faixaBackoff: [8, 10],
   backoffPct: 0.9,
   seriesValidas: 2,
+  rpeAlvo: RPE_ALVO.composto,
 };
 
 // Máquinas, cabos e isoladores
@@ -34,6 +43,7 @@ const ISOLADOR: Preset = {
   faixaBackoff: [10, 12],
   backoffPct: 0.9,
   seriesValidas: 2,
+  rpeAlvo: RPE_ALVO.isolador,
 };
 
 // ── Sessões v4 ───────────────────────────────────────────────────────────────
@@ -77,7 +87,7 @@ export const SESSOES: Record<SessaoTipo, ExercicioSessao[]> = {
     { nome: "Elevação lateral cabo",         grupo: "Ombro",    ...ISOLADOR, seriesValidas: 3, cue: "2ª sessão semanal. Tensão contínua pelo cabo" },
     { nome: "Remada unilateral apoiada",     grupo: "Costas",   ...ISOLADOR,                   cue: "Cotovelo rente ao corpo em direção ao quadril. Lombar fora. Componente de lat" },
     { nome: "Desenvolvimento máquina",       grupo: "Ombro",    ...ISOLADOR,                   cue: "Empurra sem subir trapézio. Entra antes da remada e do supino" },
-    { nome: "Supino reto barra",             grupo: "Peitoral", ...ISOLADOR,                   cue: "Carga mais baixa — técnico, não PR. Melhora técnica e volume do peito" },
+    { nome: "Supino reto barra",             grupo: "Peitoral", ...ISOLADOR, rpeAlvo: RPE_ALVO.composto, cue: "Carga mais baixa — técnico, não PR. Melhora técnica e volume do peito" },
     { nome: "Barra fixa",            grupo: "Costas",   ...COMPOSTO, seriesValidas: 3, cue: "3 séries pendurado ~1 min. Use straps. Progressão de carga leve — alongamento máximo do lat" },
     { nome: "Rosca Bayesian",                grupo: "Braço",    ...ISOLADOR,                   cue: "Braço atrás do corpo, porção longa em alongamento máximo. Controla a descida" },
     { nome: "Tríceps Pulley",                 grupo: "Braço",    ...ISOLADOR,                   cue: "PRIMEIRO — mais carga. PR work aqui. Cotovelos baixos e fixos. Medial em foco" },

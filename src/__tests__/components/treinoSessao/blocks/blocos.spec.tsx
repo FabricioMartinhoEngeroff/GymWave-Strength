@@ -18,7 +18,8 @@ const EX: ExercicioSessao = {
   backoffPct: 0.9, seriesValidas: 3, cue: "",
 };
 const estado = (over: Partial<ExerciseState> = {}): ExerciseState => ({ ...emptyExerciseState(), ...over });
-const escala = { escala: "RPE" as const, onTrocarEscala: vi.fn() };
+const escala = { escala: "RPE" as const, onTrocarEscala: vi.fn(), semEsforco: [] };
+const AVISO = /Marque o esforço desta série/;
 const digitar = (label: RegExp, value: string) => fireEvent.change(screen.getByLabelText(label), { target: { value } });
 
 describe("Blocos da sessão", () => {
@@ -66,5 +67,36 @@ describe("Blocos da sessão", () => {
     expect(screen.getByLabelText(/Top Set 1 kg/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Top Set 2 kg/)).not.toBeInTheDocument();
     expect(screen.getByText(/Deload registrado — não conta para progressão/)).toBeInTheDocument();
+  });
+
+  describe("aviso de esforço só na série que falta (RG27)", () => {
+    const acoes = { aviso: false, onChange: vi.fn(), onConfirmar: vi.fn(), onEditar: vi.fn() };
+    const cluster = estado({ tecnica: "RP", tecnicaConfirmed: true, clusterSeries: [{ kg: "80", reps: "4" }], clusterSeries2: [{ kg: "80", reps: "3" }] });
+
+    it.each([
+      ["Top Set 1", <TopSetBlock {...escala} {...acoes} ex={EX} state={estado()} semEsforco={["topSetRpe"]} />],
+      ["Top Set 2", <TopSet2Block {...escala} {...acoes} ex={EX} state={estado()} semEsforco={["backoffRpe"]} />],
+      ["Back-off", <BackoffBlock {...escala} ex={EX} state={estado()} onChange={vi.fn()} semEsforco={["extraRpe"]} />],
+      ["Série 4, sem avisar a Série 3", <SeriesExtrasBlock {...escala} ex={EX} state={estado()} onChange={vi.fn()} semEsforco={["serie4Rpe"]} />],
+      ["Deload", <DeloadBlock {...escala} {...acoes} ex={EX} state={estado({ isDeload: true })} semEsforco={["topSetRpe"]} />],
+      ["Cluster confirmado", <ClusterBlock {...escala} ex={EX} state={cluster} aviso={false} onChange={vi.fn()} onAbrirSerie={vi.fn()} onFinalizarSerie1={vi.fn()} onConfirmar={vi.fn()} semEsforco={["clusterRpe2"]} />],
+    ])("%s", (_n, bloco) => {
+      render(bloco);
+      expect(screen.getAllByText(AVISO)).toHaveLength(1);
+    });
+
+    it("outra série sem esforço não avisa no Top Set 1", () => {
+      render(<TopSetBlock {...escala} {...acoes} ex={EX} state={estado()} semEsforco={["backoffRpe"]} />);
+      expect(screen.queryByText(AVISO)).toBeNull();
+    });
+
+    it("Cluster confirmado: o campo fica na tela só para a série sem esforço e marca num toque", () => {
+      const onChange = vi.fn();
+      render(<ClusterBlock {...escala} ex={EX} state={{ ...cluster, clusterRpe: 9 }} aviso={false} onChange={onChange} onAbrirSerie={vi.fn()} onFinalizarSerie1={vi.fn()} onConfirmar={vi.fn()} />);
+      expect(screen.queryByLabelText(/Esforço Cluster Série 1/)).toBeNull();
+      expect(screen.getByLabelText(/Esforço Cluster Série 2/)).toBeInTheDocument();
+      fireEvent.click(screen.getByLabelText("RPE 10"));
+      expect(onChange).toHaveBeenCalledWith({ clusterRpe2: 10 });
+    });
   });
 });
