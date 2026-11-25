@@ -81,17 +81,17 @@ O sistema implementa o modelo de séries **v6** (2 Top Sets + Back-off). O plano
 - **Top Set 1:** primeira série pesada, na faixa de reps do exercício. É a série de referência para 1RM, PR e teto.
 - **Top Set 2:** segunda série pesada, **no mesmo peso do Top Set 1**, na mesma faixa de reps.
 - **Back-off:** série de volume, opcional — apenas para exercícios configurados com `seriesValidas = 3`. Tira ~10% da carga dos Top Sets (`backoffPct` = 0,9) e vai até a falha, com as mesmas repetições ou mais. Não conta para o teto.
-- **Teto de reps:** quando o atleta atinge o limite superior da faixa no Top Set 1, o sistema avisa que dá para subir a carga, se o esforço não passou do alvo (EF_02 RG21). É só aviso: o peso salvo nunca muda sozinho.
+- **Teto de reps:** quando o atleta atinge o limite superior da faixa no Top Set 1, o card "Último treino" avisa, no treino seguinte, que dá para subir a carga, se o esforço não passou do alvo (EF_02 RG21). É só aviso: o peso salvo nunca muda sozinho.
 
 ### Avisos de treino
 
-**Princípio:** o app **informa, nunca manda**. Quem treina há anos tem percepção própria. Aviso é dado do histórico em linguagem neutra; não dá ordem, não bloqueia o treino e não altera campo. Detalhes na EF_02 RG29.
+**Princípio:** o app **informa, nunca manda**. Quem treina há anos tem percepção própria. Aviso é dado do histórico em linguagem neutra; não dá ordem, não bloqueia o treino e não altera campo. Os avisos de progressão ficam no card "Último treino"; o bloco de registro não exibe status de resultado. Detalhes na EF_02 RG21 e RG29.
 
 | Cor | Uso |
 |---|---|
 | Azul do sistema | Informação normal |
 | Verde | Só "dá para subir a carga" |
-| Âmbar | Só atenção: fadiga (RG22), regressão (RG30) e "Abaixo da faixa" |
+| Âmbar | Só atenção: fadiga (RG22) e regressão (RG30) |
 | Cinza | Observações, textos de apoio e Deload (escolha do atleta) |
 | Vermelho | Só erro de verdade (ex.: dado inválido), nunca aviso de treino |
 

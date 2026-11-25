@@ -37,7 +37,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - **Depois de um Cluster Set**, os Top Sets abrem com os valores do último treino em que foram feitos.
   - **O que o atleta digita ou apaga fica:** um campo apagado nunca é preenchido de novo pelo sistema naquele treino (inclui reconfirmar o Top Set 1 com 4 válidas).
 - **RG6** – **Sugestão de peso do Top Set 2:** o Top Set 2 vem com o **peso e as repetições salvos no Top Set 2 do último treino** (RG5.1), e esse peso não acompanha trocas feitas no Top Set 1. Sem peso salvo no Top Set 2 (ou sem histórico), o campo espelha o Top Set 1 e **acompanha qualquer troca de peso** feita nele durante o treino (indicador visual azul = sugestão). O espelho trava permanentemente quando o peso veio do logbook, quando o usuário digita um valor próprio no campo (flag `backoffKgWasUserEdited`) ou quando confirma o bloco — a partir daí nada sobrescreve o valor.
-- **RG7** – O sistema pré-preenche **peso e repetições** do Top Set 1 com os valores exatos do último registro desse exercício no mesmo treino — **sem incremento automático**, mesmo que o teto de reps tenha sido atingido (o status do Top Set e o resumo do treino informam o teto; quem decide a carga é o atleta). Campos exibidos com indicador visual azul = sugestão.
+- **RG7** – O sistema pré-preenche **peso e repetições** do Top Set 1 com os valores exatos do último registro desse exercício no mesmo treino — **sem incremento automático**, mesmo que o teto de reps tenha sido atingido (o card "Último treino" e o resumo do treino informam o teto; quem decide a carga é o atleta). Campos exibidos com indicador visual azul = sugestão.
 - **RG8** – Ao trocar de exercício ou de sessão, os avisos de validação (Top Set e Back-off) são resetados.
 - **RG9** – Se houver treino em andamento ao trocar de aba ou sair da conta, o sistema pede confirmação (EF_09 RG7). O rascunho fica guardado.
 - **RG10** – Após salvar todos os exercícios, é exibido um resumo com: quantidade feita / total, e quantos exercícios bateram o teto de reps dentro do alvo.
@@ -87,10 +87,11 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - Um botão **?** explica as duas escalas (RG25).
   - Implementação: `utils/esforco.ts` e `treinoSessao/blocks/EsforcoInput.tsx`.
 - **RG21** – **Progressão pelo esforço:** quando o Top Set 1 **bate o teto de reps**, o sistema compara o esforço com o **alvo do exercício** (RG28).
-  - Esforço **igual ou abaixo do alvo** → status `[status_teto]` e, no treino seguinte, o aviso `[subir_peso]` no card (RG29).
-  - Esforço **acima do alvo** → status e, no treino seguinte, aviso no card com o mesmo texto: `[consolidar_carga]` (RG29). Não conta no resumo de teto (RG10).
+  - Esforço **igual ou abaixo do alvo** → no treino seguinte, o aviso `[subir_peso]` no card (RG29). Conta no resumo de teto (RG10).
+  - Esforço **acima do alvo** → no treino seguinte, o aviso `[consolidar_carga]` no card (RG29). Não conta no resumo de teto (RG10).
+  - **O bloco Top Set 1 não exibe status de resultado:** confirmar a série não mostra teto, consolidação, "na faixa" nem "abaixo da faixa". Teto e consolidação, por exercício, aparecem **só** no card "Último treino", no treino seguinte.
   - O alvo é uma faixa; o limite é o **valor de cima** (alvo 7 a 8: RPE 8 está dentro, RPE 9 está acima). Com alvo 9 a 10, bater o teto está sempre dentro.
-  - Teto **sem RPE** (registro antigo, ou série ainda sem esforço marcado) → vale só o teto, e o texto não cita o alvo.
+  - Teto **sem RPE** (registro antigo) → vale só o teto, e o texto não cita o alvo.
   - O fato `bateuTeto` continua gravado só pelas reps (usado na análise de estagnação da aba Volume). É só aviso: o sistema nunca altera a carga sozinho (RG5.1, RG7).
   - Implementação: `deveSubirPeso` e `passouDoAlvo` em `utils/esforco.ts`.
 - **RG22** – **Alerta de fadiga:** aparece quando a **mesma carga com as mesmas reps** no Top Set 1 passa a custar mais esforço e isso **se repete em 2 treinos seguidos** (um dia ruim sozinho não alerta). Todas as condições precisam valer:
@@ -140,7 +141,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - **Plano importado ou salvo sem alvo:** usa o alvo do mesmo exercício no cadastro (nome ou apelido do catálogo). Fora do cadastro, agachamento, supino e terra livres usam 7 a 8; os demais, 9 a 10. Alvo em formato inválido é ignorado.
   - Implementação: `RPE_ALVO` em `sessionExercises.ts` e `rpeAlvoDoExercicio` em `treinoSessao/domain/rpeAlvo.ts`.
 - **RG29** – **Avisos dentro do card "Último treino":** o app **informa, nunca manda**. Todo aviso descreve um dado do histórico, em linguagem neutra, sem ordem. Nenhum aviso bloqueia o treino nem altera campo (RG5.1).
-  - **Onde:** uma linha logo abaixo das séries, acima da contagem e do volume. Não há caixa de aviso fora do card; a única exceção é o `[banner_pr]` (RG13).
+  - **Onde:** uma linha logo abaixo das séries, acima da contagem e do volume. Não há aviso de progressão fora do card, nem na área de registro (RG21); a única exceção é o recorde (`[banner_pr]` e "PR Confirmado!", RG13).
   - **Quais, em ordem de prioridade:**
 
 | Prioridade | Aviso | Quando | Marca | Cor |
@@ -158,7 +159,7 @@ Qualquer usuário autenticado possui acesso completo a esta tela.
   - Sempre ligado: não há configuração. Limites e prioridades são constantes nomeadas.
   - **Cores** (tokens `TONS` de `TreinoSessao.styles.ts`, sem hex solto nos componentes):
     - **Azul do sistema:** título, data, séries e aviso informativo. **Verde:** só `[subir_peso]`. **Âmbar:** só fadiga e regressão. **Cinza:** contagem e volume, observação do dia e "ver mais". **Vermelho:** nunca.
-  - **Resto da tela de treino** (mesmo princípio e mesma paleta): status do Top Set 1 → `[status_teto]` verde, `[consolidar_carga]` e `[status_faixa]` azul, `[status_abaixo]` âmbar. Deload (texto do modo, `[deload_confirmado]` e etiqueta da revisão) → cinza: é uma escolha do atleta. Vermelho só para erro de verdade (ex.: campo inválido).
+  - **Resto da tela de treino** (mesmo princípio e mesma paleta): o bloco Top Set 1 não tem status de resultado (RG21). Deload (texto do modo, `[deload_confirmado]` e etiqueta da revisão) → cinza: é uma escolha do atleta. Vermelho só para erro de verdade (ex.: campo inválido).
     - O aviso **não tem fundo colorido**: barra lateral fina, marca e texto na cor do aviso. Sem `[subir_peso]`, fadiga ou regressão, o card é só azul e cinza.
   - **Acessibilidade:** todo aviso tem marca **e** texto, nunca só cor. O link é um botão com `aria-expanded`.
   - Implementação: `avisosDoTreino` em `treinoSessao/domain/avisosTreino.ts` monta a lista já ordenada; `UltimoTreinoPanel` só exibe.
@@ -243,7 +244,7 @@ Chips **Cluster Set** (ícone de camadas) e **Deload** (ícone de bateria) apare
 - Ao desativar: o bloco Top Set 2 volta com o peso e as repetições do último treino (indicador azul); sem histórico, o peso espelha o Top Set 1 (RG6).
 - Não há bloco de técnica nem botão de confirmar técnica — o fluxo de confirmação é o mesmo do Top Set 1 padrão.
 - Salvo só com o Top Set 1: `isDeload: true`, `seriesValidas: 1` (RG15).
-- Após confirmar, exibe `[deload_confirmado]` no lugar do status de teto/faixa.
+- Após confirmar, exibe `[deload_confirmado]`.
 
 ### 4.6 Bloco Top Set 1 (obrigatório no modo padrão, oculto quando técnica ativa)
 
@@ -260,7 +261,7 @@ A cada alteração nos campos peso ou repetições, o sistema recalcula o 1RM es
 **Botão "Confirmar Top Set 1":**
 - Habilitado somente quando peso e repetições são positivos (desabilitado enquanto vazio).
 - Se os campos não estiverem preenchidos com valores positivos: exibe banner de aviso e destaca os campos com borda vermelha.
-- Após confirmação: exibe status com ícone (`[status_teto]`, `[consolidar_carga]`, `[status_faixa]` ou `[status_abaixo]`, ver RG21 e RG29) e botão "Editar Top Set 1". Se o estado `[banner_pr]` estava ativo ao confirmar, o status exibido é "🔥 PR Confirmado!" no lugar dos status padrão.
+- Após confirmação: exibe só o botão "Editar Top Set 1", sem status de resultado (RG21). Se a série superou o recorde histórico, exibe também "🔥 PR Confirmado!"; em Deload, `[deload_confirmado]`.
 
 ### 4.7 Bloco Top Set 2 (obrigatório no modo padrão, oculto quando técnica ativa ou Deload)
 
@@ -314,7 +315,7 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 - Tocar no chip marcado **desmarca**.
 - Chip marcado, botão de trocar escala e botão **?**: **azul do sistema** (`#2563eb`) com texto e ícone brancos, nas duas escalas. O chip não usa verde, laranja nem vermelho: RPE 9 é o esperado num isolador e alto num agacho.
 - Série feita sem esforço, ao tentar avançar: `[aviso_esforco]` abaixo dos chips (RG27).
-- Ícones `lucide-react`, os mesmos da barra de navegação: `Gauge` (esforço), `ArrowLeftRight` (trocar escala), `CircleHelp` (ajuda), `X` (fechar ajuda), `TrendingUp` (subir), `Repeat` (consolidar), `Equal` (na faixa), `TrendingDown` (abaixo), `Layers` (Cluster Set), `BatteryCharging` (Deload).
+- Ícones `lucide-react`, os mesmos da barra de navegação: `Gauge` (esforço), `ArrowLeftRight` (trocar escala), `CircleHelp` (ajuda), `X` (fechar ajuda), `Layers` (Cluster Set), `BatteryCharging` (Deload).
 - Acessibilidade: cada grupo tem o nome da série e do exercício, e o chip marcado usa `aria-pressed`. O **?** usa `aria-expanded`, e fechar com **Esc** ou no **X** devolve o foco para ele.
 
 ### 4.9 Observação
@@ -356,12 +357,9 @@ Fica logo abaixo de peso e repetições de cada série (ver RG20).
 | `[aviso_tecnica]` | Aviso inline | Laranja | ⚠ | Preencha pelo menos um bloco (peso e reps) em cada série. |
 | — | — | — | — | Sucesso, erro, conquista e confirmações desta tela estão no catálogo da EF_09 (`[treino_salvo]`, `[treino_nao_salvo]`, `[treino_em_andamento]`, `[series_nao_feitas]`…) |
 | `[banner_pr]` | Destaque motivacional | Verde/Dourado pulsante | 🔥 Ritmo de Recorde Pessoal! | Confirme para validar o PR. (exibido em tempo real durante preenchimento do Top Set 1, ver RG13) |
-| `[status_teto]` | Status | Verde | `TrendingUp` | Teto de reps atingido dentro do alvo · Sem esforço marcado: Teto de reps atingido |
-| `[status_faixa]` | Status | Azul | `Equal` | Na faixa de reps |
-| `[status_abaixo]` | Status | Âmbar | `TrendingDown` | Abaixo da faixa |
 | `[deload_confirmado]` | Status | Cinza | `BatteryCharging` | Deload registrado — não conta para progressão |
 | `[subir_peso]` | Aviso no card | Verde | ↑ | Bateu o teto de reps dentro do alvo (RPE X). Dá para subir a carga. · Sem RPE (registro antigo): Bateu o teto de reps. Dá para subir a carga. |
-| `[consolidar_carga]` | Aviso no card e status | Azul | i (card) · `Repeat` (status) | Teto de reps com esforço acima do alvo (RPE X, alvo A–B): carga em consolidação. |
+| `[consolidar_carga]` | Aviso no card | Azul | i | Teto de reps com esforço acima do alvo (RPE X, alvo A–B): carga em consolidação. |
 | `[alerta_fadiga]` | Aviso no card | Âmbar | ! | Mesma carga (X kg), esforço subindo: RPE A → B em N treinos. |
 | `[alerta_regressao]` | Aviso no card | Âmbar | ! | Mesma carga (X kg), reps caindo: A → B → C em N treinos. |
 | `[primeiro_registro]` | Aviso no card | Azul | i | Primeiro registro deste exercício nesta sessão. |

@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { renderComMensagens } from "../mensagens/helpers";
 import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
-import { marcarEsforco } from "./helpers";
+import { marcarEsforco, STATUS_DE_RESULTADO } from "./helpers";
 import { carregarLogbookCompleto, carregarRegistros, salvarRegistro } from "../../../utils/storage";
 
 function renderFresh() {
@@ -136,20 +136,12 @@ describe("TreinoSessao — Fluxo Saizen Top Set + Back-off", () => {
       expect(boInput.value).toBe("100");
     });
 
-    it("teto atingido mostra badge verde", () => {
+    it.each([["no teto", "9"], ["abaixo da faixa", "3"]])("confirmar Top Set %s nao mostra status de resultado", (_n, reps) => {
       renderFresh();
       selecionarSessao("Upper A");
-      // Supino reto barra faixa [5,9] -> 9 reps = teto
-      confirmarTopSet("100", "9");
-      expect(screen.getByText(/teto de reps atingido/i)).toBeInTheDocument();
-    });
-
-    it("abaixo da faixa mostra badge vermelho", () => {
-      renderFresh();
-      selecionarSessao("Upper A");
-      // Supino reto barra faixa [5,9] -> 3 reps = abaixo
-      confirmarTopSet("100", "3");
-      expect(screen.getByText(/abaixo da faixa/i)).toBeInTheDocument();
+      confirmarTopSet("100", reps);
+      expect(screen.getByText("Editar Top Set 1")).toBeInTheDocument();
+      expect(document.body).not.toHaveTextContent(STATUS_DE_RESULTADO);
     });
   });
 

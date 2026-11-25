@@ -27,7 +27,7 @@ const APARENCIA: Record<TipoAvisoTreino, Pick<AvisoTreino, "tom" | "marca"> & { 
   primeiro: { tom: "azul", marca: "i", prioridade: 3 },
 };
 
-export function textoConsolidar(rpe: number, alvo: FaixaRpe, escala: EscalaEsforco): string {
+function textoConsolidar(rpe: number, alvo: FaixaRpe, escala: EscalaEsforco): string {
   return `Teto de reps com esforço acima do alvo (${rotuloEsforco(rpe, escala)}, alvo ${faixaAlvo(alvo, escala)}): carga em consolidação.`;
 }
 

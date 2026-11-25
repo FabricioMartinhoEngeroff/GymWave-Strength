@@ -1,8 +1,7 @@
 import type { ExercicioSessao } from "../../../data/sessionExercises";
 import type { RegistroExercicio, SeriesValidas } from "../../../types/TrainingData";
-import { deveSubirPeso, rpeDaTela } from "../../../utils/esforco";
+import { rpeDaTela } from "../../../utils/esforco";
 import { normalizarSeriesValidas, sugestaoDoUltimoTreino } from "../../../utils/seriesValidas";
-import { rpeAlvoDoExercicio } from "./rpeAlvo";
 
 export interface BlocoCluster {
   kg: string;
@@ -365,16 +364,4 @@ export function temProgresso(s: ExerciseState): boolean {
     (Object.keys(RPE_VAZIO) as CampoRpe[]).some((c) => s[c] !== null) ||
     [...s.clusterSeries, ...s.clusterSeries2].some((b) => b.kg !== "" || b.reps !== "")
   );
-}
-
-/** "consolidar" = teto batido, mas com esforço alto demais para subir (RG21). */
-export type StatusTopSet = "teto" | "consolidar" | "abaixo" | "faixa" | null;
-
-export function statusTopSet(ex: ExercicioSessao, state: ExerciseState): StatusTopSet {
-  if (!state.topSetConfirmed || state.isDeload) return null;
-  const reps = parseInt(state.topSetReps);
-  if (isNaN(reps)) return null;
-  if (reps >= ex.faixaTopSet[1]) return deveSubirPeso(true, state.topSetRpe, rpeAlvoDoExercicio(ex)) ? "teto" : "consolidar";
-  if (reps < ex.faixaTopSet[0]) return "abaixo";
-  return "faixa";
 }

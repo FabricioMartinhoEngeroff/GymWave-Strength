@@ -6,3 +6,6 @@ export function marcarEsforco(rotulo = "RPE 7") {
     if (!grupo.querySelector("[aria-pressed='true']")) fireEvent.click(within(grupo).getByLabelText(rotulo));
   }
 }
+
+/** Textos de resultado da série que não aparecem no bloco de registro (EF_02 RG21). */
+export const STATUS_DE_RESULTADO = /teto de reps|na faixa de reps|abaixo da faixa|consolidação/i;

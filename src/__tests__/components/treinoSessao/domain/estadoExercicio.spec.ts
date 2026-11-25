@@ -14,7 +14,6 @@ import {
   exercicioConcluido,
   sanitizeExerciseState,
   seriesExtrasDoTopSet,
-  statusTopSet,
   type ExerciseState,
 } from "../../../../components/treinoSessao/domain/estadoExercicio";
 import type { ExercicioSessao } from "../../../../data/sessionExercises";
@@ -92,10 +91,6 @@ describe("estadoExercicio — domain", () => {
     expect(ativarDeload(estado({ tecnica: "RP" }), EX, ULTIMO)).toMatchObject({ topSetKg: "100", topSetReps: "7" });
   });
 
-  it("Deload não tem status de teto/faixa (RG15)", () => {
-    expect(statusTopSet(EX, estado({ ...TOP1, topSetReps: "8", isDeload: true }))).toBeNull();
-  });
-
   it("4 válidas: séries extras só são sugeridas se o atleta ainda não mexeu nelas (RG5.1)", () => {
     expect(seriesExtrasDoTopSet(estado({ seriesValidas: 4 }), 100, 7)).toMatchObject({ extraKg: "100", serie4Reps: "7" });
     expect(seriesExtrasDoTopSet(estado({ seriesValidas: 4, extraKgWasUserEdited: true }), 100, 7)).toEqual({});
@@ -118,14 +113,6 @@ describe("estadoExercicio — domain", () => {
     expect(exercicioConcluido(estado(over as Partial<ExerciseState>))).toBe(esperado);
   });
 
-  it.each([
-    [6, [7, 8], "teto"], [8, [7, 8], "teto"], [9, [7, 8], "consolidar"], [10, [7, 8], "consolidar"], [null, [7, 8], "teto"],
-    [9, [9, 10], "teto"], [10, [9, 10], "teto"],
-  ] as const)("teto com RPE %s e alvo %j → %s (RG21)", (rpe, alvo, esperado) => {
-    const ex = { ...EX, rpeAlvo: [alvo[0], alvo[1]] as [number, number] };
-    expect(statusTopSet(ex, estado({ topSetConfirmed: true, topSetReps: "8", topSetRpe: rpe }))).toBe(esperado);
-  });
-
   it("o RPE nunca vem do último treino e zera ao trocar de modo", () => {
     expect(estadoInicial(EX, { ...ULTIMO, topSetRpe: 9, backoffRpe: 10 })).toMatchObject({ topSetRpe: null, backoffRpe: null });
     expect(ativarCluster(estado({ topSetRpe: 9 }), EX)).toMatchObject({ topSetRpe: null, backoffRpe: null });
@@ -140,10 +127,6 @@ describe("estadoExercicio — domain", () => {
 
   it("rascunho com meio ponto volta vazio: a tela não tem mais esse botão (RG20)", () => {
     expect(sanitizeExerciseState({ topSetRpe: 7.5, backoffRpe: 8.5, extraRpe: 9.5 })).toMatchObject({ topSetRpe: null, backoffRpe: null, extraRpe: null });
-  });
-
-  it.each([["8", "teto"], ["6", "faixa"], ["4", "abaixo"], ["", null]])("statusTopSet com %s reps → %s", (reps, esperado) => {
-    expect(statusTopSet(EX, estado({ topSetConfirmed: true, topSetReps: reps }))).toBe(esperado);
   });
 
   it("sanitizeExerciseState completa rascunho antigo ou corrompido", () => {

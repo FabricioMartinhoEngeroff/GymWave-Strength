@@ -7,6 +7,7 @@ import TreinoSessao from "../../../components/treinoSessao/TreinoSessao";
 import { carregarRegistros, salvarRegistro } from "../../../utils/storage";
 import type { RegistroExercicio } from "../../../types/TrainingData";
 import { dialogo, renderComMensagens } from "../mensagens/helpers";
+import { STATUS_DE_RESULTADO } from "./helpers";
 
 const EX = "Supino reto barra";
 
@@ -183,18 +184,22 @@ describe("TreinoSessao — RPE/RIR por série", () => {
   });
 
   describe("progressão pelo esforço alvo (RG21)", () => {
-    it("pesado: teto no limite do alvo (RPE 8)", () => {
+    it("pesado: teto no limite do alvo (RPE 8) conta no resumo, sem status no bloco", () => {
       abrir();
       topSet("100", "8", "RPE 8");
-      expect(screen.getByText("Teto de reps atingido dentro do alvo")).toBeInTheDocument();
-    });
-
-    it("pesado: teto acima do alvo fica em consolidação e não conta no resumo", () => {
-      abrir();
-      topSet("100", "8", "RPE 9");
-      expect(screen.getByText("Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.")).toBeInTheDocument();
+      expect(document.body).not.toHaveTextContent(STATUS_DE_RESULTADO);
       topSet2("6", "RPE 9");
       salvar();
+      expect(screen.getByText("1 exercício(s) no teto de reps dentro do alvo")).toBeInTheDocument();
+    });
+
+    it("pesado: teto acima do alvo não conta no resumo, sem status no bloco", () => {
+      abrir();
+      topSet("100", "8", "RPE 9");
+      expect(document.body).not.toHaveTextContent(STATUS_DE_RESULTADO);
+      topSet2("6", "RPE 9");
+      salvar();
+      expect(screen.getByText("1/1 exercícios registrados")).toBeInTheDocument();
       expect(screen.queryByText(/no teto de reps/)).not.toBeInTheDocument();
     });
 
@@ -202,11 +207,44 @@ describe("TreinoSessao — RPE/RIR por série", () => {
       planoDeUmExercicio({ rpeAlvo: [9, 10] });
       abrir();
       topSet("100", "8", "RPE 10");
-      expect(screen.getByText("Teto de reps atingido dentro do alvo")).toBeInTheDocument();
+      expect(document.body).not.toHaveTextContent(STATUS_DE_RESULTADO);
       topSet2("6", "RPE 10");
       salvar();
       expect(screen.getByText("1 exercício(s) no teto de reps dentro do alvo")).toBeInTheDocument();
     });
+
+    it.each([
+      ["dentro do alvo", "RPE 8", "aviso-subir", "Bateu o teto de reps dentro do alvo (RPE 8). Dá para subir a carga."],
+      ["acima do alvo", "RPE 9", "aviso-consolidar", "Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação."],
+    ])("teto %s: salva o treino e o aviso chega ao card do treino seguinte", (_n, rpe, aviso, texto) => {
+      const bloco = () => screen.getByText("Editar Top Set 1").parentElement;
+      const semanaPassada = new Date(Date.now() - 7 * DIA).toLocaleDateString("pt-BR");
+
+      // Treino da semana passada, feito na tela: nada vem semeado no storage.
+      abrir();
+      fireEvent.change(screen.getByLabelText("Data do treino"), { target: { value: semanaPassada } });
+      topSet("100", "8", rpe);
+      expect(bloco()).not.toHaveTextContent(STATUS_DE_RESULTADO);
+      expect(screen.queryByTestId(aviso)).toBeNull();
+      topSet2("6", "RPE 9");
+      salvar();
+      expect(carregarRegistros()).toHaveLength(1);
+
+      // Treino seguinte: tela nova, série ainda por confirmar.
+      cleanup();
+      abrir();
+      expect(screen.getByLabelText("Data do treino")).toHaveValue(new Date().toLocaleDateString("pt-BR"));
+      expect(screen.getByText("Confirmar Top Set 1")).toBeInTheDocument();
+      const card = screen.getByTestId("ultimo-treino-detalhe");
+      expect(card).toHaveTextContent(semanaPassada);
+      expect(card).toHaveTextContent(`100kg × 8 reps · ${rpe}`);
+      expect(within(card).getByTestId(aviso)).toHaveTextContent(texto);
+
+      // Confirmar de novo no teto: o aviso segue no card e o bloco continua sem status.
+      topSet("100", "8", rpe);
+      expect(bloco()).not.toHaveTextContent(STATUS_DE_RESULTADO);
+      expect(within(card).getByTestId(aviso)).toHaveTextContent(texto);
+    }, 15_000);
 
     it("subir é só aviso: o campo abre com o mesmo peso e reps do último treino (RG5.1)", () => {
       historico(7, { topSetReps: 8, topSetBateuTeto: true, topSetRpe: 7 });

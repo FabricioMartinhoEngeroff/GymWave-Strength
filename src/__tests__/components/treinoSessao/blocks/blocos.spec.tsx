@@ -12,6 +12,7 @@ import { ClusterBlock } from "../../../../components/treinoSessao/blocks/Cluster
 import { DeloadBlock } from "../../../../components/treinoSessao/blocks/DeloadBlock";
 import { blocosVazios, emptyExerciseState, type ExerciseState } from "../../../../components/treinoSessao/domain/estadoExercicio";
 import type { ExercicioSessao } from "../../../../data/sessionExercises";
+import { STATUS_DE_RESULTADO } from "../helpers";
 
 const EX: ExercicioSessao = {
   nome: "Supino reto barra", grupo: "Peitoral", faixaTopSet: [5, 8], faixaBackoff: [8, 10],
@@ -75,22 +76,41 @@ describe("Blocos da sessão", () => {
     expect(screen.getByText(/Deload registrado/).parentElement).toHaveStyle({ color: "#6b7280" });
   });
 
-  describe("status do Top Set 1: descreve, sem mandar (RG21, RG29)", () => {
-    const CONSOLIDAR = "Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.";
-    it.each<[string, string, number | null, string, string]>([
-      ["teto dentro do alvo", "8", 8, "Teto de reps atingido dentro do alvo", "#166534"],
-      ["teto ainda sem esforço", "8", null, "Teto de reps atingido", "#166534"],
-      ["teto acima do alvo", "8", 9, CONSOLIDAR, "#1d4ed8"],
-      ["na faixa", "7", 8, "Na faixa de reps", "#1d4ed8"],
-      ["abaixo da faixa", "3", 8, "Abaixo da faixa", "#92400e"],
-    ])("%s", (_n, topSetReps, topSetRpe, texto, cor) => {
-      render(<TopSetBlock {...escala} ex={EX} state={estado({ topSetKg: "100", topSetReps, topSetRpe, topSetConfirmed: true })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
-      expect(screen.getByText(texto).parentElement).toHaveStyle({ color: cor });
+  describe("Top Set 1 confirmado: sem status de resultado (RG21)", () => {
+    const confirmado = (over: Partial<ExerciseState>, tela: "RPE" | "RIR" = "RPE") =>
+      render(<TopSetBlock {...escala} escala={tela} ex={EX} state={estado({ topSetKg: "100", topSetConfirmed: true, ...over })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
+    const antesDoEditar = () => screen.getByText("Editar Top Set 1").previousElementSibling;
+
+    it.each([
+      ["teto dentro do alvo", "8", 8, "RPE"],
+      ["teto ainda sem esforço", "8", null, "RPE"],
+      ["teto acima do alvo", "8", 9, "RPE"],
+      ["teto acima do alvo, em RIR", "8", 9, "RIR"],
+      ["na faixa", "7", 8, "RPE"],
+      ["abaixo da faixa", "3", 8, "RPE"],
+    ] as const)("%s", (_n, topSetReps, topSetRpe, tela) => {
+      const { container } = confirmado({ topSetReps, topSetRpe }, tela);
+      expect(container).not.toHaveTextContent(STATUS_DE_RESULTADO);
+      // Vale para qualquer texto: entre os chips de esforço e o botão de editar não há nada.
+      expect(antesDoEditar()).toBe(screen.getByLabelText(/^Esforço Top Set 1/));
     });
 
-    it("consolidar em RIR", () => {
-      render(<TopSetBlock {...escala} escala="RIR" ex={EX} state={estado({ topSetKg: "100", topSetReps: "8", topSetRpe: 9, topSetConfirmed: true })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
-      expect(screen.getByText("Teto de reps com esforço acima do alvo (RIR 1, alvo 2–3): carga em consolidação.")).toBeInTheDocument();
+    it("recorde confirmado continua, mesmo no teto", () => {
+      const { container } = confirmado({ topSetReps: "8", topSetRpe: 8, prConfirmado: true });
+      expect(antesDoEditar()).toHaveTextContent("🔥 PR Confirmado!");
+      expect(container).not.toHaveTextContent(STATUS_DE_RESULTADO);
+    });
+
+    it("campo obrigatório vazio continua avisando", () => {
+      render(<TopSetBlock {...escala} ex={EX} state={estado()} aviso onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={vi.fn()} />);
+      expect(screen.getByText(/Preencha o peso e as repetições do Top Set 1/)).toBeInTheDocument();
+    });
+
+    it("o botão de editar continua chamando o callback", () => {
+      const onEditar = vi.fn();
+      render(<TopSetBlock {...escala} ex={EX} state={estado({ topSetKg: "100", topSetReps: "8", topSetConfirmed: true })} aviso={false} onChange={vi.fn()} onConfirmar={vi.fn()} onEditar={onEditar} />);
+      fireEvent.click(screen.getByText("Editar Top Set 1"));
+      expect(onEditar).toHaveBeenCalledOnce();
     });
   });
 

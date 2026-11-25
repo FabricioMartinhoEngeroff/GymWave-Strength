@@ -593,8 +593,8 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 11 | Confirmar Top Set sem dados | Botao desabilitado (`disabled`) |
 | 12 | Confirmar Top Set com dados validos | Bloco Back-off aparece |
 | 13 | Back-off apos confirmar Top Set 100kg | Peso sugerido automaticamente = 85 (85%) |
-| 14 | Top Set com reps no teto (9 reps, faixa 5–9) | Status verde `[status_teto]` exibido |
-| 15 | Top Set abaixo da faixa (3 reps, faixa 5–9) | Status ambar `Abaixo da faixa` exibido |
+| 14 | Confirmar Top Set com reps no teto | Nenhum status de resultado no bloco; `Editar Top Set 1` visivel |
+| 15 | Confirmar Top Set abaixo da faixa (3 reps) | Nenhum status de resultado no bloco; `Editar Top Set 1` visivel |
 
 **Série Extra (seriesValidas) (6)**
 
@@ -724,8 +724,8 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 79 | Fechar e reabrir o app | Esforco volta do rascunho |
 | 80 | Cluster Set | Um esforco por serie cluster, gravado no registro |
 | 81 | Revisao | Exibe `@ RPE X` depois das reps |
-| 82 | Teto com RPE 8 e alvo 7 a 8; teto com RPE 10 e alvo 9 a 10 | `Teto de reps atingido dentro do alvo`; conta no resumo; campos nao mudam |
-| 83 | Teto com RPE 9 e alvo 7 a 8 | `Teto de reps com esforço acima do alvo (RPE 9, alvo 7–8): carga em consolidação.`; nao conta no resumo |
+| 82 | Teto com RPE 8 e alvo 7 a 8; teto com RPE 10 e alvo 9 a 10 | Sem status no bloco; conta no resumo; campos nao mudam |
+| 83 | Teto com RPE 9 e alvo 7 a 8 | Sem status no bloco; nao conta no resumo |
 | 84 | Abrir com ultimo treino no teto, RPE 7 / RPE 9 | Aviso `[subir_peso]` / `[consolidar_carga]` no card |
 | 85 | Alvo 7 a 8 com 8 → 9 → 10; alvo 9 a 10 com 9 → 10 → 10 | `[alerta_fadiga]` exibido no card, sem sugerir deload |
 | 86 | RPE estavel, um dia ruim so, subiu dentro do alvo | Sem alerta |
@@ -873,12 +873,14 @@ Progressão: C1 Pico (5–6 reps · 2 séries) → C2 Intens. (7–8 · 3) → C
 | 178 | Aviso | Marca e texto; fundo transparente; barra lateral |
 | 179 | `ProgressBanner.tsx` e `UltimoTreinoPanel.tsx` | Nenhum hex solto |
 | 180 | Plano com `rpeAlvo` 7 a 8 em Stiff | Cabecalho `alvo RPE 7–8`; teto com RPE 9 vira `[consolidar_carga]`; esforco segue obrigatorio |
-| 181 | Status do Top Set: teto dentro do alvo / sem esforco / acima do alvo / na faixa / abaixo | `[status_teto]` / `Teto de reps atingido` / `[consolidar_carga]` / `Na faixa de reps` / `Abaixo da faixa` |
-| 182 | Cor do status | Verde / verde / azul / azul / ambar; nenhum vermelho |
+| 181 | Top Set 1 confirmado: teto dentro do alvo / sem esforco / acima do alvo / na faixa / abaixo, em RPE e em RIR | Nenhum texto de status no bloco (EF_02 RG21) |
+| 182 | O que continua no bloco Top Set 1 | `PR Confirmado!` quando supera o recorde; aviso de campo obrigatorio; `[aviso_esforco]`; `Editar Top Set 1` |
 | 183 | Deload: texto do modo, status e etiqueta da revisao | Cinza |
 | 184 | Resumo do treino | `N exercício(s) no teto de reps dentro do alvo` |
 | 185 | Balao ? | `dá para subir a carga` e `carga em consolidação`; sem `sobe o peso` nem `repete a carga` |
 | 186 | Tela de treino inteira | Nenhum texto com ordem de carga; sem vermelho fora de campo invalido |
+| 187 | Confirmar Top Set 1 no teto (RPE 8 / RPE 9, alvo 7 a 8), salvar e abrir o treino seguinte | Bloco sem status nos dois treinos; card mostra `[subir_peso]` / `[consolidar_carga]` |
+| 188 | Codigo da tela de treino, fora dos arquivos do card (`avisosTreino`, `UltimoTreinoPanel`, `ProgressBanner`) | Nenhum texto `Teto de reps atingido`, `Na faixa de reps` ou `Abaixo da faixa` |
 
 ---
 

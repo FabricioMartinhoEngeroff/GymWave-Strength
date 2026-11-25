@@ -486,7 +486,7 @@ const TONS = {
   cinza: { fundo: "#f9fafb", borda: "#d1d5db", texto: "#6b7280" },
 };
 
-export type Tom = keyof typeof TONS;
+type Tom = keyof typeof TONS;
 
 export const StatusBox = styled.div<{ $tom: Tom }>`
   background: ${(p) => TONS[p.$tom].fundo};

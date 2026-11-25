@@ -226,7 +226,7 @@ export function useSessaoTreino(onUnsavedChanges?: (has: boolean) => void) {
   function confirmTopSet() {
     const ok = serieValida(state.topSetKg, state.topSetReps);
     avisar("topSet", !ok);
-    // prConfirmado só quando supera PR histórico (teto sem histórico = "Teto atingido" normal)
+    // prConfirmado só quando supera o PR histórico: bater o teto não é recorde confirmado.
     if (ok) atualizar({ topSetConfirmed: true, skipped: false, prConfirmado: superaPr, ...seriesExtrasDoTopSet(state, topKg, topReps) });
   }
 
