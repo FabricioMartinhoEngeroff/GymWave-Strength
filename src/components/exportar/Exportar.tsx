@@ -3,7 +3,7 @@ import styled from "styled-components";
 import * as XLSX from "xlsx";
 import Papa from "papaparse";
 import type { PlanoTreino, RegistroExercicio, SeriesValidas } from "../../types/TrainingData";
-import { carregarDados, carregarRegistros, emTransacao, fotografarRegistros, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
+import { carregarDados, carregarRegistros, emTransacao, fotografarRegistros, limparRascunhos, restaurarRegistros, salvarRegistro, storageKey } from "../../utils/storage";
 import { hojeBR, parseDataBR } from "../../utils/datas";
 import type { FaixaRpe } from "../../utils/esforco";
 import { exportarCSV } from "../../utils/registros";
@@ -577,7 +577,7 @@ export default function Exportar() {
     localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(db));
     localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
     localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
-    localStorage.removeItem(storageKey("rascunho_treino"));
+    limparRascunhos();
     setResult({ total, preservados, porSessao });
     mensagens.mostrar("importacao_concluida");
     avisarRpeAlvoIlegivel(rows);

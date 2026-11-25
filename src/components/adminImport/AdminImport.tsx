@@ -11,6 +11,7 @@ import {
   emTransacao,
   fotografarRegistros,
   getCurrentUser,
+  limparRascunhos,
   limparRegistros,
   restaurarRegistros,
   salvarRegistro,
@@ -472,7 +473,7 @@ export default function AdminImport() {
       localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(legacyDb));
       localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
       localStorage.setItem(storageKey("sessoes_config"), JSON.stringify(sessoesConfigMap));
-      localStorage.removeItem(storageKey("rascunho_treino"));
+      limparRascunhos();
       return { total, porTreino };
     }));
 

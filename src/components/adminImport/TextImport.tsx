@@ -4,6 +4,7 @@ import {
   carregarLogbookCompleto,
   emTransacao,
   getCurrentUser,
+  limparRascunhos,
   salvarLogbookCompleto,
   setCurrentUser,
   storageKey,
@@ -266,7 +267,7 @@ export default function TextImport() {
         localStorage.setItem(storageKey("dadosTreino"), JSON.stringify(dadosTreino));
         localStorage.setItem(storageKey("planoTreino"), JSON.stringify(planoNovo));
       });
-      localStorage.removeItem(storageKey("rascunho_treino"));
+      limparRascunhos();
 
       setResult({ sessoes: sessions.length, exercicios: totalEx });
       setErrors([]);

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { CycleInstruction } from "../../../components/cyclesCard/CycleInstruction";
 import { setCurrentUser } from "../../../utils/storage";
 
@@ -69,5 +69,23 @@ describe("CycleInstruction", () => {
     localStorage.setItem("gw:treino@gmail.com:instrucoesVistas", "true");
     render(<CycleInstruction />);
     expect(screen.queryByText(/registre primeiro/i)).not.toBeInTheDocument();
+  });
+
+  it("fechar grava so para o usuario atual", () => {
+    setCurrentUser("u1");
+    render(<CycleInstruction />);
+    fireEvent.click(screen.getByText("Ok, entendi"));
+    expect(localStorage.getItem("gw:u1:instrucoesVistas")).toBe("true");
+    expect(localStorage.getItem("instrucoesVistas")).toBeNull();
+    cleanup();
+    setCurrentUser("u2");
+    render(<CycleInstruction />);
+    expect(screen.getByText(/registre primeiro/i)).toBeInTheDocument();
+  });
+
+  it.each([["false", false], ["0", false], ["", true]])("guardado %j: exibe = %s (qualquer texto vale como visto)", (guardado, exibe) => {
+    localStorage.setItem("instrucoesVistas", guardado);
+    render(<CycleInstruction />);
+    expect(screen.queryByText(/registre primeiro/i) !== null).toBe(exibe);
   });
 });

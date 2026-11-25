@@ -150,7 +150,9 @@ src/
     ├── esforco.ts              # RPE/RIR: escala, rótulos, faixaValida(), passouDoAlvo(), deveSubirPeso(), detectarFadiga(), detectarRegressao()
     ├── planilhaSessoes.ts      # Sessões da planilha: prefixo de semana, id da sessão, cluster, rpe_alvo, exercício repetido
     ├── registros.ts            # Formato v3 do histórico: slug do exercício, conversões, CSV
-    ├── storage.ts              # Logbook: salvarRegistro(), ultimoRegistro(), referenciaDoExercicio(), exercicioDeveSubirPeso()
+    ├── storage/                # Único módulo que toca no localStorage (ver ARMAZENAMENTO.md)
+    │   ├── chaves.ts · preferencias.ts · rascunho.ts
+    │   └── historico.ts            # salvarRegistro(), ultimoRegistro(), referenciaDoExercicio(), exercicioDeveSubirPeso()
     │                           # Legado: salvarDados() / carregarDados() → localStorage["dadosTreino"]
     ├── timeFilter.ts           # getCutoffTs() — corte de timestamp por intervalo (1M, 3M…)
     ├── validateUUID.ts         # Validação de UUID
@@ -226,6 +228,8 @@ src/__tests__/
 ---
 
 ## Modelo de dados (`localStorage`)
+
+Inventário de todas as chaves, com quem lê e quem grava: [ARMAZENAMENTO.md](./ARMAZENAMENTO.md).
 
 ### `logbook` — histórico novo (fonte principal)
 ```

@@ -1,4 +1,4 @@
-import { storageKey } from "../../../utils/storage";
+import { carregarRascunhos, limparRascunhos, salvarRascunhos } from "../../../utils/storage";
 import { sanitizeExerciseState, type ExerciseState } from "./estadoExercicio";
 
 // Rascunho do treino em andamento (RG12): um por sessão, removido só ao salvar.
@@ -10,32 +10,12 @@ export interface DraftPayload {
   currentIdx: number;
 }
 
-type DraftStore = Partial<Record<string, DraftPayload>>;
-
-const DRAFT_KEY = () => storageKey("rascunho_treino");
-
-function loadDraftStore(): DraftStore {
-  try {
-    const raw = localStorage.getItem(DRAFT_KEY());
-    if (!raw) return {};
-    const parsed = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return {};
-    return parsed as DraftStore;
-  } catch {
-    return {};
-  }
-}
-
-function saveDraftStore(store: DraftStore) {
-  localStorage.setItem(DRAFT_KEY(), JSON.stringify(store));
-}
-
 /** Guarda o rascunho; false se o aparelho não deixou (sem espaço ou bloqueado). */
 export function saveDraft(sessao: string, states: EstadosDaSessao, idx: number): boolean {
   try {
-    const store = loadDraftStore();
+    const store = carregarRascunhos<DraftPayload>();
     store[sessao] = { states, currentIdx: idx };
-    saveDraftStore(store);
+    salvarRascunhos(store);
     return true;
   } catch {
     return false;
@@ -43,17 +23,17 @@ export function saveDraft(sessao: string, states: EstadosDaSessao, idx: number):
 }
 
 export function clearDraft(sessao: string) {
-  const store = loadDraftStore();
+  const store = carregarRascunhos<DraftPayload>();
   delete store[sessao];
   if (Object.keys(store).length === 0) {
-    localStorage.removeItem(DRAFT_KEY());
+    limparRascunhos();
   } else {
-    saveDraftStore(store);
+    salvarRascunhos(store);
   }
 }
 
 export function loadDraft(sessao: string): DraftPayload | null {
-  const store = loadDraftStore();
+  const store = carregarRascunhos<DraftPayload>();
   const payload = store[sessao];
   if (!payload || typeof payload !== "object") return null;
   if (!payload.states || typeof payload.states !== "object") return null;
